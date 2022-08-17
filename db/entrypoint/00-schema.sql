@@ -52,6 +52,20 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+-- -----------------------------------------------------
+-- Table `oasip`.`user`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `oasip`.`user` (
+  `userId` INT NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(50) NOT NULL,
+  `role` VARCHAR(50) NOT NULL DEFAULT 'student',
+  `createOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`userId`),
+  UNIQUE INDEX `userName_UNIQUE` (`name` ASC) VISIBLE,
+  UNIQUE INDEX `userEmail_UNIQUE` (`email` ASC) VISIBLE)
+ENGINE = InnoDB;
 
 
 SET SQL_MODE=@OLD_SQL_MODE;
