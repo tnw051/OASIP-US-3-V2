@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+  db:
+    image: ghcr.io/manassinee/oasip-us-3/db:latest
+    volumes:
+      - ./db/data:/var/lib/mysql
+      - ./db/scripts:/tests
+    env_file:
+      - ./db/.env
+    environment:
+      - TZ=Asia/Bangkok
+      - LANG=C.UTF-8
+
+  backend:
+    image: ghcr.io/manassinee/oasip-us-3/backend:latest
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    restart: on-failure
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=oasip
+
+  frontend:
+    image: ghcr.io/manassinee/oasip-us-3/frontend:latest
+    depends_on:
+      - backend
+
+  reverse_proxy:
+    image: ghcr.io/manassinee/oasip-us-3/reverse_proxy:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend

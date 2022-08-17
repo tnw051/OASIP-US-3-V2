@@ -1,0 +1,4 @@
+USE oasip;
+
+DELETE FROM event;
+ALTER TABLE event AUTO_INCREMENT = 1;
