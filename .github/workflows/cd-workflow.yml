@@ -19,9 +19,9 @@ on:
         description: Build and push reverse proxy image
         type: boolean
         required: false
-  push:
-    branches:
-      - main
+#   push:
+#     branches:
+#       - main
 
 jobs:
   docker:
