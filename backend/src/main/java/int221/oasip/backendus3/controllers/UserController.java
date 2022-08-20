@@ -1,12 +1,12 @@
 package int221.oasip.backendus3.controllers;
 
+import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.services.UserServive;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,4 +20,14 @@ public class UserController {
     public List<UserResponse> getUsers() {
         return service.getAll();
     }
+
+    @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse create(@RequestBody CreateUserRequest request) {
+        System.out.println(request);
+
+        return service.create(request);
+    }
+
+
 }

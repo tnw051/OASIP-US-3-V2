@@ -5,10 +5,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.Instant;
 
 @Entity
@@ -17,6 +14,7 @@ import java.time.Instant;
 @Setter
 public class User {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId", nullable = false)
     private Integer id;
 
@@ -26,14 +24,14 @@ public class User {
     @Column(name = "email", nullable = false, length = 50)
     private String email;
 
-    @Column(name = "role", nullable = false, length = 50)
-    private String role;
+    @Column(name = "role", nullable = false)
+    private Role role;
 
-    //    @CreationTimestamp
+        @CreationTimestamp
     @Column(name = "createOn", nullable = false)
     private Instant createOn;
 
-    //    @UpdateTimestamp
+//        @UpdateTimestamp
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
 }
