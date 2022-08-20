@@ -27,7 +27,7 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role;
 
-        @CreationTimestamp
+//        @CreationTimestamp
     @Column(name = "createOn", nullable = false)
     private Instant createOn;
 
