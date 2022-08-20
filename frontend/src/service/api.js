@@ -145,3 +145,13 @@ export async function updateCategory(id, editCategory) {
     console.log("Cannot edit category");
   }
 }
+
+export async function getUsers() {
+  const response = await fetch(makeUrl("/users"));
+  if (response.status === 200) {
+    const users = response.json();
+    return users;
+  } else {
+    console.log("Cannot fetch users");
+  }
+}
