@@ -1,8 +1,9 @@
 <script setup>
 import { onBeforeMount, ref } from "vue";
-import { getCategories, updateCategory } from "../service/api";
 import EditCategory from "../components/EditCategory.vue";
 import Modal from "../components/Modal.vue";
+import Table from "../components/Table.vue";
+import { getCategories, updateCategory } from "../service/api";
 
 const categories = ref([]);
 const currentCategory = ref({});
@@ -69,55 +70,37 @@ async function saveCategory(newValues) {
         <div class="mb-4 mt-2">{{ categories.length }} events shown</div>
       </div>
       <div class="flex">
-        <table
-          class="table-fixed text-left w-8/12 flex-1 break-words border border-slate-200 shadow-xl shadow-black/5 p-4 h-full">
+        <Table :headers="[
+          {
+            name: 'Category Name',
+            key: 'name',
+          },
+          {
+            name: 'Description',
+            key: 'description',
+          },
+          {
+            name: 'Duration',
+            key: 'duration',
+          },
+        ]" :items="categories" enable-edit @edit="startEdit" :selected-key="currentCategory.id"
+          :key-extractor="(category) => category.id">
+          <template #cell:name="{ item }">
+            <span class="font-medium">{{ item.eventCategoryName }}</span>
+          </template>
 
-          <thead class="text-xs text-slate-500 uppercase bg-slate-100 text-left">
-            <tr>
-              <th class="pl-2 py-3">Category Name</th>
-              <th class="pl-2 py-3">Description</th>
-              <th class="pl-2 py-3">Duration</th>
-              <th class="pl-2 py-3">Actions</th>
-            </tr>
-          </thead>
+          <template #cell:description="{ item }">
+            <span class="font-medium">{{ item.eventCategoryDescription }}</span>
+          </template>
 
-          <tr v-if="categories.length > 0" v-for="category in categories"
-            class=" my-10 bg-white rounded-lg border-b border-gray-200 shadow-black/5 relative hover:bg-gray-50 transition box-border"
-            :class="[
-              {
-                'z-10 bg-blue-200/10 hover:bg-blue-200/20 ring-2 ring-blue-400/50 ':
-                  currentCategory.id === category.id
-              }
-            ]">
+          <template #cell:duration="{ item }">
+            <span class="font-medium">{{ item.eventDuration }}</span>
+          </template>
 
-            <td class="py-2 px-2">
-              <span class="font-medium">{{ category.eventCategoryName }}</span>
-            </td>
-
-            <td class="py-2 px-2">
-              <span class="font-medium">{{ category.eventCategoryDescription }}</span>
-            </td>
-
-            <td class="py-2 px-2">
-              <span class="font-medium">{{ category.eventDuration }}</span>
-            </td>
-
-            <td class="py-2 px-2">
-              <div class="flex">
-                <button @click.stop="startEdit(category)"
-                  class="text-slate-400 hover:text-yellow-500 disabled:hover:text-slate-400 text-xs flex items-center justify-center w-8 h-8 rounded-full transition"
-                  :disabled="isEditing">
-                  <span class="material-symbols-outlined">
-                    edit
-                  </span>
-                </button>
-              </div>
-            </td>
-
-          </tr>
-
-
-        </table>
+          <template #empty>
+            No categories found
+          </template>
+        </Table>
 
         <div class="p-4 bg-slate-100 relative w-4/12" v-if="currentCategory.id">
           <EditCategory class="sticky top-24" :category="currentCategory" :categories="categories" @cancel="stopEdit"
