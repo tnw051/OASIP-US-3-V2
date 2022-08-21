@@ -29,7 +29,7 @@ public class UserController {
     public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         try {
             return service.create(request);
-        } catch (NotUniqueException ex) {
+        } catch (NotUniqueException e) {
             throw new FieldNotValidException("W", e.getMessage());
         }
     }
