@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onBeforeMount, computed } from 'vue';
-import { getRoles, createUser } from '../service/api';
+import { computed, onBeforeMount, ref } from 'vue';
 import Modal from '../components/Modal.vue';
+import { createUser, getRoles } from '../service/api';
 
 const roles = ref([]);
 
@@ -65,7 +65,7 @@ function validateEmail(e) {
 }
 
 const isSuccessModalOpen = ref(false);
-// const isErrorModalOpen = ref(false);
+const isErrorModalOpen = ref(false);
 
 async function handleSubmit() {
   const user = {
@@ -79,15 +79,15 @@ async function handleSubmit() {
       resetInputs();
       isSuccessModalOpen.value = true;
     } else {
-      // isErrorModalOpen.value = true;
+      isErrorModalOpen.value = true;
     }
   } catch (errorResponse) {
-    // if (errorResponse.status !== 400) {
-    //   isErrorModalOpen.value = true;
-    //   return;
-    // }
+    if (errorResponse.status !== 400) {
+      isErrorModalOpen.value = true;
+      return;
+    }
 
-    // Object.assign(errors.value, errorResponse.errors);
+    Object.assign(errors.value, errorResponse.errors);
   }
 }
 
@@ -142,8 +142,8 @@ function resetInputs() {
   <Modal title="Success" subtitle="User created successfully" :is-open="isSuccessModalOpen"
     @close="isSuccessModalOpen = false" />
 
-  <!-- <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isErrorModalOpen"
-    variant="error" @close="isErrorModalOpen = false" /> -->
+  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isErrorModalOpen"
+    variant="error" @close="isErrorModalOpen = false" />
 </template>
  
 <style scoped>
