@@ -7,10 +7,11 @@ import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { deleteEvent, getCategories, getEvents, getEventsByFilter, updateEvent } from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
+import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
 const events = ref([]);
-const currentEvent = ref({});
+const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
 const categories = ref([]);
 const { isLoading, setIsLoading } = useIsLoading(true);
 const isEditSuccessModalOpen = ref(false);
@@ -74,24 +75,9 @@ async function confirmCancelEvent(event) {
 }
 
 function selectEvent(event) {
-  if (isEditing.value) {
-    return;
-  }
-  currentEvent.value = event;
-}
-
-const isEditing = ref(false)
-function startEdit(event) {
-  if (isEditing.value) {
-    return;
-  }
-  currentEvent.value = event;
-  isEditing.value = true;
-}
-
-function stopEdit() {
-  currentEvent.value = {};
-  isEditing.value = false;
+  withNoEditing(() => {
+    currentEvent.value = event;
+  });
 }
 
 async function saveEvent(updates) {
@@ -110,7 +96,7 @@ async function saveEvent(updates) {
     }
   }
 
-  isEditing.value = false;
+  stopEditing();
 }
 
 async function filterEvents() {
@@ -203,7 +189,7 @@ async function filterEvents() {
             name: 'Category',
             key: 'eventCategory',
           },
-        ]" :items="events" enable-edit enable-delete @edit="startEdit" @delete="startConfirmCancel"
+        ]" :items="events" enable-edit enable-delete @edit="startEditing" @delete="startConfirmCancel"
           @select="selectEvent" :selected-key="currentEvent.id" :key-extractor="(event) => event.id"
           :is-loading="isLoading">
           <template #cell:bookingName="{ item }">
