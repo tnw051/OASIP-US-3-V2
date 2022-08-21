@@ -4,10 +4,10 @@ import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
+import Table from "../components/Table.vue";
 import { deleteEvent, getCategories, getEvents, getEventsByFilter, updateEvent } from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useIsLoading } from "../utils/useIsLoading";
-
 
 const events = ref([]);
 const currentEvent = ref({});
@@ -190,75 +190,45 @@ async function filterEvents() {
         </div>
       </div>
       <div class="flex">
-        <table
-          class="table-fixed text-left w-8/12 flex-1 break-words border border-slate-200 shadow-xl shadow-black/5 p-4 h-full">
+        <Table :headers="[
+          {
+            name: 'Name',
+            key: 'bookingName',
+          },
+          {
+            name: 'Date & Time',
+            key: 'eventStartTime',
+          },
+          {
+            name: 'Category',
+            key: 'eventCategory',
+          },
+        ]" :items="events" enable-edit enable-delete @edit="startEdit" @delete="startConfirmCancel"
+          @select="selectEvent" :selected-key="currentEvent.id" :key-extractor="(event) => event.id"
+          :is-loading="isLoading">
+          <template #cell:bookingName="{ item }">
+            <span class="font-medium">{{ item.bookingName }}</span>
+          </template>
 
-          <thead class="text-xs text-slate-500 uppercase bg-slate-100 text-left">
-            <tr>
-              <th class="pl-2 py-3">Name</th>
-              <th class="pl-2 py-3">Date & Time</th>
-              <th class="pl-2 py-3">Category</th>
-              <th class="pl-2 py-3">Actions</th>
-            </tr>
-          </thead>
+          <template #cell:eventStartTime="{ item }">
+            <div class="flex flex-col">
+              <span class="">{{ formatDateTime(new Date(item.eventStartTime)) }}</span>
+              <span class="text-sm text-slate-500">{{ item.eventDuration }} minutes</span>
+            </div>
+          </template>
 
-          <tbody class="divide-y">
-            <tr v-if="!isLoading && events.length > 0" v-for="event in events" @click="selectEvent(event)"
-              class="my-10 bg-white relative transition text-slate-600" :class="[{
-                'z-10 bg-blue-200/10 hover:bg-blue-200/20 ring-2 ring-blue-400/50': currentEvent.id === event.id,
-                'cursor-pointer hover:bg-slate-50 shadow-black/5': !isEditing
-              }
-              ]">
+          <template #cell:eventCategory="{ item }">
+            <div class="flex">
+              <Badge :text="item.eventCategory.eventCategoryName" />
+            </div>
+          </template>
 
-              <td class="py-2 px-2">
-                <span class="font-medium">{{ event.bookingName }}</span>
-              </td>
-
-              <td class="py-2 px-2">
-                <div class="flex flex-col">
-                  <span class="">{{ formatDateTime(new Date(event.eventStartTime)) }}</span>
-                  <span class="text-sm text-slate-500">{{ event.eventDuration }} minutes</span>
-                </div>
-              </td>
-
-              <td class="py-2 px-2">
-                <div class="flex">
-                  <Badge :text="event.eventCategory.eventCategoryName" />
-                </div>
-              </td>
-
-              <td class="py-2 px-2">
-                <div class="flex space-x-2">
-                  <button @click.stop="startConfirmCancel(event)"
-                    class="text-slate-400 hover:text-red-500 disabled:hover:text-slate-400 text-xs flex items-center justify-center w-8 h-8 rounded-full transition"
-                    :disabled="isEditing">
-                    <span class="material-symbols-outlined">
-                      delete
-                    </span>
-                  </button>
-
-                  <button @click.stop="startEdit(event)"
-                    class="text-slate-400 hover:text-yellow-500 disabled:hover:text-slate-400 text-xs flex items-center justify-center w-8 h-8 rounded-full transition"
-                    :disabled="isEditing">
-                    <span class="material-symbols-outlined">
-                      edit
-                    </span>
-                  </button>
-                </div>
-              </td>
-
-            </tr>
-            <tr v-else>
-              <td colspan="4" class="p-6 text-center">
-                <span v-if="isLoading">Loading...</span>
-                <span v-else-if="filter.type === eventTypes.UPCOMING">No On-Going or Upcoming Events</span>
-                <span v-else-if="filter.type === eventTypes.PAST">No Past Events</span>
-                <span v-else>No Scheduled Event</span>
-              </td>
-            </tr>
-          </tbody>
-
-        </table>
+          <template #empty>
+            <span v-if="filter.type === eventTypes.UPCOMING">No On-Going or Upcoming Events</span>
+            <span v-else-if="filter.type === eventTypes.PAST">No Past Events</span>
+            <span v-else>No Scheduled Event</span>
+          </template>
+        </Table>
 
         <div class="p-4 bg-slate-100 relative w-4/12" v-if="currentEvent.id">
           <EditEvent class="sticky top-24" :currentEvent="currentEvent" @cancel="isEditing = false" v-if="isEditing"
