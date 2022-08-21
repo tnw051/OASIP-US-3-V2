@@ -2,12 +2,15 @@ package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.exceptions.FieldNotValidException;
+import int221.oasip.backendus3.exceptions.NotUniqueException;
 import int221.oasip.backendus3.services.UserServive;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -23,11 +26,11 @@ public class UserController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@RequestBody CreateUserRequest request) {
-        System.out.println(request);
-
-        return service.create(request);
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
+        try {
+            return service.create(request);
+        } catch (NotUniqueException ex) {
+            throw new FieldNotValidException("W", e.getMessage());
+        }
     }
-
-
 }
