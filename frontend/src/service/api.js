@@ -155,3 +155,32 @@ export async function getUsers() {
     console.log("Cannot fetch users");
   }
 }
+
+export async function getRoles() {
+  const response = await fetch(makeUrl("/users/roles"));
+  if (response.status === 200) {
+    const users = response.json();
+    return users;
+  } else {
+    console.log("Cannot fetch user roles");
+  }
+}
+
+export async function createUser(newUser) {
+  const response = await fetch(makeUrl("/users"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(newUser),
+  });
+
+  const data = await response.json();
+  if (response.status === 201) {
+    return data;
+  } else if (response.status === 400) {
+    throw data;
+  } else {
+    console.log("Cannot create user");
+  }
+}

@@ -3,6 +3,7 @@ import CreateEvent from "../views/CreateEvent.vue";
 import Events from "../views/Events.vue";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import Users from "../views/Users.vue";
+import CreateUser from "../views/CreateUser.vue";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
@@ -26,6 +27,11 @@ const routes = [
     path: "/users",
     name: "users",
     component: Users
+  },
+  {
+    path: "/create-user",
+    name: "createUser",
+    component: CreateUser,
   }
 ];
 
