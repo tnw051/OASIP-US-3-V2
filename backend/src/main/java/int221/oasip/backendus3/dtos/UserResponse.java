@@ -11,6 +11,6 @@ public class UserResponse {
     private String name;
     private String email;
     private String role;
-    private Instant createOn;
+    private Instant createdOn;
     private Instant updatedOn;
 }

@@ -2,8 +2,8 @@ package int221.oasip.backendus3.entities;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -24,14 +24,15 @@ public class User {
     @Column(name = "email", nullable = false, length = 50)
     private String email;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
 
-//        @CreationTimestamp
-    @Column(name = "createOn", nullable = false)
-    private Instant createOn;
+    @Generated(GenerationTime.INSERT)
+    @Column(name = "createdOn", nullable = false)
+    private Instant createdOn;
 
-//        @UpdateTimestamp
+    @Generated(GenerationTime.ALWAYS)
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
 }
