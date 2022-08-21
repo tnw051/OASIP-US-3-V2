@@ -2,6 +2,7 @@ package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.exceptions.NotUniqueException;
 import int221.oasip.backendus3.services.UserServive;
@@ -33,4 +34,10 @@ public class UserController {
             throw new FieldNotValidException("W", e.getMessage());
         }
     }
+
+    @GetMapping("/roles")
+    public Role[] getRoles() {
+        return Role.values();
+    }
+
 }
