@@ -4,9 +4,10 @@ import EditCategory from "../components/EditCategory.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { getCategories, updateCategory } from "../service/api";
+import { useEditing } from "../utils/useEditing";
 
 const categories = ref([]);
-const currentCategory = ref({});
+const { editingItem: currentCategory, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
 
 onBeforeMount(async () => {
   const _categories = await getCategories();
@@ -15,22 +16,8 @@ onBeforeMount(async () => {
   categories.value = _categories;
 });
 
-const isEditing = ref(false)
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
-
-function startEdit(category) {
-  if (isEditing.value) {
-    return;
-  }
-  currentCategory.value = category;
-  isEditing.value = true;
-}
-
-function stopEdit() {
-  currentCategory.value = {};
-  isEditing.value = false;
-}
 
 async function saveCategory(newValues) {
   const categoryId = currentCategory.value.id;
@@ -57,8 +44,7 @@ async function saveCategory(newValues) {
     }
   }
 
-  isEditing.value = false;
-  currentCategory.value = {};
+  stopEditing();
 }
 </script>
 
@@ -83,7 +69,7 @@ async function saveCategory(newValues) {
             name: 'Duration',
             key: 'duration',
           },
-        ]" :items="categories" enable-edit @edit="startEdit" :selected-key="currentCategory.id"
+        ]" :items="categories" enable-edit @edit="startEditing" :selected-key="currentCategory.id"
           :key-extractor="(category) => category.id">
           <template #cell:name="{ item }">
             <span class="font-medium">{{ item.eventCategoryName }}</span>
@@ -103,7 +89,7 @@ async function saveCategory(newValues) {
         </Table>
 
         <div class="p-4 bg-slate-100 relative w-4/12" v-if="currentCategory.id">
-          <EditCategory class="sticky top-24" :category="currentCategory" :categories="categories" @cancel="stopEdit"
+          <EditCategory class="sticky top-24" :category="currentCategory" :categories="categories" @cancel="stopEditing"
             v-if="isEditing" @save="saveCategory" />
         </div>
 
