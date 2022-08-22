@@ -8,6 +8,7 @@ import java.time.Instant;
 @Getter
 @Setter
 public class UserResponse {
+    private Integer id;
     private String name;
     private String email;
     private String role;

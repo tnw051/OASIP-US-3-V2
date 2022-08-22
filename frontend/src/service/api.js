@@ -184,3 +184,16 @@ export async function createUser(newUser) {
     console.log("Cannot create user");
   }
 }
+
+export async function deleteUser(id) {
+  const response = await fetch(makeUrl(`/users/${id}`), {
+    method: "DELETE",
+  });
+
+  if (response.status === 204) {
+    return true;
+  } else {
+    console.log("Cannot delete user");
+    return false;
+  }
+}

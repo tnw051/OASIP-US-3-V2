@@ -56,4 +56,8 @@ public class UserServive {
 
         return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
     }
+
+    public void delete(Integer id) {
+        repository.deleteById(id);
+    }
 }

@@ -2,7 +2,7 @@
 import { computed } from "@vue/reactivity";
 import { onBeforeMount, ref } from "vue";
 import Table from "../components/Table.vue";
-import { getUsers } from "../service/api";
+import { deleteUser, getUsers } from "../service/api";
 import { formatDateTime } from "../utils";
 
 const users = ref([]);
@@ -43,6 +43,19 @@ const headers = computed(() => {
 
   return parsedHeaders;
 })
+
+function confirmDeleteUser(user) {
+  if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
+    return;
+  }
+  const isSuccess = deleteUser(user.id);
+  if (isSuccess) {
+    users.value = users.value.filter((u) => u.id !== user.id);
+    alert('User deleted successfully');
+  } else {
+    alert('Failed to delete user');
+  }
+}
 </script>
 
 <template>
@@ -57,7 +70,7 @@ const headers = computed(() => {
         </div>
       </div>
       <div class="flex">
-        <Table :headers="headers" :items="users">
+        <Table :headers="headers" :items="users" enable-delete @delete="confirmDeleteUser">
           <template #cell:name="{ item }">
             {{ item.name }}
           </template>
