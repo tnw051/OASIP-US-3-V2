@@ -1,13 +1,48 @@
 <script setup>
+import { computed } from "@vue/reactivity";
 import { onBeforeMount, ref } from "vue";
 import Table from "../components/Table.vue";
 import { getUsers } from "../service/api";
+import { formatDateTime } from "../utils";
 
 const users = ref([]);
+const showDetails = ref(false);
 
 onBeforeMount(async () => {
   users.value = await getUsers();
 });
+
+const headers = computed(() => {
+  const parsedHeaders = [
+    {
+      name: 'Name',
+      key: 'name',
+    },
+    {
+      name: 'Email',
+      key: 'email',
+    },
+    {
+      name: 'Role',
+      key: 'role',
+    },
+  ];
+
+  if (showDetails.value) {
+    parsedHeaders.push(
+      {
+        name: 'Created On',
+        key: 'createdOn',
+      },
+      {
+        name: 'Updated On',
+        key: 'updatedOn',
+      },
+    );
+  }
+
+  return parsedHeaders;
+})
 </script>
 
 <template>
@@ -16,22 +51,13 @@ onBeforeMount(async () => {
       <h1 class="font-semibold text-4xl">Users</h1>
       <div class="flex justify-between mb-4">
         <div class="mb-4 mt-2">{{ users.length }} users shown</div>
+        <div class="flex items-center">
+          <label for="showDetails">Show Details</label>
+          <input type="checkbox" v-model="showDetails" id="showDetails" class="ml-2" />
+        </div>
       </div>
       <div class="flex">
-        <Table :headers="[
-          {
-            name: 'Name',
-            key: 'name',
-          },
-          {
-            name: 'Email',
-            key: 'email',
-          },
-          {
-            name: 'Role',
-            key: 'role',
-          },
-        ]" :items="users">
+        <Table :headers="headers" :items="users">
           <template #cell:name="{ item }">
             {{ item.name }}
           </template>
@@ -40,6 +66,12 @@ onBeforeMount(async () => {
           </template>
           <template #cell:role="{ item }">
             {{ item.role }}
+          </template>
+          <template #cell:createdOn="{ item }">
+            {{ formatDateTime(new Date(item.createdOn)) }}
+          </template>
+          <template #cell:updatedOn="{ item }">
+            {{ formatDateTime(new Date(item.updatedOn)) }}
           </template>
           <template #empty>
             No users found
