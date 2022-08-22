@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.configs;
 
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
+import int221.oasip.backendus3.exceptions.ValidationErrors;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.validation.FieldError;
@@ -36,6 +37,11 @@ public class ExtendedErrorAttributes extends DefaultErrorAttributes {
         if (error instanceof ResponseStatusException) {
             ResponseStatusException exception = (ResponseStatusException) error;
             errorAttributes.put(MESSAGE_ATTRIBUTE, exception.getReason());
+        }
+
+        if (error instanceof ValidationErrors) {
+            errorAttributes.put(MESSAGE_ATTRIBUTE, VALIDATION_ERROR_MESSAGE);
+            errorAttributes.put(ERRORS_ATTRIBUTE, ((ValidationErrors) error).getErrors());
         }
 
         return errorAttributes;
