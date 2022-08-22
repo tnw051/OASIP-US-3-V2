@@ -2,10 +2,10 @@ version: "3"
 
 services:
   db:
-    image: ghcr.io/manassinee/oasip-us-3/db:latest
+    build: ./db
     volumes:
       - ./db/data:/var/lib/mysql
-      - ./db/scripts:/tests
+      - ./db/scripts:/scripts
     env_file:
       - ./db/.env
     environment:
@@ -13,7 +13,7 @@ services:
       - LANG=C.UTF-8
 
   backend:
-    image: ghcr.io/manassinee/oasip-us-3/backend:latest
+    build: ./backend
     depends_on:
       - db
     env_file:
@@ -25,12 +25,16 @@ services:
       - MYSQL_DATABASE=oasip
 
   frontend:
-    image: ghcr.io/manassinee/oasip-us-3/frontend:latest
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=/us3/api
+        - BASE_URL=/us3
     depends_on:
       - backend
 
   reverse_proxy:
-    image: ghcr.io/manassinee/oasip-us-3/reverse_proxy:latest
+    build: ./reverse_proxy
     ports:
       - "80:80"
     depends_on:
