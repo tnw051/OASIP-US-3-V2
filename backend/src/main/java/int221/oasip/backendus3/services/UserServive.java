@@ -4,6 +4,7 @@ import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
+import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.ValidationErrors;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
@@ -58,6 +59,10 @@ public class UserServive {
     }
 
     public void delete(Integer id) {
+        boolean userExists = repository.existsById(id);
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
+        }
         repository.deleteById(id);
     }
 }
