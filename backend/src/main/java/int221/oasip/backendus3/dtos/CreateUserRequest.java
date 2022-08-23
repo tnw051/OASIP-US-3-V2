@@ -1,11 +1,13 @@
 package int221.oasip.backendus3.dtos;
 
+import int221.oasip.backendus3.entities.Role;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 @Getter
@@ -21,6 +23,5 @@ public class CreateUserRequest {
     @Email(message = "Email is invalid")
     private String email;
 
-    @NotBlank(message = "Role must not be blank")
-    private String role;
+    private String role = Role.STUDENT.toString();
 }
