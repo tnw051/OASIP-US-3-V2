@@ -167,12 +167,18 @@ export async function getRoles() {
 }
 
 export async function createUser(newUser) {
+  const trimmedUser = {
+    ...newUser,
+    name: newUser.name.trim(),
+    email: newUser.email.trim(),
+  };
+
   const response = await fetch(makeUrl("/users"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(newUser),
+    body: JSON.stringify(trimmedUser),
   });
 
   const data = await response.json();
