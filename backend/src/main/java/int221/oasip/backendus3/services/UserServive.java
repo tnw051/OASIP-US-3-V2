@@ -44,7 +44,7 @@ public class UserServive {
         try {
             parsedRole = Role.fromString(strippedRoleRaw);
         } catch (IllegalArgumentException e) {
-            errors.addFieldError("role", "Invalid role");
+            errors.addFieldError("role", "Invalid role, must be either student, admin, or lecturer");
         }
         if (errors.hasErrors()) {
             throw errors;
