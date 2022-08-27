@@ -1,7 +1,9 @@
 package int221.oasip.backendus3.services;
 
 import int221.oasip.backendus3.dtos.CreateUserRequest;
+import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -64,5 +66,48 @@ public class UserServive {
             throw new EntityNotFoundException("User not found");
         }
         repository.deleteById(id);
+    }
+
+    public UserResponse update(Integer id, EditUserRequest request) {
+        User user = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+
+        ValidationErrors errors = new ValidationErrors();
+        if (request.getName() != null) {
+            String strippedName = request.getName().strip();
+            if (!user.getName().equals(strippedName)) {
+                if (!repository.existsByName(strippedName)) {
+                    user.setName(strippedName);
+                } else {
+                    errors.addFieldError("name", "Name is not unique");
+                }
+            }
+        }
+
+        if (request.getEmail() != null) {
+            String strippedEmail = request.getEmail().strip();
+            if (!user.getEmail().equals(strippedEmail)) {
+                if (!repository.existsByEmail(strippedEmail)) {
+                    user.setEmail(strippedEmail);
+                } else {
+                    errors.addFieldError("email", "Email is not unique");
+                }
+            }
+        }
+
+        if (request.getRole() != null) {
+            String strippedRoleRaw = request.getRole().strip();
+            try {
+                Role parsedRole = Role.fromString(strippedRoleRaw);
+                user.setRole(parsedRole);
+            } catch (IllegalArgumentException e) {
+                errors.addFieldError("role", "Invalid role, must be either student, admin, or lecturer");
+            }
+        }
+
+        if (errors.hasErrors()) {
+            throw errors;
+        }
+
+        return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
     }
 }
