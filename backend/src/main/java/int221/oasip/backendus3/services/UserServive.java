@@ -34,7 +34,7 @@ public class UserServive {
     public UserResponse create(CreateUserRequest request) {
         String strippedName = request.getName().strip();
         String strippedEmail = request.getEmail().strip();
-        String strippedPassword = request.getPassword().strip();
+        String password = request.getPassword();
         String strippedRoleRaw = request.getRole().strip();
         Role parsedRole = null;
 
@@ -58,7 +58,7 @@ public class UserServive {
         User user = new User();
         user.setName(strippedName);
         user.setEmail(strippedEmail);
-        user.setPassword(argon2PasswordEncoder.encode(strippedPassword));
+        user.setPassword(argon2PasswordEncoder.encode(password));
         user.setRole(parsedRole);
 
         return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
