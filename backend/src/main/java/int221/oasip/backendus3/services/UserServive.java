@@ -13,6 +13,7 @@ import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +24,7 @@ public class UserServive {
     private UserRepository repository;
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
+    private Argon2PasswordEncoder argon2PasswordEncoder;
 
     public List<UserResponse> getAll() {
         List<User> users = repository.findAll(Sort.by("name"));
@@ -32,6 +34,7 @@ public class UserServive {
     public UserResponse create(CreateUserRequest request) {
         String strippedName = request.getName().strip();
         String strippedEmail = request.getEmail().strip();
+        String strippedPassword = request.getPassword().strip();
         String strippedRoleRaw = request.getRole().strip();
         Role parsedRole = null;
 
@@ -55,6 +58,7 @@ public class UserServive {
         User user = new User();
         user.setName(strippedName);
         user.setEmail(strippedEmail);
+        user.setPassword(argon2PasswordEncoder.encode(strippedPassword));
         user.setRole(parsedRole);
 
         return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
