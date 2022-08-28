@@ -203,3 +203,19 @@ export async function deleteUser(id) {
     return false;
   }
 }
+
+export async function updateUser(id, changes) {
+  const response = await fetch(makeUrl(`/users/${id}`), {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(changes),
+  });
+  if (response.status === 200) {
+    const updatedUser = await response.json();
+    return updatedUser;
+  } else {
+    console.log("Cannot edit user");
+  }
+}

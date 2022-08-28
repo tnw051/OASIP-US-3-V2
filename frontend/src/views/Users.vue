@@ -1,16 +1,28 @@
 <script setup>
 import { computed } from "@vue/reactivity";
 import { onBeforeMount, ref } from "vue";
+import EditUser from "../components/EditUser.vue";
+import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
-import { deleteUser, getUsers } from "../service/api";
+import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
 import { formatDateTime } from "../utils";
+import { useEditing } from "../utils/useEditing";
 
 const users = ref([]);
+const roles = ref([]);
 const showDetails = ref(false);
+const { editingItem: currentUser, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
 
 onBeforeMount(async () => {
   users.value = await getUsers();
+  roles.value = await getRoles();
 });
+
+function selectUser(user) {
+  withNoEditing(() => {
+    currentUser.value = user;
+  });
+}
 
 const headers = computed(() => {
   const parsedHeaders = [
@@ -56,6 +68,25 @@ function confirmDeleteUser(user) {
     alert('Failed to delete user');
   }
 }
+
+const isEditSuccessModalOpen = ref(false);
+const isEditErrorModalOpen = ref(false);
+
+async function saveUser(updates) {
+  const updatedUser = await updateUser(currentUser.value.id, updates);
+  if (updatedUser) {
+    const user = users.value.find((u) => u.id === updatedUser.id);
+    user.name = updatedUser.name;
+    user.email = updatedUser.email;
+    user.role = updatedUser.role;
+    user.updatedOn = updatedUser.updatedOn;
+    isEditSuccessModalOpen.value = true;
+  } else {
+    isEditErrorModalOpen.value = true;
+  }
+
+  stopEditing();
+}
 </script>
 
 <template>
@@ -70,7 +101,9 @@ function confirmDeleteUser(user) {
         </div>
       </div>
       <div class="flex">
-        <Table :headers="headers" :items="users" enable-delete @delete="confirmDeleteUser">
+        <Table :headers="headers" :items="users" enable-edit enable-delete @edit="startEditing"
+          @delete="confirmDeleteUser" @select="selectUser" :selected-key="currentUser.id"
+          :key-extractor="(user) => user.id">
           <template #cell:name="{ item }">
             {{ item.name }}
           </template>
@@ -91,19 +124,19 @@ function confirmDeleteUser(user) {
           </template>
         </Table>
 
-        <!-- <div class="p-4 bg-slate-100 relative w-4/12" v-if="currentCategory.id">
-          <EditCategory
-            class="sticky top-24"
-            :category="currentCategory"
-            :categories="categories"
-            @cancel="stopEdit"
-            v-if="isEditing"
-            @save="saveCategory"
-          />
-        </div> -->
+        <div class="p-4 bg-slate-100 relative w-4/12" v-if="isEditing">
+          <EditUser class="sticky top-24" :current-user="currentUser" :roles="roles" @cancel="stopEditing"
+            v-if="isEditing" @save="saveUser" />
+        </div>
       </div>
     </div>
   </div>
+
+  <Modal title="Success" subtitle="User has been saved" :is-open="isEditSuccessModalOpen"
+    @close="isEditSuccessModalOpen = false" />
+
+  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isEditErrorModalOpen"
+    variant="error" @close="isEditErrorModalOpen = false" />
 </template>
 
 <style scoped>
