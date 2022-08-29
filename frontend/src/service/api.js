@@ -219,3 +219,45 @@ export async function updateUser(id, changes) {
     console.log("Cannot edit user");
   }
 }
+
+// {
+//   "timestamp": "2022-08-29T15:25:36.839+00:00",
+//   "status": 401,
+//   "error": "Unauthorized",
+//   "path": "/api/auth/match",
+//   "message": "Password NOT Matched"
+// }
+
+// @PostMapping("/match")
+// public String match(@Valid @RequestBody MatchRequest matchRequest) {
+//     try {
+//         boolean matches = service.match(matchRequest);
+//         if (!matches) {
+//             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password NOT Matched");
+//         }
+//         return "Password Matched";
+//     } catch (EntityNotFoundException e) {
+//         throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+//     }
+// }
+
+export async function match(matchRequest) {
+  const response = await fetch(makeUrl("/auth/match"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(matchRequest),
+  });
+
+  if (response.status === 200) {
+    return true;
+  } else if (response.status === 401) {
+    return false;
+  } else if (response.status === 404) {
+    const data = await response.json();
+    throw new Error(data.message);
+  } else {
+    console.log("Cannot match password");
+  }
+}

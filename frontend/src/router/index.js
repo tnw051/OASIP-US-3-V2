@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import CreateEvent from "../views/CreateEvent.vue";
 import Events from "../views/Events.vue";
+import Match from "../views/Match.vue";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import Users from "../views/Users.vue";
 import CreateUser from "../views/CreateUser.vue";
@@ -32,6 +33,11 @@ const routes = [
     path: "/create-user",
     name: "createUser",
     component: CreateUser,
+  },
+  {
+    path: "/match",
+    name: "match",
+    component: Match,
   }
 ];
 
