@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.dtos;
 
 import int221.oasip.backendus3.entities.Role;
+import int221.oasip.backendus3.validators.EnumValue;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -28,5 +29,7 @@ public class CreateUserRequest {
     @Size(min = 8, max = 14, message = "Password must be between {min} and {max} characters")
     private String password;
 
+    @NotBlank(message = "Role must not be blank")
+    @EnumValue(enumClass = Role.class, method = "fromString", message = "Role must be either student, admin, or lecturer")
     private String role = Role.STUDENT.toString();
 }

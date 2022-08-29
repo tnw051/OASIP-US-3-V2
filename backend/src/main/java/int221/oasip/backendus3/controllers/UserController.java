@@ -5,11 +5,9 @@ import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
-import int221.oasip.backendus3.exceptions.ValidationErrors;
 import int221.oasip.backendus3.services.UserServive;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,13 +27,8 @@ public class UserController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@Valid @RequestBody CreateUserRequest request, BindingResult bindingResult) {
-        try {
-            return service.create(request);
-        } catch (ValidationErrors e) {
-            e.addFieldErrors(bindingResult);
-            throw e;
-        }
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
+        return service.create(request);
     }
 
     @GetMapping("/roles")

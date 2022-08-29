@@ -3,7 +3,6 @@ package int221.oasip.backendus3.services;
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
-import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -49,7 +48,7 @@ public class UserServive {
         try {
             parsedRole = Role.fromString(strippedRoleRaw);
         } catch (IllegalArgumentException e) {
-            errors.addFieldError("role", "Invalid role, must be either student, admin, or lecturer");
+            errors.addFieldError("role", "Role must be either student, admin, or lecturer");
         }
         if (errors.hasErrors()) {
             throw errors;
