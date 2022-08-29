@@ -24,7 +24,7 @@ public class AuthController {
         try {
             boolean matches = service.match(matchRequest);
             if (!matches) {
-                return "Password NOT Matched";
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password NOT Matched");
             }
             return "Password Matched";
         } catch (EntityNotFoundException e) {
