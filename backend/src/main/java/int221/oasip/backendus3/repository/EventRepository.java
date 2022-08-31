@@ -14,19 +14,19 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
     // 2. events that started between the startTime (inclusive) and the endTime (exclusive)
     // with optional currentEventId to exclude the current event from the result
     @Query(nativeQuery = true,
-            value = "SELECT * FROM event e WHERE " +
-                    // categoryId
-                    "e.eventCategoryId = ?3 AND " +
+            value = "SELECT * " +
+                    "FROM event e " +
+                    "WHERE e.eventCategoryId = :categoryId " +
                     // optional eventId to exclude from the result
-                    "(?4 IS NULL OR e.eventId <> ?4) AND " +
+                    "AND (:currentEventId IS NULL OR e.eventId <> :currentEventId) AND " +
                     // case 1
-                    "((e.eventStartTime < ?1 AND (e.eventStartTime + INTERVAL e.eventDuration MINUTE) > ?1) OR " +
+                    "((e.eventStartTime < :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt) OR " +
                     // case 2
-                    "(e.eventStartTime >= ?1 AND e.eventStartTime < ?2))")
-    List<Event> findOverlapEventsByCategoryId(Instant startTime, Instant endTime, Integer categoryId, Integer currentEventId);
+                    "(e.eventStartTime >= :startAt AND e.eventStartTime < :endAt))")
+    List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId, Integer currentEventId);
 
-    default List<Event> findOverlapEventsByCategoryId(Instant startTime, Instant endTime, Integer categoryId) {
-        return findOverlapEventsByCategoryId(startTime, endTime, categoryId, null);
+    default List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId) {
+        return findOverlapEventsByCategoryId(startAt, endAt, categoryId, null);
     }
 
     // optional categoryId
@@ -49,13 +49,13 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
     // 2. events that start after startAt (upcoming)
     // 3. event that start before startAt but end after startAt (ongoing)
     @Query(nativeQuery = true,
-            value = "SELECT * FROM event e WHERE " +
-                    // optional categoryId
-                    "(?2 IS NULL OR e.eventCategoryId = ?2) AND " +
+            value = "SELECT * " +
+                    "FROM event e " +
+                    "WHERE (:categoryId IS NULL OR e.eventCategoryId = :categoryId) AND " +
                     // upcoming
-                    "((e.eventStartTime > ?1) OR " +
+                    "((e.eventStartTime > :startAt) OR " +
                     // ongoing
-                    "(e.eventStartTime <= ?1 AND (e.eventStartTime + INTERVAL e.eventDuration MINUTE) > ?1))")
+                    "(e.eventStartTime <= :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt))")
     List<Event> findUpcomingAndOngoingEvents(Instant startAt, Integer categoryId);
 
     default List<Event> findUpcomingAndOngoingEvents(Instant startAt) {
@@ -64,9 +64,8 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     // get past events (start before startAt and end at or before startAt)
     @Query(nativeQuery = true,
-            value = "SELECT * FROM event e WHERE " +
-                    "(?2 IS NULL OR e.eventCategoryId = ?2) AND " + // optional categoryId
-                    "(e.eventStartTime < ?1 AND (e.eventStartTime + INTERVAL e.eventDuration MINUTE) <= ?1)")
+            value = "SELECT * FROM event e WHERE (:categoryId IS NULL OR e.eventCategoryId = :categoryId) AND " +
+                    "(e.eventStartTime < :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) <= :startAt)")
     List<Event> findPastEvents(Instant startAt, Integer categoryId);
 
     default List<Event> findPastEvents(Instant now) {
