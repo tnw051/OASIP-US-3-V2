@@ -9,7 +9,7 @@ import javax.validation.constraints.Size;
 
 @Getter
 @Setter
-public class MatchRequest {
+public class LoginRequest {
     @NotBlank(message = "Email must not be blank")
     @Size(max = 50, message = "Email must be less than {max} characters")
     // extended java email regex by allowing leading and trailing whitespace
@@ -21,4 +21,3 @@ public class MatchRequest {
     @Size(min = 8, max = 14, message = "Password must be between {min} and {max} characters")
     private String password;
 }
-
