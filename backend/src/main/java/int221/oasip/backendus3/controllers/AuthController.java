@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.LoginRequest;
+import int221.oasip.backendus3.dtos.LoginResponse;
 import int221.oasip.backendus3.dtos.MatchRequest;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.services.AuthService;
@@ -10,17 +11,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -45,9 +43,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest loginRequest) {
+    public LoginResponse login(@RequestBody LoginRequest loginRequest) {
         Instant now = Instant.now();
-        long expiry = 36000L;
+        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         Authentication authentication;
         try {
@@ -57,15 +55,20 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
         }
 
+        JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("self")
+                .issuer("me smiley face")
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(expiry))
+                .expiresAt(expiresAt)
                 .subject(authentication.getName())
-//                .claim("scope", scope)
                 .build();
 
-        return encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        Jwt token = encoder.encode(JwtEncoderParameters.from(headers, claims));
+        return new LoginResponse(token.getTokenValue());
+    }
 
+    @GetMapping("/private")
+    public String hello() {
+        return "What is he doing? LULW";
     }
 }
