@@ -71,6 +71,7 @@ async function handleSubmit() {
       onSuccess: (response) => {
         console.log(response);
         alert("Login successful");
+        localStorage.setItem("token", response.token);
       },
       onUnauthorized: (error) => {
         console.log(error);

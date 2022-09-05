@@ -11,10 +11,15 @@ import { useEditing } from "../utils/useEditing";
 const users = ref([]);
 const roles = ref([]);
 const showDetails = ref(false);
+const isLoggedIn = ref(true);
 const { editingItem: currentUser, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
 
 onBeforeMount(async () => {
-  users.value = await getUsers();
+  users.value = await getUsers({
+    onUnauthorized: () => {
+      isLoggedIn.value = false;
+    },
+  });
   roles.value = await getRoles();
 });
 
@@ -120,7 +125,13 @@ async function saveUser(updates) {
             {{ formatDateTime(new Date(item.updatedOn)) }}
           </template>
           <template #empty>
-            No users found
+            <span v-if="isLoggedIn">
+              No users found
+            </span>
+            <span v-else>
+              Please <router-link to="/login" class="text-sky-500 underline">login</router-link> to view users
+            </span>
+
           </template>
         </Table>
 

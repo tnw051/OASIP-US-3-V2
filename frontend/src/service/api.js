@@ -146,11 +146,18 @@ export async function updateCategory(id, editCategory) {
   }
 }
 
-export async function getUsers() {
-  const response = await fetch(makeUrl("/users"));
+export async function getUsers(options = {}) {
+  const {onUnauthorized} = options;
+  const response = await fetch(makeUrl("/users"), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    }
+  });
   if (response.status === 200) {
     const users = response.json();
     return users;
+  } else if (response.status === 401) {
+    onUnauthorized();
   } else {
     console.log("Cannot fetch users");
   }
