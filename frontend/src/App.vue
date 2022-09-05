@@ -10,7 +10,7 @@
       <router-link :to="{ name: 'categories' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Categories</router-link>
       <router-link :to="{ name: 'users' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Users</router-link>
       <router-link :to="{ name: 'createUser' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Create User</router-link>
-      <router-link :to="{ name: 'match' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Login</router-link>
+      <router-link :to="{ name: 'login' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Login</router-link>
     </div>
   </nav>
 

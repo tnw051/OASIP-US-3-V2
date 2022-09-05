@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
-import CreateEvent from "../views/CreateEvent.vue";
-import Events from "../views/Events.vue";
-import Match from "../views/Match.vue";
 import CategoryEvent from "../views/CategoryEvent.vue";
-import Users from "../views/Users.vue";
+import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
+import Events from "../views/Events.vue";
+import Login from '../views/Login.vue';
+import Users from "../views/Users.vue";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
@@ -35,9 +35,9 @@ const routes = [
     component: CreateUser,
   },
   {
-    path: "/match",
-    name: "match",
-    component: Match,
+    path: "/login",
+    name: "login",
+    component: Login,
   }
 ];
 

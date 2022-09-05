@@ -261,3 +261,38 @@ export async function match(matchRequest) {
     console.log("Cannot match password");
   }
 }
+
+/**
+ * @typedef {Object} LoginResponse
+ * @property {string} token
+ * @property {string} type
+ */
+/**
+ * @param {Object} loginRequest
+ * @param {Object} options
+ * @param {Function} options.onSuccess
+ * @param {Function} options.onUnauthorized
+ * @param {Function} options.onNotFound
+ * @returns {Promise<void>}
+ */
+export async function login(loginRequest, options = {}) {
+  const { onSuccess, onUnauthorized, onNotFound } = options;
+  const response = await fetch(makeUrl("/auth/login"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(loginRequest),
+  });
+
+  const data = await response.json();
+  if (response.status === 200) {
+    onSuccess(data);
+  } else if (response.status === 401) {
+    onUnauthorized(data);
+  } else if (response.status === 404) {
+    onNotFound(data);
+  } else {
+    console.log("Cannot login");
+  }
+}
