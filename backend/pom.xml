@@ -15,6 +15,7 @@
     <description>backend-us3</description>
     <properties>
         <java.version>11</java.version>
+        <typescript-generator.version>2.37.1128</typescript-generator.version>
     </properties>
     <dependencies>
         <dependency>
@@ -84,6 +85,35 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>cz.habarta.typescript-generator</groupId>
+                <artifactId>typescript-generator-maven-plugin</artifactId>
+                <version>${typescript-generator.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jsonLibrary>jackson2</jsonLibrary>
+                    <classPatterns>
+                        <pattern>**.dtos.*</pattern>
+                    </classPatterns>
+                    <outputKind>global</outputKind>
+                    <outputFile>gen-types.d.ts</outputFile>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>cz.habarta.typescript-generator</groupId>
+                        <artifactId>typescript-generator-spring</artifactId>
+                        <version>${typescript-generator.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
