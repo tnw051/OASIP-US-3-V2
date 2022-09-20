@@ -7,9 +7,9 @@ import lombok.Setter;
 @Setter
 public class LoginResponse {
     private String type = "Bearer";
-    private String token;
+    private String accessToken;
 
-    public LoginResponse(String token) {
-        this.token = token;
+    public LoginResponse(String accessToken) {
+        this.accessToken = accessToken;
     }
 }
