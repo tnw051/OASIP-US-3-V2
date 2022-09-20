@@ -1,4 +1,12 @@
 <script setup>
+  import {useRouter} from 'vue-router';
+
+  const router = useRouter()
+
+  function handleLogout() {
+    localStorage.removeItem('token')
+    router.push({ name: 'home' })
+  }
 </script>
  
 <template>
@@ -11,6 +19,7 @@
       <router-link :to="{ name: 'users' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Users</router-link>
       <router-link :to="{ name: 'createUser' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Create User</router-link>
       <router-link :to="{ name: 'login' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Login</router-link>
+      <a @click="handleLogout" class="cursor-pointer p-2 ml-2 text-gray-700 hover:text-sky-600">Logout</a>
     </div>
   </nav>
 
