@@ -77,8 +77,6 @@ public class AuthController {
 
         Jwt accessToken = encoder.encode(JwtEncoderParameters.from(headers, accessTokenClaims));
         Jwt refreshToken = encoder.encode(JwtEncoderParameters.from(headers, refreshTokenClaims));
-        System.out.println(accessToken);
-        System.out.println(refreshToken);
 
         Cookie cookie = new Cookie("refreshToken", refreshToken.getTokenValue());
         cookie.setHttpOnly(true);
