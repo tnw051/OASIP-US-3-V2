@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { login } from "../service/api";
+import { accessTokenKey, login } from "../service/api";
 
 function makeDefaultValues() {
   const defaultValue = "";
@@ -71,7 +71,7 @@ async function handleSubmit() {
       onSuccess: (response) => {
         console.log(response);
         alert("Login successful");
-        localStorage.setItem("token", response.token);
+        localStorage.setItem(accessTokenKey, response.accessToken);
       },
       onUnauthorized: (error) => {
         console.log(error);

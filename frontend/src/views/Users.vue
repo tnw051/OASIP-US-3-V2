@@ -19,7 +19,7 @@ onBeforeMount(async () => {
     onUnauthorized: () => {
       isLoggedIn.value = false;
     },
-  });
+  }) || [];
   roles.value = await getRoles();
 });
 

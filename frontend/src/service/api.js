@@ -146,20 +146,48 @@ export async function updateCategory(id, editCategory) {
   }
 }
 
+export const accessTokenKey = "accessToken";
 export async function getUsers(options = {}) {
-  const {onUnauthorized} = options;
+  const { onUnauthorized } = options;
   const response = await fetch(makeUrl("/users"), {
     headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     }
   });
   if (response.status === 200) {
     const users = response.json();
     return users;
   } else if (response.status === 401) {
-    onUnauthorized();
+    const { error } = await refreshAccessToken();
+    if (error) {
+      onUnauthorized();
+      return;
+    }
+
+    return getUsers(options);
   } else {
     console.log("Cannot fetch users");
+  }
+}
+
+async function refreshAccessToken() {
+  const response = await fetch(makeUrl("/auth/refresh"), {
+    method: "POST"
+  });
+
+  if (response.status === 200) {
+    const data = await response.json();
+    localStorage.setItem(accessTokenKey, data.accessToken);
+    console.log("Refreshed access token");
+    return {
+      accessToken: data.accessToken,
+      error: null,
+    }
+  } else {
+    return {
+      accessToken: null,
+      error: new Error("Cannot refresh access token"),
+    };
   }
 }
 
