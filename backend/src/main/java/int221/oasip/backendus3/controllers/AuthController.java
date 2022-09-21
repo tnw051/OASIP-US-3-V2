@@ -121,6 +121,16 @@ public class AuthController {
         return new LoginResponse(accessToken.getTokenValue());
     }
 
+    @PostMapping("/logout")
+    public void logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refreshToken", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // TODO: change to false for development. Otherwise, the cookie will not be sent from postman
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+    }
+
     @GetMapping("/private")
     public String hello() {
         return "What is he doing? LULW";

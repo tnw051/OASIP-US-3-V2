@@ -331,3 +331,20 @@ export async function login(loginRequest, options = {}) {
     console.log("Cannot login");
   }
 }
+
+export async function logout() {
+  const response = await fetch(makeUrl("/auth/logout"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status === 200) {
+    localStorage.removeItem(accessTokenKey);
+    return true;
+  } else {
+    console.log("Cannot logout");
+    return false;
+  }
+}
