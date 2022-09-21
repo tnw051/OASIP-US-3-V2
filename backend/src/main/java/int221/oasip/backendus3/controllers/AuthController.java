@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -84,9 +83,6 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is missing or has expired");
         }
 
-        Instant now = Instant.now();
-        Instant accessTokenExpiresAt = now.plus(30, ChronoUnit.MINUTES);
-
         Jwt jwt;
         try {
             jwt = decoder.decode(refreshToken);
@@ -94,16 +90,7 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
 
-        JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
-        JwtClaimsSet baseClaims = JwtClaimsSet.builder()
-                .issuer("me smiley face")
-                .issuedAt(now)
-                .subject(jwt.getSubject()).build();
-        JwtClaimsSet accessTokenClaims = JwtClaimsSet.from(baseClaims)
-                .expiresAt(accessTokenExpiresAt)
-                .build();
-
-        Jwt accessToken = encoder.encode(JwtEncoderParameters.from(headers, accessTokenClaims));
+        Jwt accessToken = generateAccessToken(jwt.getSubject());
 
         return new LoginResponse(accessToken.getTokenValue());
     }
