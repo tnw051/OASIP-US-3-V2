@@ -5,7 +5,8 @@ import int221.oasip.backendus3.dtos.LoginResponse;
 import int221.oasip.backendus3.dtos.MatchRequest;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.services.AuthService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,12 +27,22 @@ import java.time.temporal.ChronoUnit;
 
 @RestController
 @RequestMapping("/api/auth")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthController {
-    private AuthService service;
-    private AuthenticationManager authenticationManager;
-    private JwtEncoder encoder;
-    private JwtDecoder decoder;
+    public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+    private final AuthService service;
+    private final AuthenticationManager authenticationManager;
+    private final JwtEncoder encoder;
+    private final JwtDecoder decoder;
+
+    @Value("${access-token.max-age-seconds}")
+    private Long accessTokenMaxAgeSeconds;
+
+    @Value("${refresh-token.max-age-seconds}")
+    private Long refreshTokenMaxAgeSeconds;
+
+    @Value("${refresh-token.secure}")
+    private Boolean refreshTokenSecure;
 
     @PostMapping("/match")
     public String match(@Valid @RequestBody MatchRequest matchRequest) {
@@ -49,10 +60,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
-        Instant now = Instant.now();
-        Instant accessTokenExpiresAt = now.plus(30, ChronoUnit.MINUTES);
-        Instant refreshTokenExpiresAt = now.plus(1, ChronoUnit.DAYS);
-
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
@@ -63,36 +70,16 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
 
-        JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
-        JwtClaimsSet baseClaims = JwtClaimsSet.builder()
-                .issuer("me smiley face")
-                .issuedAt(now)
-                .subject(authentication.getName()).build();
-        JwtClaimsSet accessTokenClaims = JwtClaimsSet.from(baseClaims)
-                .expiresAt(accessTokenExpiresAt)
-                .build();
-        JwtClaimsSet refreshTokenClaims = JwtClaimsSet.from(baseClaims)
-                .expiresAt(refreshTokenExpiresAt)
-                .build();
-
-
-        Jwt accessToken = encoder.encode(JwtEncoderParameters.from(headers, accessTokenClaims));
-        Jwt refreshToken = encoder.encode(JwtEncoderParameters.from(headers, refreshTokenClaims));
-
-        Cookie cookie = new Cookie("refreshToken", refreshToken.getTokenValue());
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // TODO: change to false for development. Otherwise, the cookie will not be sent from postman
-        Duration maxAge = Duration.between(now, refreshTokenExpiresAt);
-        cookie.setMaxAge((int) maxAge.getSeconds());
-        cookie.setPath("/");
-        response.addCookie(cookie);
+        Jwt accessToken = generateAccessToken(authentication.getName());
+        Jwt refreshToken = generateRefreshToken(authentication.getName());
+        setRefreshTokenCookie(response, refreshToken);
 
         return new LoginResponse(accessToken.getTokenValue());
     }
 
     // refresh token endpoint
     @PostMapping("/refresh")
-    public LoginResponse refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+    public LoginResponse refresh(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
         if (refreshToken == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is missing or has expired");
         }
@@ -123,12 +110,59 @@ public class AuthController {
 
     @PostMapping("/logout")
     public void logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // TODO: change to false for development. Otherwise, the cookie will not be sent from postman
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
+        deleteRefreshTokenCookie(response);
+    }
+
+    private void setRefreshTokenCookie(HttpServletResponse response, Jwt refreshToken) {
+        Cookie cookie = createBaseRefreshTokenCookie(refreshToken.getTokenValue());
+        int expiry = (int) Duration.between(Instant.now(), refreshToken.getExpiresAt()).getSeconds();
+        cookie.setMaxAge(expiry);
         response.addCookie(cookie);
+    }
+
+    private void deleteRefreshTokenCookie(HttpServletResponse response) {
+        Cookie cookie = createBaseRefreshTokenCookie(null);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
+
+    private Cookie createBaseRefreshTokenCookie(String refreshToken) {
+        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(refreshTokenSecure);
+        cookie.setPath("/");
+        return cookie;
+    }
+
+    private Jwt generateAccessToken(String subject) {
+        Instant accessTokenExpiresAt = Instant.now().plusSeconds(accessTokenMaxAgeSeconds);
+        JwtClaimsSet accessTokenClaims = createBaseClaimsSetBuilder()
+                .subject(subject)
+                .expiresAt(accessTokenExpiresAt)
+                .build();
+
+        return encodeTokenWithDefaultHeaders(accessTokenClaims);
+    }
+
+    private Jwt generateRefreshToken(String subject) {
+        Instant refreshTokenExpiresAt = Instant.now().plusSeconds(refreshTokenMaxAgeSeconds);
+        JwtClaimsSet refreshTokenClaims = createBaseClaimsSetBuilder()
+                .subject(subject)
+                .expiresAt(refreshTokenExpiresAt)
+                .build();
+
+        return encodeTokenWithDefaultHeaders(refreshTokenClaims);
+    }
+
+    private JwtClaimsSet.Builder createBaseClaimsSetBuilder() {
+        return JwtClaimsSet.builder()
+                .issuer("me smiley face")
+                .issuedAt(Instant.now());
+    }
+
+    private Jwt encodeTokenWithDefaultHeaders(JwtClaimsSet claims) {
+        JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
+        return encoder.encode(JwtEncoderParameters.from(headers, claims));
     }
 
     @GetMapping("/private")
