@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -81,7 +82,9 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", refreshToken.getTokenValue());
         cookie.setHttpOnly(true);
         cookie.setSecure(true); // TODO: change to false for development. Otherwise, the cookie will not be sent from postman
-        cookie.setMaxAge((int) refreshTokenExpiresAt.getEpochSecond());
+        Duration maxAge = Duration.between(now, refreshTokenExpiresAt);
+        cookie.setMaxAge((int) maxAge.getSeconds());
+        cookie.setPath("/");
         response.addCookie(cookie);
 
         return new LoginResponse(accessToken.getTokenValue());
