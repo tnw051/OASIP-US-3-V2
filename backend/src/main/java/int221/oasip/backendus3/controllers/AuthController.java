@@ -92,13 +92,19 @@ public class AuthController {
 
     // refresh token endpoint
     @PostMapping("/refresh")
-    public LoginResponse refresh(@CookieValue("refreshToken") String refreshToken, HttpServletResponse response) {
+    public LoginResponse refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        if (refreshToken == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is missing or has expired");
+        }
+
         Instant now = Instant.now();
         Instant accessTokenExpiresAt = now.plus(30, ChronoUnit.MINUTES);
 
-        Jwt jwt = decoder.decode(refreshToken);
-        if (jwt.getExpiresAt() == null || jwt.getExpiresAt().isBefore(now)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expired");
+        Jwt jwt;
+        try {
+            jwt = decoder.decode(refreshToken);
+        } catch (JwtException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
 
         JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
