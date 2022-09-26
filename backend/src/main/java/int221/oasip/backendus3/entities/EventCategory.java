@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.entities;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
@@ -9,6 +10,7 @@ import javax.persistence.*;
 @Table(name = "eventCategory")
 @Setter
 @Getter
+@NoArgsConstructor
 public class EventCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,4 +25,10 @@ public class EventCategory {
 
     @Column(name = "eventDuration", nullable = false)
     private Integer eventDuration;
+
+    public EventCategory(String eventCategoryName, String eventCategoryDescription, Integer eventDuration) {
+        this.eventCategoryName = eventCategoryName;
+        this.eventCategoryDescription = eventCategoryDescription;
+        this.eventDuration = eventDuration;
+    }
 }

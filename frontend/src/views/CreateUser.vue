@@ -14,6 +14,8 @@ function makeDefaultValues() {
   return {
     name: defaultValue,
     email: defaultValue,
+    password: defaultValue,
+    confirmPassword: defaultValue,
     role: "STUDENT"
   };
 }
@@ -23,6 +25,8 @@ const inputs = ref(makeDefaultValues());
 const errors = ref({
   name: [],
   email: [],
+  password: [],
+  confirmPassword: [],
 });
 
 const canSubmit = computed(() => {
@@ -64,6 +68,30 @@ function validateEmail(e) {
   }
 }
 
+function validatePassword(e) {
+  const password = e.target.value;
+  errors.value.password = [];
+  
+  if (password.length > 14 || password.length < 8) {
+    errors.value.password.push("Password must be between 8 and 14 characters")
+  }
+
+  if (password.length === 0) {
+    errors.value.password.push("Password must not be blank");
+  }
+}
+
+function validateConfirmPassword(e) {
+  const password = inputs.value.password;
+  const confirmPassword = e.target.value;
+  errors.value.confirmPassword = [];
+
+  if (confirmPassword !== password) {
+    errors.value.confirmPassword.push("Passwords do not match");
+  }
+}
+
+
 const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
@@ -71,6 +99,7 @@ async function handleSubmit() {
   const user = {
     ...inputs.value,
   };
+  delete user.confirmPassword;
 
   try {
     const createdUser = await createUser(user);
@@ -126,6 +155,26 @@ function resetInputs() {
       </div>
 
       <div class="flex flex-col gap-2">
+        <label for="password" class="required text-sm font-medium text-gray-700">Password</label>
+        <input id="password" type="password" v-model="inputs.password" required class="bg-gray-100 p-2 rounded"
+          @input="validatePassword" placeholder="What's your password?">
+        <div v-if="errors.password.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
+          <span v-for="error in errors.password">{{ error }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="confirmPassword" class="required text-sm font-medium text-gray-700">Confirm password</label>
+        <input id="confirmPassword" type="password" v-model="inputs.confirmPassword" required class="bg-gray-100 p-2 rounded"
+          @input="validateConfirmPassword" placeholder="Confirm your password">
+        <div v-if="errors.confirmPassword.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
+          <span v-for="error in errors.confirmPassword">{{ error }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
         <label for="role" class="required text-sm font-medium text-gray-700">Role</label>
         <select v-model="inputs.role" required class="bg-gray-100 p-2 rounded" id="category">
           <option disabled selected value="">Select role</option>
@@ -147,4 +196,8 @@ function resetInputs() {
 </template>
  
 <style scoped>
+.required::after {
+  content: '*';
+  @apply text-red-500 pl-1
+}
 </style>

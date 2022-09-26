@@ -6,6 +6,7 @@ services:
     volumes:
       - ./db/data:/var/lib/mysql
       - ./db/scripts:/scripts
+    restart: always
     env_file:
       - ./db/.env
     environment:

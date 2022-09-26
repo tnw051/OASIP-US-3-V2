@@ -8,9 +8,4 @@ public enum Role {
     public static Role fromString(String role) {
         return Role.valueOf(role.toUpperCase());
     }
-
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
 }

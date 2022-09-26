@@ -146,13 +146,48 @@ export async function updateCategory(id, editCategory) {
   }
 }
 
-export async function getUsers() {
-  const response = await fetch(makeUrl("/users"));
+export const accessTokenKey = "accessToken";
+export async function getUsers(options = {}) {
+  const { onUnauthorized } = options;
+  const response = await fetch(makeUrl("/users"), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
   if (response.status === 200) {
     const users = response.json();
     return users;
+  } else if (response.status === 401) {
+    const { error } = await refreshAccessToken();
+    if (error) {
+      onUnauthorized();
+      return;
+    }
+
+    return getUsers(options);
   } else {
     console.log("Cannot fetch users");
+  }
+}
+
+async function refreshAccessToken() {
+  const response = await fetch(makeUrl("/auth/refresh"), {
+    method: "POST"
+  });
+
+  if (response.status === 200) {
+    const data = await response.json();
+    localStorage.setItem(accessTokenKey, data.accessToken);
+    console.log("Refreshed access token");
+    return {
+      accessToken: data.accessToken,
+      error: null,
+    }
+  } else {
+    return {
+      accessToken: null,
+      error: new Error("Cannot refresh access token"),
+    };
   }
 }
 
@@ -200,6 +235,116 @@ export async function deleteUser(id) {
     return true;
   } else {
     console.log("Cannot delete user");
+    return false;
+  }
+}
+
+export async function updateUser(id, changes) {
+  const response = await fetch(makeUrl(`/users/${id}`), {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(changes),
+  });
+  if (response.status === 200) {
+    const updatedUser = await response.json();
+    return updatedUser;
+  } else {
+    console.log("Cannot edit user");
+  }
+}
+
+// {
+//   "timestamp": "2022-08-29T15:25:36.839+00:00",
+//   "status": 401,
+//   "error": "Unauthorized",
+//   "path": "/api/auth/match",
+//   "message": "Password NOT Matched"
+// }
+
+// @PostMapping("/match")
+// public String match(@Valid @RequestBody MatchRequest matchRequest) {
+//     try {
+//         boolean matches = service.match(matchRequest);
+//         if (!matches) {
+//             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password NOT Matched");
+//         }
+//         return "Password Matched";
+//     } catch (EntityNotFoundException e) {
+//         throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+//     }
+// }
+
+export async function match(matchRequest) {
+  const response = await fetch(makeUrl("/auth/match"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(matchRequest),
+  });
+
+  if (response.status === 200) {
+    return true;
+  } else if (response.status === 401) {
+    return false;
+  } else if (response.status === 404) {
+    const data = await response.json();
+    throw new Error(data.message);
+  } else {
+    console.log("Cannot match password");
+  }
+}
+
+/**
+ * @typedef {Object} LoginResponse
+ * @property {string} token
+ * @property {string} type
+ */
+/**
+ * @param {Object} loginRequest
+ * @param {Object} options
+ * @param {Function} options.onSuccess
+ * @param {Function} options.onUnauthorized
+ * @param {Function} options.onNotFound
+ * @returns {Promise<void>}
+ */
+export async function login(loginRequest, options = {}) {
+  const { onSuccess, onUnauthorized, onNotFound } = options;
+  const response = await fetch(makeUrl("/auth/login"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(loginRequest),
+  });
+
+  const data = await response.json();
+  if (response.status === 200) {
+    onSuccess(data);
+  } else if (response.status === 401) {
+    onUnauthorized(data);
+  } else if (response.status === 404) {
+    onNotFound(data);
+  } else {
+    console.log("Cannot login");
+  }
+}
+
+export async function logout() {
+  const response = await fetch(makeUrl("/auth/logout"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status === 200) {
+    localStorage.removeItem(accessTokenKey);
+    return true;
+  } else {
+    console.log("Cannot logout");
     return false;
   }
 }

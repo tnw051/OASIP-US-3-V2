@@ -136,7 +136,7 @@ const canSubmit = computed(() => {
   </div>
 </template>
  
-<style>
+<style scoped>
 .required::after {
   content: '*';
   @apply text-red-500 pl-1

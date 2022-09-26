@@ -1,4 +1,17 @@
 <script setup>
+import { useRouter } from 'vue-router';
+import { logout } from './service/api';
+
+const router = useRouter()
+
+async function handleLogout() {
+  const success = await logout();
+  if (success) {
+    router.push({ name: 'login' })
+  } else {
+    alert('Something went wrong')
+  }
+}
 </script>
  
 <template>
@@ -7,9 +20,13 @@
       <router-link to="/" class="p-2 rounded-md text-gray-700 hover:text-sky-600">Events</router-link>
       <router-link :to="{ name: 'createEvent' }" class="p-2 rounded-md text-gray-700 hover:text-sky-600">Create
         Event</router-link>
-      <router-link :to="{ name: 'categories' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Categories</router-link>
+      <router-link :to="{ name: 'categories' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Categories
+      </router-link>
       <router-link :to="{ name: 'users' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Users</router-link>
-      <router-link :to="{ name: 'createUser' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Create User</router-link>
+      <router-link :to="{ name: 'createUser' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Create User
+      </router-link>
+      <router-link :to="{ name: 'login' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Login</router-link>
+      <a @click="handleLogout" class="cursor-pointer p-2 ml-2 text-gray-700 hover:text-sky-600">Logout</a>
     </div>
   </nav>
 
