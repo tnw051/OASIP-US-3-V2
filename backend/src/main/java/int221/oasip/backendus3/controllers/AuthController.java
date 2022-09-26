@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
@@ -69,8 +70,11 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
 
-        Jwt accessToken = generateAccessToken(authentication.getName());
-        Jwt refreshToken = generateRefreshToken(authentication.getName());
+        GrantedAuthority roleAuthority = authentication.getAuthorities().stream().findFirst().orElse(null);
+        String role = roleAuthority != null ? roleAuthority.getAuthority() : "WHAT";
+
+        Jwt accessToken = generateAccessToken(authentication.getName(), role);
+        Jwt refreshToken = generateRefreshToken(authentication.getName(), role);
         setRefreshTokenCookie(response, refreshToken);
 
         return new LoginResponse(accessToken.getTokenValue());
@@ -90,7 +94,7 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
 
-        Jwt accessToken = generateAccessToken(jwt.getSubject());
+        Jwt accessToken = generateAccessToken(jwt.getSubject(), jwt.getClaimAsString("role"));
 
         return new LoginResponse(accessToken.getTokenValue());
     }
@@ -121,29 +125,24 @@ public class AuthController {
         return cookie;
     }
 
-    private Jwt generateAccessToken(String subject) {
+    private Jwt generateAccessToken(String subject, String role) {
         Instant accessTokenExpiresAt = Instant.now().plusSeconds(accessTokenMaxAgeSeconds);
-        JwtClaimsSet accessTokenClaims = createBaseClaimsSetBuilder()
-                .subject(subject)
-                .expiresAt(accessTokenExpiresAt)
-                .build();
-
+        JwtClaimsSet accessTokenClaims = createBaseClaimsSetBuilder(subject, role, accessTokenExpiresAt).build();
         return encodeTokenWithDefaultHeaders(accessTokenClaims);
     }
 
-    private Jwt generateRefreshToken(String subject) {
+    private Jwt generateRefreshToken(String subject, String role) {
         Instant refreshTokenExpiresAt = Instant.now().plusSeconds(refreshTokenMaxAgeSeconds);
-        JwtClaimsSet refreshTokenClaims = createBaseClaimsSetBuilder()
-                .subject(subject)
-                .expiresAt(refreshTokenExpiresAt)
-                .build();
-
+        JwtClaimsSet refreshTokenClaims = createBaseClaimsSetBuilder(subject, role, refreshTokenExpiresAt).build();
         return encodeTokenWithDefaultHeaders(refreshTokenClaims);
     }
 
-    private JwtClaimsSet.Builder createBaseClaimsSetBuilder() {
+    private JwtClaimsSet.Builder createBaseClaimsSetBuilder(String subject, String role, Instant exp) {
         return JwtClaimsSet.builder()
                 .issuer("me smiley face")
+                .subject(subject)
+                .claim("role", role)
+                .expiresAt(exp)
                 .issuedAt(Instant.now());
     }
 

@@ -8,6 +8,7 @@ import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.services.UserServive;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,7 +22,9 @@ public class UserController {
     private UserServive service;
 
     @GetMapping("")
-    public List<UserResponse> getUsers() {
+    public List<UserResponse> getUsers(Authentication auth) {
+        System.out.println(auth.getName());
+        System.out.println(auth.getAuthorities());
         return service.getAll();
     }
 
