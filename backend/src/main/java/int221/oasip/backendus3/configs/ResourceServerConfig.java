@@ -41,7 +41,8 @@ public class ResourceServerConfig {
         return http
                 .authorizeHttpRequests()
                 .antMatchers("/api/auth/private").authenticated()
-                .antMatchers(HttpMethod.GET, "/api/users").authenticated()
+                .antMatchers("/api/users/**").hasRole("ADMIN")
+                .antMatchers("/api/auth/match").hasRole("ADMIN")
                 .antMatchers(HttpMethod.POST, "/api/events").permitAll()
                 .antMatchers("/api/events/**").authenticated()
                 .anyRequest().permitAll()
