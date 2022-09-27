@@ -66,7 +66,7 @@ public class EventController {
         }
 
         String email = authentication.getName();
-        if (!event.getBookingEmail().equals(email)) {
+        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
 
@@ -78,7 +78,7 @@ public class EventController {
     public EventResponseDTO create(@Valid @RequestBody CreateEventRequestDTO newEvent, Authentication authentication) {
         if (authentication != null) {
             String email = authentication.getName();
-            if (!email.equals(newEvent.getBookingEmail())) {
+            if (!isAdmin(authentication) && !email.equals(newEvent.getBookingEmail())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
             }
         }
@@ -95,15 +95,13 @@ public class EventController {
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Integer id, Authentication authentication) {
-        System.out.println(authentication.getName());
         EventResponseDTO event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
         }
 
         String email = authentication.getName();
-        System.out.println(event.getBookingEmail());
-        if (!event.getBookingEmail().equals(email)) {
+        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
 
@@ -111,9 +109,19 @@ public class EventController {
     }
 
     @PatchMapping("/{id}")
-    public EventResponseDTO update(@PathVariable Integer id, @Valid @RequestBody EditEventRequestDTO editEvent) {
+    public EventResponseDTO update(@PathVariable Integer id, @Valid @RequestBody EditEventRequestDTO editEvent, Authentication authentication) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime or eventNotes must be provided");
+        }
+
+        EventResponseDTO event = service.getEvent(id);
+        if (event == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
+        }
+
+        String email = authentication.getName();
+        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
 
         try {
@@ -123,5 +131,10 @@ public class EventController {
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }
