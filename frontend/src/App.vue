@@ -1,8 +1,9 @@
 <script setup>
 import { useRouter } from 'vue-router';
-import { logout } from './service/api';
+import { useAuth } from './utils/useAuth';
 
 const router = useRouter()
+const { logout } = useAuth();
 
 async function handleLogout() {
   const success = await logout();

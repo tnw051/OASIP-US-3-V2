@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuth } from "../utils/useAuth";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
@@ -44,6 +45,16 @@ const routes = [
 const router = createRouter({
   history,
   routes,
+});
+
+const { isAuthenticated, user } = useAuth();
+
+// guard /users route
+router.beforeEach((to, from) => {
+  const isAuth = isAuthenticated.value;
+  if (to.name === "users" && (!isAuth || user.value?.role?.toLowerCase() !== "admin")) {
+    return { name: "login" };
+  }
 });
 
 export default router;
