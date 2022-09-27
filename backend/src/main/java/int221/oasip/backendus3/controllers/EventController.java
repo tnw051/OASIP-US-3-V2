@@ -10,6 +10,7 @@ import int221.oasip.backendus3.services.EventService;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,11 +27,13 @@ public class EventController {
     public static final String PAST = "past";
     private EventService service;
 
+    // TODO: refactor service methods and add email as a parameter
     @GetMapping("")
     public List<EventResponseDTO> getEvents(
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startAt,
-            @RequestParam(required = false) String type
+            @RequestParam(required = false) String type,
+            Authentication authentication
     ) {
         if (categoryId != null) {
             if (DAY.equalsIgnoreCase(type) && startAt != null) {
@@ -56,11 +59,15 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public EventResponseDTO getEventById(@PathVariable Integer id) {
+    public EventResponseDTO getEventById(@PathVariable Integer id, Authentication authentication) {
         EventResponseDTO event = service.getEvent(id);
-
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
+        }
+
+        String email = authentication.getName();
+        if (!event.getBookingEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
 
         return event;
@@ -68,7 +75,14 @@ public class EventController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventResponseDTO create(@Valid @RequestBody CreateEventRequestDTO newEvent) {
+    public EventResponseDTO create(@Valid @RequestBody CreateEventRequestDTO newEvent, Authentication authentication) {
+        if (authentication != null) {
+            String email = authentication.getName();
+            if (!email.equals(newEvent.getBookingEmail())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
+            }
+        }
+
         try {
             return service.create(newEvent);
         } catch (EventOverlapException e) {
@@ -80,7 +94,19 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
+    public void delete(@PathVariable Integer id, Authentication authentication) {
+        System.out.println(authentication.getName());
+        EventResponseDTO event = service.getEvent(id);
+        if (event == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
+        }
+
+        String email = authentication.getName();
+        System.out.println(event.getBookingEmail());
+        if (!event.getBookingEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
+        }
+
         service.delete(id);
     }
 

@@ -42,6 +42,8 @@ public class ResourceServerConfig {
                 .authorizeHttpRequests()
                 .antMatchers("/api/auth/private").authenticated()
                 .antMatchers(HttpMethod.GET, "/api/users").authenticated()
+                .antMatchers(HttpMethod.POST, "/api/events").permitAll()
+                .antMatchers("/api/events/**").authenticated()
                 .anyRequest().permitAll()
                 .and()
                 .csrf().disable()
