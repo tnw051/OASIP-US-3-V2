@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/events")
@@ -35,27 +36,37 @@ public class EventController {
             @RequestParam(required = false) String type,
             Authentication authentication
     ) {
+        List<EventResponseDTO> events;
         if (categoryId != null) {
             if (DAY.equalsIgnoreCase(type) && startAt != null) {
-                return service.getEventsOnDate(startAt.toInstant(), categoryId);
+                events = service.getEventsOnDate(startAt.toInstant(), categoryId);
             } else if (UPCOMING.equalsIgnoreCase(type)) {
-                return service.getUpcomingAndOngoingEvents(categoryId);
+                events = service.getUpcomingAndOngoingEvents(categoryId);
             } else if (PAST.equalsIgnoreCase(type)) {
-                return service.getPastEvents(categoryId);
+                events = service.getPastEvents(categoryId);
             } else {
-                return service.getEventsInCategory(categoryId);
+                events = service.getEventsInCategory(categoryId);
             }
         } else {
             if (DAY.equalsIgnoreCase(type) && startAt != null) {
-                return service.getEventsOnDate(startAt.toInstant());
+                events = service.getEventsOnDate(startAt.toInstant());
             } else if (UPCOMING.equalsIgnoreCase(type)) {
-                return service.getUpcomingAndOngoingEvents();
+                events = service.getUpcomingAndOngoingEvents();
             } else if (PAST.equalsIgnoreCase(type)) {
-                return service.getPastEvents();
+                events = service.getPastEvents();
             } else {
-                return service.getAll();
+                events = service.getAll();
             }
         }
+
+        if (!isAdmin(authentication)) {
+            // filter events by user's email
+            // TODO: refactor this, service methods, and repository methods
+            String email = authentication.getName();
+            return events.stream().filter(event -> email.equals(event.getBookingEmail())).collect(Collectors.toList());
+        }
+
+        return events;
     }
 
     @GetMapping("/{id}")
