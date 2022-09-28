@@ -20,8 +20,8 @@ const {
   canSubmit
 } = useEventValidator();
 
-const { isAuthenticated, user } = useAuth();
-if (isAuthenticated.value) {
+const { isAuthenticated, user, isAdmin } = useAuth();
+if (isAuthenticated.value && !isAdmin.value) {
   inputs.value.bookingEmail = user.value.sub;
 }
 
@@ -93,7 +93,7 @@ function handleCategoryIdChange() {
         <label for="email" class="text-sm font-medium text-gray-700" :required="!isAuthenticated">Booking Email</label>
         <!-- <span v-if="isAuthenticated" id="email" type="email" :value="user.sub" class="p-2 rounded"
           @input="validateBookingEmail" placeholder="What's your email?"> -->
-        <span v-if="isAuthenticated" class="p-2 rounded" :value="user.sub">{{ user.sub }}</span>
+        <span v-if="isAuthenticated && !isAdmin" class="p-2 rounded" :value="user.sub">{{ user.sub }}</span>
         <input v-else id="email" type="email" v-model="inputs.bookingEmail" required class="bg-gray-100 p-2 rounded"
           @input="validateBookingEmail" placeholder="What's your email?">
         <div v-if="errors.bookingEmail.length > 0"
