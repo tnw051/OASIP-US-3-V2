@@ -11,7 +11,7 @@ const isAdmin = computed(() => {
   return false;
 });
 
-function _login(user) {
+function _login(user, onSuccess = () => {}) {
   try {
     login(user, {
       onSuccess: (response) => {
@@ -20,6 +20,7 @@ function _login(user) {
         const token = response.accessToken;
         localStorage.setItem(accessTokenKey, token);
         setUserFromToken(token);
+        onSuccess();
       },
       onUnauthorized: (error) => {
         console.log(error);

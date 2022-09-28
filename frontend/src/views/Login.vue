@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
+import router from "../router";
 import { useAuth } from "../utils/useAuth";
 
 const { login } = useAuth();
@@ -68,7 +69,9 @@ async function handleSubmit() {
     ...inputs.value,
   };
 
-  login(user);
+  login(user, () => {
+    router.push({ name: "home" });
+  });
 
   inputs.value.password = ""; // clear password every time user submits
 }
