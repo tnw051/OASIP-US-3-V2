@@ -1,3 +1,4 @@
+
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 
 function makeUrl(path) {
@@ -6,7 +7,11 @@ function makeUrl(path) {
 
 //GET
 export async function getEvents() {
-  const response = await fetch(makeUrl("/events"));
+  const response = await fetch(makeUrl("/events"), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
   if (response.status === 200) {
     const events = response.json();
     console.log(events);
@@ -32,6 +37,7 @@ export async function createEvent(newEvent) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(newEvent),
   });
@@ -50,6 +56,9 @@ export async function createEvent(newEvent) {
 export async function deleteEvent(id) {
   const response = await fetch(makeUrl(`/events/${id}`), {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
   });
 
   if (response.status === 200) {
@@ -66,6 +75,7 @@ export async function updateEvent(id, editEvent) {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(editEvent),
   });
@@ -79,7 +89,11 @@ export async function updateEvent(id, editEvent) {
 
 export async function getEventsByCategoryIdOnDate(categoryId, startAt) {
   const response = await fetch(
-    makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`)
+    makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  }
   );
   if (response.status === 200) {
     const events = response.json();
@@ -90,7 +104,11 @@ export async function getEventsByCategoryIdOnDate(categoryId, startAt) {
 }
 
 export async function getEventsByCategoryId(categoryId) {
-  const response = await fetch(makeUrl(`/events?categoryId=${categoryId}`));
+  const response = await fetch(makeUrl(`/events?categoryId=${categoryId}`), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
   if (response.status === 200) {
     const events = response.json();
     return events;
@@ -121,7 +139,11 @@ export async function getEventsByFilter(filter) {
     uri += filters.join("&");
   }
 
-  const response = await fetch(makeUrl(uri));
+  const response = await fetch(makeUrl(uri), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
   if (response.status === 200) {
     const events = response.json();
     return events;
@@ -184,6 +206,7 @@ async function refreshAccessToken() {
       error: null,
     }
   } else {
+    // TODO: clear auth data in useAuth when refresh token is expired
     return {
       accessToken: null,
       error: new Error("Cannot refresh access token"),
@@ -192,7 +215,11 @@ async function refreshAccessToken() {
 }
 
 export async function getRoles() {
-  const response = await fetch(makeUrl("/users/roles"));
+  const response = await fetch(makeUrl("/users/roles"), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
   if (response.status === 200) {
     const users = response.json();
     return users;
@@ -212,6 +239,7 @@ export async function createUser(newUser) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(trimmedUser),
   });
@@ -229,6 +257,9 @@ export async function createUser(newUser) {
 export async function deleteUser(id) {
   const response = await fetch(makeUrl(`/users/${id}`), {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
   });
 
   if (response.status === 204) {
@@ -244,6 +275,7 @@ export async function updateUser(id, changes) {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(changes),
   });
@@ -310,7 +342,11 @@ export async function match(matchRequest) {
  * @param {Function} options.onNotFound
  * @returns {Promise<void>}
  */
-export async function login(loginRequest, options = {}) {
+export async function login(loginRequest, options = {
+  onSuccess: () => { },
+  onUnauthorized: () => { },
+  onNotFound: () => { },
+}) {
   const { onSuccess, onUnauthorized, onNotFound } = options;
   const response = await fetch(makeUrl("/auth/login"), {
     method: "POST",
