@@ -4,6 +4,12 @@ import { accessTokenKey, login, logout } from "../service/api";
 
 const user = ref(null);
 const isAuthenticated = computed(() => user.value !== null);
+const isAdmin = computed(() => {
+  if (user.value) {
+    return user.value.role === 'ADMIN';
+  }
+  return false;
+});
 
 function _login(user) {
   try {
@@ -60,5 +66,6 @@ export function useAuth() {
     isAuthenticated,
     login: _login,
     logout: _logout,
+    isAdmin,
   };
 }
