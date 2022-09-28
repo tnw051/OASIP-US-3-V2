@@ -5,6 +5,7 @@ import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
 import Events from "../views/Events.vue";
 import Login from '../views/Login.vue';
+import NotFound from "../views/NotFound.vue";
 import Users from "../views/Users.vue";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
@@ -39,7 +40,12 @@ const routes = [
     path: "/login",
     name: "login",
     component: Login,
-  }
+  },
+  {
+    path: "/:catchAll(.*)",
+    name: "notFound",
+    component: NotFound,
+  },
 ];
 
 const router = createRouter({
