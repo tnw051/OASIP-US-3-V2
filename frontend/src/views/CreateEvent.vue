@@ -90,7 +90,7 @@ function handleCategoryIdChange() {
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="email" class="text-sm font-medium text-gray-700" :required="!isAuthenticated">Booking Email</label>
+        <label for="email" class="text-sm font-medium text-gray-700" :class="{ 'required': !isAuthenticated || isAdmin }">Booking Email</label>
         <!-- <span v-if="isAuthenticated" id="email" type="email" :value="user.sub" class="p-2 rounded"
           @input="validateBookingEmail" placeholder="What's your email?"> -->
         <span v-if="isAuthenticated && !isAdmin" class="p-2 rounded" :value="user.sub">{{ user.sub }}</span>
