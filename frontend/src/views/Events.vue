@@ -7,8 +7,11 @@ import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { deleteEvent, getCategories, getEvents, getEventsByFilter, updateEvent } from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
+import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
+
+const { isAuthenticated } = useAuth();
 
 const events = ref([]);
 const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
@@ -38,6 +41,10 @@ const filter = ref({
 });
 
 onBeforeMount(async () => {
+  if (!isAuthenticated.value) {
+    setIsLoading(false);
+    return;
+  }
   const events = await getEvents();
   setEvents(events);
   categories.value = await getCategories();
@@ -210,9 +217,15 @@ async function filterEvents() {
           </template>
 
           <template #empty>
-            <span v-if="filter.type === eventTypes.UPCOMING">No On-Going or Upcoming Events</span>
-            <span v-else-if="filter.type === eventTypes.PAST">No Past Events</span>
-            <span v-else>No Scheduled Event</span>
+            <span v-if="isAuthenticated">
+              <span v-if="filter.type === eventTypes.UPCOMING">No On-Going or Upcoming Events</span>
+              <span v-else-if="filter.type === eventTypes.PAST">No Past Events</span>
+              <span v-else>No Scheduled Event</span>
+            </span>
+            <span v-else>
+              Please <router-link to="/login" class="text-sky-500 underline">login</router-link> to view events
+            </span>
+            
           </template>
         </Table>
 
