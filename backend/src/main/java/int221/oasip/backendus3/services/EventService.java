@@ -55,7 +55,7 @@ public class EventService {
         Instant startTime = e.getEventStartTime();
         Instant endTime = startTime.plus(e.getEventDuration(), ChronoUnit.MINUTES);
 
-        List<Event> overlapEvents = repository.findOverlapEventsByCategoryId(startTime, endTime, e.getEventCategory().getId());
+        List<Event> overlapEvents = repository.findOverlapEventsByCategoryId(startTime, endTime, e.getEventCategory().getId(), null);
 
         if (overlapEvents.size() > 0) {
             throw new EventOverlapException();
