@@ -3,6 +3,7 @@ package int221.oasip.backendus3.dtos;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.*;
 import java.time.OffsetDateTime;
 
@@ -26,5 +27,6 @@ public class CreateEventRequest {
     private OffsetDateTime eventStartTime;
 
     @Size(max = 500, message = "Event notes must be less than {max} characters")
+    @Nullable
     private String eventNotes;
 }
