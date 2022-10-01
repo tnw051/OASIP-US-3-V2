@@ -137,6 +137,9 @@ public class EventService {
         return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
+    public List<EventResponse> getEventsForLecturer(String email) {
+    }
+
     public static enum EventTimeType {
         UPCOMING, PAST, DAY;
 
