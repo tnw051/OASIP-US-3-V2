@@ -1,8 +1,8 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CreateEventRequestDTO;
-import int221.oasip.backendus3.dtos.EditEventRequestDTO;
-import int221.oasip.backendus3.dtos.EventResponseDTO;
+import int221.oasip.backendus3.dtos.CreateEventRequest;
+import int221.oasip.backendus3.dtos.EditEventRequest;
+import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -28,17 +28,17 @@ public class EventService {
     private ModelMapperUtils modelMapperUtils;
     private EventCategoryRepository categoryRepository;
 
-    public EventResponseDTO getEvent(Integer id) {
+    public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
 
         if (event == null) {
             return null;
         }
 
-        return modelMapper.map(event, EventResponseDTO.class);
+        return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponseDTO create(CreateEventRequestDTO newEvent) {
+    public EventResponse create(CreateEventRequest newEvent) {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
@@ -63,14 +63,14 @@ public class EventService {
 
         e.setId(null);
 
-        return modelMapper.map(repository.saveAndFlush(e), EventResponseDTO.class);
+        return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
 
     public void delete(Integer id) {
         repository.deleteById(id);
     }
 
-    public EventResponseDTO update(Integer id, EditEventRequestDTO editEvent) {
+    public EventResponse update(Integer id, EditEventRequest editEvent) {
         Event event = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
 
         if (editEvent.getEventNotes() != null) {
@@ -92,7 +92,7 @@ public class EventService {
             }
         }
 
-        return modelMapper.map(repository.saveAndFlush(event), EventResponseDTO.class);
+        return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
     }
 
     /**
@@ -110,7 +110,7 @@ public class EventService {
      * @return List of events based on the options provided
      * @throws IllegalArgumentException if the {@code type} is {@link EventTimeType#DAY} and {@code startAt} is null
      */
-    public List<EventResponseDTO> getEvents(GetEventsOptions options) {
+    public List<EventResponse> getEvents(GetEventsOptions options) {
         EventTimeType type = EventTimeType.fromString(options.getType());
         Instant startAt = options.getStartAt();
         Integer categoryId = options.getCategoryId();
@@ -134,7 +134,7 @@ public class EventService {
             events = repository.findAll();
         }
 
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
+        return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
     public static enum EventTimeType {

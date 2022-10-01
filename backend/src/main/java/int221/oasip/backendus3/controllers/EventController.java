@@ -1,8 +1,8 @@
 package int221.oasip.backendus3.controllers;
 
-import int221.oasip.backendus3.dtos.CreateEventRequestDTO;
-import int221.oasip.backendus3.dtos.EditEventRequestDTO;
-import int221.oasip.backendus3.dtos.EventResponseDTO;
+import int221.oasip.backendus3.dtos.CreateEventRequest;
+import int221.oasip.backendus3.dtos.EditEventRequest;
+import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -27,7 +27,7 @@ public class EventController {
 
     // TODO: refactor service methods and add email as a parameter
     @GetMapping("")
-    public List<EventResponseDTO> getEvents(
+    public List<EventResponse> getEvents(
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startAt,
             @RequestParam(required = false) String type,
@@ -37,7 +37,7 @@ public class EventController {
                 .categoryId(categoryId)
                 .startAt(startAt != null ? startAt.toInstant() : null)
                 .type(type).build();
-        List<EventResponseDTO> events = service.getEvents(options);
+        List<EventResponse> events = service.getEvents(options);
 
         if (!isAdmin(authentication)) {
             // filter events by user's email
@@ -50,8 +50,8 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public EventResponseDTO getEventById(@PathVariable Integer id, Authentication authentication) {
-        EventResponseDTO event = service.getEvent(id);
+    public EventResponse getEventById(@PathVariable Integer id, Authentication authentication) {
+        EventResponse event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
         }
@@ -66,7 +66,7 @@ public class EventController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventResponseDTO create(@Valid @RequestBody CreateEventRequestDTO newEvent, Authentication authentication) {
+    public EventResponse create(@Valid @RequestBody CreateEventRequest newEvent, Authentication authentication) {
         if (authentication != null) {
             String email = authentication.getName();
             if (!isAdmin(authentication) && !email.equals(newEvent.getBookingEmail())) {
@@ -86,7 +86,7 @@ public class EventController {
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Integer id, Authentication authentication) {
-        EventResponseDTO event = service.getEvent(id);
+        EventResponse event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
         }
@@ -100,12 +100,12 @@ public class EventController {
     }
 
     @PatchMapping("/{id}")
-    public EventResponseDTO update(@PathVariable Integer id, @Valid @RequestBody EditEventRequestDTO editEvent, Authentication authentication) {
+    public EventResponse update(@PathVariable Integer id, @Valid @RequestBody EditEventRequest editEvent, Authentication authentication) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime or eventNotes must be provided");
         }
 
-        EventResponseDTO event = service.getEvent(id);
+        EventResponse event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
         }
