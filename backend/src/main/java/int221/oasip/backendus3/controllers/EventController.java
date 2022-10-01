@@ -23,9 +23,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/events")
 @AllArgsConstructor
 public class EventController {
-    public static final String DAY = "day";
-    public static final String UPCOMING = "upcoming";
-    public static final String PAST = "past";
     private EventService service;
 
     // TODO: refactor service methods and add email as a parameter
@@ -36,28 +33,11 @@ public class EventController {
             @RequestParam(required = false) String type,
             Authentication authentication
     ) {
-        List<EventResponseDTO> events;
-        if (categoryId != null) {
-            if (DAY.equalsIgnoreCase(type) && startAt != null) {
-                events = service.getEventsOnDate(startAt.toInstant(), categoryId);
-            } else if (UPCOMING.equalsIgnoreCase(type)) {
-                events = service.getUpcomingAndOngoingEvents(categoryId);
-            } else if (PAST.equalsIgnoreCase(type)) {
-                events = service.getPastEvents(categoryId);
-            } else {
-                events = service.getEventsInCategory(categoryId);
-            }
-        } else {
-            if (DAY.equalsIgnoreCase(type) && startAt != null) {
-                events = service.getEventsOnDate(startAt.toInstant());
-            } else if (UPCOMING.equalsIgnoreCase(type)) {
-                events = service.getUpcomingAndOngoingEvents();
-            } else if (PAST.equalsIgnoreCase(type)) {
-                events = service.getPastEvents();
-            } else {
-                events = service.getAll();
-            }
-        }
+        EventService.GetEventsOptions options = EventService.GetEventsOptions.builder()
+                .categoryId(categoryId)
+                .startAt(startAt != null ? startAt.toInstant() : null)
+                .type(type).build();
+        List<EventResponseDTO> events = service.getEvents(options);
 
         if (!isAdmin(authentication)) {
             // filter events by user's email
