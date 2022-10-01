@@ -127,6 +127,7 @@
                     <optionalAnnotations>
                         <annotation>javax.annotation.Nullable</annotation>
                     </optionalAnnotations>
+                    <mapDate>asString</mapDate>
                 </configuration>
                 <dependencies>
                     <dependency>
