@@ -124,6 +124,9 @@
                     </classPatterns>
                     <outputKind>global</outputKind>
                     <outputFile>gen-types.d.ts</outputFile>
+                    <optionalAnnotations>
+                        <annotation>javax.annotation.Nullable</annotation>
+                    </optionalAnnotations>
                 </configuration>
                 <dependencies>
                     <dependency>
