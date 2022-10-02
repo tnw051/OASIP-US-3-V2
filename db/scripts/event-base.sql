@@ -10,7 +10,8 @@ INSERT INTO
     eventCategoryId,
     eventStartTime,
     eventDuration,
-    eventNotes
+    eventNotes,
+    userId
   )
 VALUES
   (
@@ -19,7 +20,8 @@ VALUES
     2,
     '2022-05-23 13:30:00',
     30,
-    NULL
+    NULL,
+    2
   ),
   (
     'Somsri Rakdee (SJ-3)',
@@ -27,7 +29,8 @@ VALUES
     1,
     '2022-04-27 09:30:00',
     30,
-    'ขอปรึกษาปัญหาเพื่อนไม่ช่วยงาน'
+    'ขอปรึกษาปัญหาเพื่อนไม่ช่วยงาน',
+    4
   ),
   (
     'สมเกียรติ ขยันเรียน กลุ่ม TT-4',
@@ -35,5 +38,6 @@ VALUES
     3,
     '2022-05-23 16:30:00',
     15,
-    NULL
+    NULL,
+    4
   )

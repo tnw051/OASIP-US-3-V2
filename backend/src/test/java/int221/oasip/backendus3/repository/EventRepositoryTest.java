@@ -48,7 +48,7 @@ class EventRepositoryTest {
         eventRepository.save(upcomingEvent2);
         eventRepository.save(pastEvent1);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt);
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null);
 
         assertEquals(4, events.size());
     }
@@ -79,7 +79,7 @@ class EventRepositoryTest {
         Event eventStartingAtStartAt = createEvent(category15MinutesA, startAt);
         eventRepository.save(eventStartingAtStartAt);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt);
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null);
 
         assertEquals(1, events.size());
     }
@@ -96,7 +96,7 @@ class EventRepositoryTest {
         eventRepository.save(pastEvent2);
         eventRepository.save(ongoingEvent1);
 
-        List<Event> events = eventRepository.findPastEvents(startAt);
+        List<Event> events = eventRepository.findPastEvents(startAt, null);
 
         assertEquals(2, events.size());
     }
@@ -125,7 +125,7 @@ class EventRepositoryTest {
         Event eventEndingAtStartAt = createEvent(category15MinutesA, fifteenMinutesAgo);
         eventRepository.save(eventEndingAtStartAt);
 
-        List<Event> events = eventRepository.findPastEvents(startAt);
+        List<Event> events = eventRepository.findPastEvents(startAt, null);
 
         assertEquals(1, events.size());
     }
@@ -142,7 +142,7 @@ class EventRepositoryTest {
         eventRepository.save(eventStartingBeforeEndAt);
         eventRepository.save(differentCategoryEventStartingBeforeEndAt);
 
-        List<Event> events = eventRepository.findOverlapEventsByCategoryId(startAt, endAt, category15MinutesA.getId());
+        List<Event> events = eventRepository.findOverlapEventsByCategoryId(startAt, endAt, category15MinutesA.getId(), null);
 
         assertEquals(2, events.size());
     }
@@ -158,7 +158,7 @@ class EventRepositoryTest {
         eventRepository.save(eventStartingAtStartAt);
         eventRepository.save(differentCategoryEventStartingAtStartAt);
 
-        List<Event> events = eventRepository.findOverlapEventsByCategoryId(startAt, endAt, category15MinutesA.getId());
+        List<Event> events = eventRepository.findOverlapEventsByCategoryId(startAt, endAt, category15MinutesA.getId(), null);
 
         assertEquals(0, events.size());
     }

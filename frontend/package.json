@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "jose": "^4.9.3",
     "json-server": "^0.17.0",
     "vue": "^3.2.25",
     "vue-router": "^4.0.15"

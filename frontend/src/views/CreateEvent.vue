@@ -3,6 +3,7 @@ import { onBeforeMount, ref } from "vue";
 import Modal from "../components/Modal.vue";
 import { createEvent, getCategories } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
+import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
 
 const categories = ref([]);
@@ -19,6 +20,10 @@ const {
   canSubmit
 } = useEventValidator();
 
+const { isAuthenticated, user, isAdmin } = useAuth();
+if (isAuthenticated.value && !isAdmin.value) {
+  inputs.value.bookingEmail = user.value.sub;
+}
 
 onBeforeMount(async () => {
   categories.value = await getCategories();
@@ -85,8 +90,11 @@ function handleCategoryIdChange() {
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="email" class="required text-sm font-medium text-gray-700">Booking Email</label>
-        <input id="email" type="email" v-model="inputs.bookingEmail" required class="bg-gray-100 p-2 rounded"
+        <label for="email" class="text-sm font-medium text-gray-700" :class="{ 'required': !isAuthenticated || isAdmin }">Booking Email</label>
+        <!-- <span v-if="isAuthenticated" id="email" type="email" :value="user.sub" class="p-2 rounded"
+          @input="validateBookingEmail" placeholder="What's your email?"> -->
+        <span v-if="isAuthenticated && !isAdmin" class="p-2 rounded" :value="user.sub">{{ user.sub }}</span>
+        <input v-else id="email" type="email" v-model="inputs.bookingEmail" required class="bg-gray-100 p-2 rounded"
           @input="validateBookingEmail" placeholder="What's your email?">
         <div v-if="errors.bookingEmail.length > 0"
           class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">

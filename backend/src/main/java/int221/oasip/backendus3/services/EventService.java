@@ -1,8 +1,8 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CreateEventRequestDTO;
-import int221.oasip.backendus3.dtos.EditEventRequestDTO;
-import int221.oasip.backendus3.dtos.EventResponseDTO;
+import int221.oasip.backendus3.dtos.CreateEventRequest;
+import int221.oasip.backendus3.dtos.EditEventRequest;
+import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -11,6 +11,8 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -26,22 +28,17 @@ public class EventService {
     private ModelMapperUtils modelMapperUtils;
     private EventCategoryRepository categoryRepository;
 
-    public List<EventResponseDTO> getAll() {
-        List<Event> events = repository.findAll();
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
-    }
-
-    public EventResponseDTO getEvent(Integer id) {
+    public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
 
         if (event == null) {
             return null;
         }
 
-        return modelMapper.map(event, EventResponseDTO.class);
+        return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponseDTO create(CreateEventRequestDTO newEvent) {
+    public EventResponse create(CreateEventRequest newEvent) {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
@@ -58,7 +55,7 @@ public class EventService {
         Instant startTime = e.getEventStartTime();
         Instant endTime = startTime.plus(e.getEventDuration(), ChronoUnit.MINUTES);
 
-        List<Event> overlapEvents = repository.findOverlapEventsByCategoryId(startTime, endTime, e.getEventCategory().getId());
+        List<Event> overlapEvents = repository.findOverlapEventsByCategoryId(startTime, endTime, e.getEventCategory().getId(), null);
 
         if (overlapEvents.size() > 0) {
             throw new EventOverlapException();
@@ -66,14 +63,14 @@ public class EventService {
 
         e.setId(null);
 
-        return modelMapper.map(repository.saveAndFlush(e), EventResponseDTO.class);
+        return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
 
     public void delete(Integer id) {
         repository.deleteById(id);
     }
 
-    public EventResponseDTO update(Integer id, EditEventRequestDTO editEvent) {
+    public EventResponse update(Integer id, EditEventRequest editEvent) {
         Event event = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
 
         if (editEvent.getEventNotes() != null) {
@@ -95,55 +92,75 @@ public class EventService {
             }
         }
 
-        return modelMapper.map(repository.saveAndFlush(event), EventResponseDTO.class);
+        return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
     }
 
-    public List<EventResponseDTO> getEventsInCategory(Integer categoryId) {
-        List<Event> events = repository.findByEventCategory_Id(categoryId);
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
-    }
-
-    public List<EventResponseDTO> getUpcomingAndOngoingEvents(Integer categoryId) {
+    /**
+     * if {@code categoryId} is specified, it will be used in all queries, otherwise all categories is assumed
+     * <br />
+     * if {@code type} is {@link EventTimeType#DAY}, {@code startAt} must be specified, otherwise, {@link IllegalArgumentException} will be thrown
+     * <br />
+     * if {@code type} is not {@link EventTimeType#DAY}}, {@code startAt} is ignored and the current time is used instead
+     * <br />
+     * if {@code type} is not specified, it will be set to all
+     * <br />
+     * if {@code type} is specified, it must be parsable to {@link EventTimeType}, otherwise {@link IllegalArgumentException} will be thrown
+     *
+     * @param options options
+     * @return List of events based on the options provided
+     * @throws IllegalArgumentException if the {@code type} is {@link EventTimeType#DAY} and {@code startAt} is null
+     */
+    public List<EventResponse> getEvents(GetEventsOptions options) {
+        EventTimeType type = EventTimeType.fromString(options.getType());
+        Instant startAt = options.getStartAt();
+        Integer categoryId = options.getCategoryId();
         Instant now = Instant.now();
+
         List<Event> events;
-        if (categoryId != null) {
-            events = repository.findUpcomingAndOngoingEvents(now, categoryId);
-        } else {
-            events = repository.findUpcomingAndOngoingEvents(now);
-        }
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
-    }
-
-    public List<EventResponseDTO> getUpcomingAndOngoingEvents() {
-        return getUpcomingAndOngoingEvents(null);
-    }
-
-    public List<EventResponseDTO> getPastEvents(Integer categoryId) {
-        Instant now = Instant.now();
-        List<Event> events;
-        if (categoryId != null) {
-            events = repository.findPastEvents(now, categoryId);
-        } else {
-            events = repository.findPastEvents(now);
-        }
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
-    }
-
-    public List<EventResponseDTO> getPastEvents() {
-        return getPastEvents(null);
-    }
-
-    public List<EventResponseDTO> getEventsOnDate(Instant startAt, Integer categoryId) {
-        List<Event> events;
-        if (categoryId != null) {
+        if (EventTimeType.DAY.equals(type)) {
+            if (startAt == null) {
+                throw new IllegalArgumentException("startAt cannot be null for type " + EventTimeType.DAY);
+            }
             events = repository.findByDateRangeOfOneDay(startAt, categoryId);
+        } else if (EventTimeType.UPCOMING.equals(type)) {
+            events = repository.findUpcomingAndOngoingEvents(now, categoryId);
+        } else if (EventTimeType.PAST.equals(type)) {
+            events = repository.findPastEvents(now, categoryId);
+        } else if (type != null) {
+            throw new IllegalArgumentException("type " + type + " is not supported");
+        } else if (categoryId != null) {
+            events = repository.findByEventCategory_Id(categoryId);
         } else {
-            events = repository.findByDateRangeOfOneDay(startAt);
+            events = repository.findAll();
         }
-        return modelMapperUtils.mapList(events, EventResponseDTO.class);
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
-    public List<EventResponseDTO> getEventsOnDate(Instant startAt) {
-        return getEventsOnDate(startAt, null);
+    public List<EventResponse> getEventsForLecturer(String email) {
+    }
+
+    public static enum EventTimeType {
+        UPCOMING, PAST, DAY;
+
+        public static EventTimeType fromString(String type) {
+            if (type == null) {
+                return null;
+            }
+
+            try {
+                return EventTimeType.valueOf(type.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+
+    @Builder(builderClassName = "Builder")
+    @Getter
+    public static class GetEventsOptions {
+        private Instant startAt;
+        private Integer categoryId;
+        private String type;
     }
 }

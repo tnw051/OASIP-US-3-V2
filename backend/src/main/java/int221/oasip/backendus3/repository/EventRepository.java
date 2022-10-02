@@ -3,72 +3,81 @@ package int221.oasip.backendus3.repository;
 import int221.oasip.backendus3.entities.Event;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Integer> {
-    // get all overlap events. there are two scenarios:
-    // 1. events that started before the startTime and ended after the startTime
-    // 2. events that started between the startTime (inclusive) and the endTime (exclusive)
-    // with optional currentEventId to exclude the current event from the result
+    /**
+     * Get all overlap events. There are two scenarios:
+     * <ol>
+     *     <li>Events that started before the {@code startTime} and ended after the {@code startTime}</li>
+     *     <li>Events that started between the {@code startTime} (inclusive) and the {@code endTime} (exclusive)</li>
+     * </ol>
+     * {@code currentEventId} is optional. If it is not null, the event with the id will be excluded from the result.
+     *
+     * @param startAt        start time of event
+     * @param endAt          end time of event
+     * @param categoryId     category id of event
+     * @param currentEventId current event id
+     * @return list of overlap events
+     */
     @Query(nativeQuery = true,
             value = "SELECT * " +
                     "FROM event e " +
                     "WHERE e.eventCategoryId = :categoryId " +
-                    // optional eventId to exclude from the result
                     "AND (:currentEventId IS NULL OR e.eventId <> :currentEventId) AND " +
-                    // case 1
                     "((e.eventStartTime < :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt) OR " +
-                    // case 2
                     "(e.eventStartTime >= :startAt AND e.eventStartTime < :endAt))")
-    List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId, Integer currentEventId);
+    List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId, @Nullable Integer currentEventId);
 
-    default List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId) {
-        return findOverlapEventsByCategoryId(startAt, endAt, categoryId, null);
-    }
-
-    // optional categoryId
     @Query("SELECT E FROM Event E WHERE (?1 IS NULL OR E.eventCategory.id = ?1) AND E.eventStartTime >= ?2 AND E.eventStartTime < ?3")
     List<Event> findByDateRange(Integer categoryId, Instant fromInclusive, Instant toExclusive);
 
-    default List<Event> findByDateRangeOfOneDay(Instant startAt, Integer categoryId) {
+    /**
+     * Get all events that started in a range of one day, starting from {@code startAt} (inclusive) to {@code startAt + 1 day} (exclusive)
+     * <p>{@code categoryId} is optional. If it is not null, only events with the category id will be returned.</p>
+     *
+     * @param startAt    start time of event
+     * @param categoryId category id of event
+     * @return list of events in the same day
+     */
+    default List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable Integer categoryId) {
         Instant endAt = startAt.plus(1, ChronoUnit.DAYS);
         return findByDateRange(categoryId, startAt, endAt);
     }
 
-    default List<Event> findByDateRangeOfOneDay(Instant startAt) {
-        return findByDateRangeOfOneDay(startAt, null);
-    }
-
     List<Event> findByEventCategory_Id(Integer categoryId);
 
-    // get upcoming and ongoing events, with these constraints:
-    // 1. categoryId is optional.
-    // 2. events that start after startAt (upcoming)
-    // 3. event that start before startAt but end after startAt (ongoing)
+    /**
+     * Get upcoming and ongoing events (events that end after the {@code startAt} time)
+     * <p>{@code categoryId} is optional. If it is not null, only events with the category id will be returned.
+     *
+     * @param startAt    start time of event
+     * @param categoryId category id of event
+     * @return list of events that started before the {@code startAt} or ended after the {@code startAt}
+     */
     @Query(nativeQuery = true,
             value = "SELECT * " +
                     "FROM event e " +
                     "WHERE (:categoryId IS NULL OR e.eventCategoryId = :categoryId) AND " +
-                    // upcoming
-                    "((e.eventStartTime > :startAt) OR " +
-                    // ongoing
-                    "(e.eventStartTime <= :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt))")
-    List<Event> findUpcomingAndOngoingEvents(Instant startAt, Integer categoryId);
+                    "TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt")
+    List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable Integer categoryId);
 
-    default List<Event> findUpcomingAndOngoingEvents(Instant startAt) {
-        return findUpcomingAndOngoingEvents(startAt, null);
-    }
-
-    // get past events (start before startAt and end at or before startAt)
+    /**
+     * Get past events (events that ended before or at the {@code startAt} time)
+     * <p>{@code categoryId} is optional. If it is not null, only events with the category id will be returned.
+     *
+     * @param startAt    start time of event
+     * @param categoryId category id of event
+     * @return list of events that ended before or at the {@code startAt}
+     */
     @Query(nativeQuery = true,
-            value = "SELECT * FROM event e WHERE (:categoryId IS NULL OR e.eventCategoryId = :categoryId) AND " +
-                    "(e.eventStartTime < :startAt AND TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) <= :startAt)")
-    List<Event> findPastEvents(Instant startAt, Integer categoryId);
-
-    default List<Event> findPastEvents(Instant now) {
-        return findPastEvents(now, null);
-    }
+            value = "SELECT * " +
+                    "FROM event e " +
+                    "WHERE (:categoryId IS NULL OR e.eventCategoryId = :categoryId) AND " +
+                    "TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) <= :startAt")
+    List<Event> findPastEvents(Instant startAt, @Nullable Integer categoryId);
 }

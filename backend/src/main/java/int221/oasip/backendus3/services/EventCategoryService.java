@@ -1,7 +1,7 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CategoryResponseDTO;
-import int221.oasip.backendus3.dtos.EditCategoryRequestDTO;
+import int221.oasip.backendus3.dtos.CategoryResponse;
+import int221.oasip.backendus3.dtos.EditCategoryRequest;
 import int221.oasip.backendus3.entities.EventCategory;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -21,11 +21,11 @@ public class EventCategoryService {
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
 
-    public List<CategoryResponseDTO> getAll() {
-        return modelMapperUtils.mapList(repository.findAll(), CategoryResponseDTO.class);
+    public List<CategoryResponse> getAll() {
+        return modelMapperUtils.mapList(repository.findAll(), CategoryResponse.class);
     }
 
-    public CategoryResponseDTO update(Integer id, EditCategoryRequestDTO editCategory) {
+    public CategoryResponse update(Integer id, EditCategoryRequest editCategory) {
         EventCategory category = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Category with id" + id + " not found"));
 
         if (editCategory.getEventCategoryName() != null) {
@@ -50,7 +50,7 @@ public class EventCategoryService {
             category.setEventDuration(editCategory.getEventDuration());
         }
 
-        return modelMapper.map(repository.saveAndFlush(category), CategoryResponseDTO.class);
+        return modelMapper.map(repository.saveAndFlush(category), CategoryResponse.class);
     }
 
 }

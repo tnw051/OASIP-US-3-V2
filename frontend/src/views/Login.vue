@@ -1,6 +1,9 @@
 <script setup>
 import { computed, ref } from "vue";
-import { accessTokenKey, login } from "../service/api";
+import router from "../router";
+import { useAuth } from "../utils/useAuth";
+
+const { login } = useAuth();
 
 function makeDefaultValues() {
   const defaultValue = "";
@@ -66,25 +69,9 @@ async function handleSubmit() {
     ...inputs.value,
   };
 
-  try {
-    login(user, {
-      onSuccess: (response) => {
-        console.log(response);
-        alert("Login successful");
-        localStorage.setItem(accessTokenKey, response.accessToken);
-      },
-      onUnauthorized: (error) => {
-        console.log(error);
-        alert("Password is incorrect");
-      },
-      onNotFound: (error) => {
-        console.log(error);
-        alert("A user with the specified email DOES NOT exist");
-      },
-    });
-  } catch (errorResponse) {
-    alert(errorResponse.message);
-  }
+  login(user, () => {
+    router.push({ name: "home" });
+  });
 
   inputs.value.password = ""; // clear password every time user submits
 }
