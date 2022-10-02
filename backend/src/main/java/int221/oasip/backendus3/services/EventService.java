@@ -138,6 +138,7 @@ public class EventService {
     }
 
     public List<EventResponse> getEventsForLecturer(String email) {
+        return null;
     }
 
     public static enum EventTimeType {
