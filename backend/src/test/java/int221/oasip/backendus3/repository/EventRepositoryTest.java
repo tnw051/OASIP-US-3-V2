@@ -2,6 +2,7 @@ package int221.oasip.backendus3.repository;
 
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
+import int221.oasip.backendus3.entities.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,9 @@ class EventRepositoryTest {
     @Autowired
     EventCategoryRepository categoryRepository;
     @Autowired
+    private UserRepository userRepository;
+    @Autowired
     private EventRepository eventRepository;
-
     private EventCategory category15MinutesA;
     private EventCategory category15MinutesB;
 
@@ -48,7 +50,7 @@ class EventRepositoryTest {
         eventRepository.save(upcomingEvent2);
         eventRepository.save(pastEvent1);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null);
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null, null);
 
         assertEquals(4, events.size());
     }
@@ -68,7 +70,7 @@ class EventRepositoryTest {
         eventRepository.save(upcomingEvent2);
         eventRepository.save(pastEvent1);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, targetCategory.getId());
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, targetCategory.getId(), null);
 
         assertEquals(2, events.size());
     }
@@ -79,7 +81,7 @@ class EventRepositoryTest {
         Event eventStartingAtStartAt = createEvent(category15MinutesA, startAt);
         eventRepository.save(eventStartingAtStartAt);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null);
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, null, null);
 
         assertEquals(1, events.size());
     }
@@ -96,7 +98,7 @@ class EventRepositoryTest {
         eventRepository.save(pastEvent2);
         eventRepository.save(ongoingEvent1);
 
-        List<Event> events = eventRepository.findPastEvents(startAt, null);
+        List<Event> events = eventRepository.findPastEvents(startAt, null, null);
 
         assertEquals(2, events.size());
     }
@@ -113,7 +115,7 @@ class EventRepositoryTest {
         eventRepository.save(pastEvent2);
         eventRepository.save(ongoingEvent1);
 
-        List<Event> events = eventRepository.findPastEvents(startAt, targetCategory.getId());
+        List<Event> events = eventRepository.findPastEvents(startAt, targetCategory.getId(), null);
 
         assertEquals(1, events.size());
     }
@@ -125,7 +127,7 @@ class EventRepositoryTest {
         Event eventEndingAtStartAt = createEvent(category15MinutesA, fifteenMinutesAgo);
         eventRepository.save(eventEndingAtStartAt);
 
-        List<Event> events = eventRepository.findPastEvents(startAt, null);
+        List<Event> events = eventRepository.findPastEvents(startAt, null, null);
 
         assertEquals(1, events.size());
     }
@@ -164,6 +166,9 @@ class EventRepositoryTest {
     }
 
     private Event createEvent(EventCategory category, Instant startAt) {
-        return new Event(category, "event name", "user@email.com", startAt, "event notes");
+        Event event = new Event(category, "event name", "user@email.com", startAt, "event notes");
+        User proxy = userRepository.getById(0); // kinda hacky, but we don't care about the user for now
+        event.setUser(proxy);
+        return event;
     }
 }

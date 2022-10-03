@@ -111,6 +111,10 @@ public class EventService {
      * if {@code type} is not specified, it will be set to all
      * <br />
      * if {@code type} is specified, it must be parsable to {@link EventTimeType}, otherwise {@link IllegalArgumentException} will be thrown
+     * <br />
+     * if {@code userEmail} is specified, it will be used to find events that the user has booked
+     * <br />
+     * if {@code isAdmin} is {@code true}, {@code userEmail} is ignored
      *
      * @param options options
      * @return List of events based on the options provided
@@ -122,20 +126,29 @@ public class EventService {
         Integer categoryId = options.getCategoryId();
         Instant now = Instant.now();
 
+        User user = null;
+        if (!options.isAdmin()) {
+            user = userRepository.findByEmail(options.getUserEmail())
+                    .orElseThrow(() -> new EntityNotFoundException("User with email " + options.getUserEmail() + " not found"));
+        }
+        Integer userId = user != null ? user.getId() : null;
+
         List<Event> events;
         if (EventTimeType.DAY.equals(type)) {
             if (startAt == null) {
                 throw new IllegalArgumentException("startAt cannot be null for type " + EventTimeType.DAY);
             }
-            events = repository.findByDateRangeOfOneDay(startAt, categoryId);
+            events = repository.findByDateRangeOfOneDay(startAt, categoryId, userId);
         } else if (EventTimeType.UPCOMING.equals(type)) {
-            events = repository.findUpcomingAndOngoingEvents(now, categoryId);
+            events = repository.findUpcomingAndOngoingEvents(now, categoryId, userId);
         } else if (EventTimeType.PAST.equals(type)) {
-            events = repository.findPastEvents(now, categoryId);
+            events = repository.findPastEvents(now, categoryId, userId);
         } else if (type != null) {
             throw new IllegalArgumentException("type " + type + " is not supported");
         } else if (categoryId != null) {
-            events = repository.findByEventCategory_Id(categoryId);
+            events = repository.findByEventCategory_IdAndUser_Id(categoryId, userId);
+        } else if (userId != null) {
+            events = repository.findByUser_Id(userId);
         } else {
             events = repository.findAll();
         }
@@ -169,5 +182,7 @@ public class EventService {
         private Instant startAt;
         private Integer categoryId;
         private String type;
+        private String userEmail;
+        private boolean isAdmin;
     }
 }
