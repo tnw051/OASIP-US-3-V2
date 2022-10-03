@@ -3,7 +3,6 @@ package int221.oasip.backendus3.controllers;
 import int221.oasip.backendus3.dtos.CreateEventRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
-import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -11,7 +10,6 @@ import int221.oasip.backendus3.services.EventService;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -81,7 +79,7 @@ public class EventController {
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {
-            // category not found
+            // category not found or user not found
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }

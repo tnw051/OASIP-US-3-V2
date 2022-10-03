@@ -5,10 +5,12 @@ import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
+import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
+import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +29,7 @@ public class EventService {
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
     private EventCategoryRepository categoryRepository;
+    private UserRepository userRepository;
 
     public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
@@ -42,12 +45,15 @@ public class EventService {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
+        User user = userRepository.findByEmail(newEvent.getBookingEmail())
+                .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
 
         e.setBookingName(newEvent.getBookingName().strip());
         e.setBookingEmail(newEvent.getBookingEmail().strip());
         e.setEventStartTime(Instant.from(newEvent.getEventStartTime()));
         e.setEventCategory(category);
         e.setEventDuration(category.getEventDuration());
+        e.setUser(user);
         if (newEvent.getEventNotes() != null) {
             e.setEventNotes(newEvent.getEventNotes().strip());
         }
