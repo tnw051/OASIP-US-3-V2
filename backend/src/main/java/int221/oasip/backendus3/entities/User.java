@@ -22,6 +22,10 @@ public class User {
 
 //    @ManyToOne
 
+    @ManyToOne(fetch = FetchType.LAZY)
+
+
+
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 

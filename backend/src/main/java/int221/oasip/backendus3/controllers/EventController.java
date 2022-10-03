@@ -3,6 +3,7 @@ package int221.oasip.backendus3.controllers;
 import int221.oasip.backendus3.dtos.CreateEventRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
+import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/events")
@@ -25,6 +27,7 @@ import java.util.List;
 public class EventController {
     private EventService service;
 
+    // TODO: refactor service methods and add email as a parameter
     @GetMapping("")
     public List<EventResponse> getEvents(
             @RequestParam(required = false) Integer categoryId,
@@ -35,12 +38,17 @@ public class EventController {
         EventService.GetEventsOptions options = EventService.GetEventsOptions.builder()
                 .categoryId(categoryId)
                 .startAt(startAt != null ? startAt.toInstant() : null)
-                .type(type)
-                .isAdmin(isAdmin(authentication))
-                .userEmail(authentication.getName())
-                .build();
+                .type(type).build();
+        List<EventResponse> events = service.getEvents(options);
 
-        return service.getEvents(options);
+        if (!isAdmin(authentication)) {
+            // filter events by user's email
+            // TODO: refactor this, service methods, and repository methods
+            String email = authentication.getName();
+            return events.stream().filter(event -> email.equals(event.getBookingEmail())).collect(Collectors.toList());
+        }
+
+        return events;
     }
 
     @GetMapping("/{id}")
@@ -70,12 +78,11 @@ public class EventController {
         }
 
         try {
-            boolean isGuest = authentication == null;
-            return service.create(newEvent, isGuest);
+            return service.create(newEvent);
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {
-            // category not found or user not found
+            // category not found
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }

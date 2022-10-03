@@ -5,12 +5,10 @@ import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
-import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
-import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,7 +27,6 @@ public class EventService {
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
     private EventCategoryRepository categoryRepository;
-    private UserRepository userRepository;
 
     public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
@@ -41,18 +38,10 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) {
+    public EventResponse create(CreateEventRequest newEvent) {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
-
-        if (isGuest) {
-                e.setUser(null);
-        } else {
-            User user = userRepository.findByEmail(newEvent.getBookingEmail())
-                    .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
-            e.setUser(user);
-        }
 
         e.setBookingName(newEvent.getBookingName().strip());
         e.setBookingEmail(newEvent.getBookingEmail().strip());
@@ -116,10 +105,6 @@ public class EventService {
      * if {@code type} is not specified, it will be set to all
      * <br />
      * if {@code type} is specified, it must be parsable to {@link EventTimeType}, otherwise {@link IllegalArgumentException} will be thrown
-     * <br />
-     * if {@code userEmail} is specified, it will be used to find events that the user has booked
-     * <br />
-     * if {@code isAdmin} is {@code true}, {@code userEmail} is ignored
      *
      * @param options options
      * @return List of events based on the options provided
@@ -131,29 +116,20 @@ public class EventService {
         Integer categoryId = options.getCategoryId();
         Instant now = Instant.now();
 
-        User user = null;
-        if (!options.isAdmin()) {
-            user = userRepository.findByEmail(options.getUserEmail())
-                    .orElseThrow(() -> new EntityNotFoundException("User with email " + options.getUserEmail() + " not found"));
-        }
-        Integer userId = user != null ? user.getId() : null;
-
         List<Event> events;
         if (EventTimeType.DAY.equals(type)) {
             if (startAt == null) {
                 throw new IllegalArgumentException("startAt cannot be null for type " + EventTimeType.DAY);
             }
-            events = repository.findByDateRangeOfOneDay(startAt, categoryId, userId);
+            events = repository.findByDateRangeOfOneDay(startAt, categoryId);
         } else if (EventTimeType.UPCOMING.equals(type)) {
-            events = repository.findUpcomingAndOngoingEvents(now, categoryId, userId);
+            events = repository.findUpcomingAndOngoingEvents(now, categoryId);
         } else if (EventTimeType.PAST.equals(type)) {
-            events = repository.findPastEvents(now, categoryId, userId);
+            events = repository.findPastEvents(now, categoryId);
         } else if (type != null) {
             throw new IllegalArgumentException("type " + type + " is not supported");
         } else if (categoryId != null) {
-            events = repository.findByEventCategory_IdAndUser_Id(categoryId, userId);
-        } else if (userId != null) {
-            events = repository.findByUser_Id(userId);
+            events = repository.findByEventCategory_Id(categoryId);
         } else {
             events = repository.findAll();
         }
@@ -162,8 +138,7 @@ public class EventService {
     }
 
     public List<EventResponse> getEventsForLecturer(String email) {
-        List<Event> events = repository.findByEventCategory_Lecturer_Email(email);
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return null;
     }
 
     public static enum EventTimeType {
@@ -188,7 +163,5 @@ public class EventService {
         private Instant startAt;
         private Integer categoryId;
         private String type;
-        private String userEmail;
-        private boolean isAdmin;
     }
 }
