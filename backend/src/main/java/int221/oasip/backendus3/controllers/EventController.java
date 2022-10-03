@@ -10,6 +10,7 @@ import int221.oasip.backendus3.services.EventService;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -69,7 +70,8 @@ public class EventController {
         }
 
         try {
-            return service.create(newEvent);
+            boolean isGuest = authentication == null;
+            return service.create(newEvent, isGuest);
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {

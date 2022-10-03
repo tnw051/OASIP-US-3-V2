@@ -104,4 +104,6 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
     List<Event> findPastEvents(Instant startAt, @Nullable Integer categoryId, Integer userId);
 
     List<Event> findByUser_Id(Integer userId);
+
+    List<Event> findByEventCategory_Lecturer_Email(String email);
 }

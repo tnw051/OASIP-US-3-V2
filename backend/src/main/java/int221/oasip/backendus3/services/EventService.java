@@ -41,19 +41,24 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventRequest newEvent) {
+    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
-        User user = userRepository.findByEmail(newEvent.getBookingEmail())
-                .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
+
+        if (isGuest) {
+                e.setUser(null);
+        } else {
+            User user = userRepository.findByEmail(newEvent.getBookingEmail())
+                    .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
+            e.setUser(user);
+        }
 
         e.setBookingName(newEvent.getBookingName().strip());
         e.setBookingEmail(newEvent.getBookingEmail().strip());
         e.setEventStartTime(Instant.from(newEvent.getEventStartTime()));
         e.setEventCategory(category);
         e.setEventDuration(category.getEventDuration());
-        e.setUser(user);
         if (newEvent.getEventNotes() != null) {
             e.setEventNotes(newEvent.getEventNotes().strip());
         }
@@ -157,7 +162,8 @@ public class EventService {
     }
 
     public List<EventResponse> getEventsForLecturer(String email) {
-        return null;
+        List<Event> events = repository.findByEventCategory_Lecturer_Email(email);
+        return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
     public static enum EventTimeType {
