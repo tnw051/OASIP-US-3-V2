@@ -59,6 +59,7 @@ public class EventController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("!hasRole('LECTURER')")
     public EventResponse create(@Valid @RequestBody CreateEventRequest newEvent, Authentication authentication) {
         if (authentication != null) {
             String email = authentication.getName();
@@ -78,6 +79,7 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("!hasRole('LECTURER')")
     public void delete(@PathVariable Integer id, Authentication authentication) {
         EventResponse event = service.getEvent(id);
         if (event == null) {
@@ -93,6 +95,7 @@ public class EventController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("!hasRole('LECTURER')")
     public EventResponse update(@PathVariable Integer id, @Valid @RequestBody EditEventRequest editEvent, Authentication authentication) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime or eventNotes must be provided");
