@@ -20,6 +20,8 @@ public class User {
     @Column(name = "userId", nullable = false)
     private Integer id;
 
+//    @ManyToOne
+
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 

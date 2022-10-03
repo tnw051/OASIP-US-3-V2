@@ -1,11 +1,12 @@
+
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 
-function makeUrl(path: string) {
+function makeUrl(path) {
   return `${baseUrl}${path}`;
 }
 
 //GET
-export async function getEvents(): Promise<EventResponse[]> {
+export async function getEvents() {
   const response = await fetch(makeUrl("/events"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
@@ -20,7 +21,7 @@ export async function getEvents(): Promise<EventResponse[]> {
   }
 }
 
-export async function getCategories(): Promise<CategoryResponse[]> {
+export async function getCategories() {
   const response = await fetch(makeUrl("/categories"));
   if (response.status === 200) {
     const categories = response.json();
@@ -31,13 +32,12 @@ export async function getCategories(): Promise<CategoryResponse[]> {
 }
 
 //CREATE
-export async function createEvent(newEvent: CreateEventRequest): Promise<EventResponse> {
-  const token = localStorage.getItem(accessTokenKey);
+export async function createEvent(newEvent) {
   const response = await fetch(makeUrl("/events"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(newEvent),
   });
@@ -53,7 +53,7 @@ export async function createEvent(newEvent: CreateEventRequest): Promise<EventRe
 }
 
 //DELETE
-export async function deleteEvent(id: Id) {
+export async function deleteEvent(id) {
   const response = await fetch(makeUrl(`/events/${id}`), {
     method: "DELETE",
     headers: {
@@ -70,7 +70,7 @@ export async function deleteEvent(id: Id) {
 }
 
 //UPDATE
-export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<EventResponse> {
+export async function updateEvent(id, editEvent) {
   const response = await fetch(makeUrl(`/events/${id}`), {
     method: "PATCH",
     headers: {
@@ -87,7 +87,7 @@ export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<
   }
 }
 
-export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): Promise<EventResponse[]> {
+export async function getEventsByCategoryIdOnDate(categoryId, startAt) {
   const response = await fetch(
     makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`), {
     headers: {
@@ -103,7 +103,7 @@ export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: strin
   }
 }
 
-export async function getEventsByCategoryId(categoryId: Id): Promise<EventResponse[]> {
+export async function getEventsByCategoryId(categoryId) {
   const response = await fetch(makeUrl(`/events?categoryId=${categoryId}`), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
@@ -117,13 +117,7 @@ export async function getEventsByCategoryId(categoryId: Id): Promise<EventRespon
   }
 }
 
-interface GetEventsFilter {
-  categoryId?: Id;
-  type?: string;
-  startAt?: string;
-}
-
-export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventResponse[]> {
+export async function getEventsByFilter(filter) {
   const { categoryId, type, startAt } = filter;
 
   let uri = "/events?";
@@ -158,7 +152,7 @@ export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventR
   }
 }
 
-export async function updateCategory(id: Id, editCategory: EditCategoryRequest): Promise<CategoryResponse> {
+export async function updateCategory(id, editCategory) {
   const response = await fetch(makeUrl(`/categories/${id}`), {
     method: "PATCH",
     headers: {
@@ -175,10 +169,7 @@ export async function updateCategory(id: Id, editCategory: EditCategoryRequest):
 }
 
 export const accessTokenKey = "accessToken";
-interface GetUsersOptions {
-  onUnauthorized?: () => void;
-}
-export async function getUsers(options: GetUsersOptions = {}): Promise<UserResponse[]> {
+export async function getUsers(options = {}) {
   const { onUnauthorized } = options;
   const response = await fetch(makeUrl("/users"), {
     headers: {
@@ -201,11 +192,7 @@ export async function getUsers(options: GetUsersOptions = {}): Promise<UserRespo
   }
 }
 
-interface RefreshTokenResponse {
-  accessToken: string;
-  error: Error | null;
-}
-async function refreshAccessToken(): Promise<RefreshTokenResponse> {
+async function refreshAccessToken() {
   const response = await fetch(makeUrl("/auth/refresh"), {
     method: "POST"
   });
@@ -227,21 +214,21 @@ async function refreshAccessToken(): Promise<RefreshTokenResponse> {
   }
 }
 
-export async function getRoles(): Promise<Role[]> {
+export async function getRoles() {
   const response = await fetch(makeUrl("/users/roles"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     }
   });
   if (response.status === 200) {
-    const roles = response.json();
-    return roles;
+    const users = response.json();
+    return users;
   } else {
     console.log("Cannot fetch user roles");
   }
 }
 
-export async function createUser(newUser: CreateUserRequest): Promise<UserResponse> {
+export async function createUser(newUser) {
   const trimmedUser = {
     ...newUser,
     name: newUser.name.trim(),
@@ -267,7 +254,7 @@ export async function createUser(newUser: CreateUserRequest): Promise<UserRespon
   }
 }
 
-export async function deleteUser(id: Id) {
+export async function deleteUser(id) {
   const response = await fetch(makeUrl(`/users/${id}`), {
     method: "DELETE",
     headers: {
@@ -283,7 +270,7 @@ export async function deleteUser(id: Id) {
   }
 }
 
-export async function updateUser(id: Id, changes: EditUserRequest): Promise<UserResponse> {
+export async function updateUser(id, changes) {
   const response = await fetch(makeUrl(`/users/${id}`), {
     method: "PATCH",
     headers: {
@@ -300,7 +287,28 @@ export async function updateUser(id: Id, changes: EditUserRequest): Promise<User
   }
 }
 
-export async function match(matchRequest: MatchRequest) {
+// {
+//   "timestamp": "2022-08-29T15:25:36.839+00:00",
+//   "status": 401,
+//   "error": "Unauthorized",
+//   "path": "/api/auth/match",
+//   "message": "Password NOT Matched"
+// }
+
+// @PostMapping("/match")
+// public String match(@Valid @RequestBody MatchRequest matchRequest) {
+//     try {
+//         boolean matches = service.match(matchRequest);
+//         if (!matches) {
+//             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Password NOT Matched");
+//         }
+//         return "Password Matched";
+//     } catch (EntityNotFoundException e) {
+//         throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+//     }
+// }
+
+export async function match(matchRequest) {
   const response = await fetch(makeUrl("/auth/match"), {
     method: "POST",
     headers: {
@@ -321,13 +329,24 @@ export async function match(matchRequest: MatchRequest) {
   }
 }
 
-interface LoginOptions {
-  onSuccess?: (r: LoginResponse) => void;
-  onUnauthorized?: (r: ErrorResponse) => void;
-  onNotFound?: (r: ErrorResponse) => void;
-}
-
-export async function login(loginRequest: LoginRequest, options: LoginOptions = {}): Promise<void> {
+/**
+ * @typedef {Object} LoginResponse
+ * @property {string} token
+ * @property {string} type
+ */
+/**
+ * @param {Object} loginRequest
+ * @param {Object} options
+ * @param {Function} options.onSuccess
+ * @param {Function} options.onUnauthorized
+ * @param {Function} options.onNotFound
+ * @returns {Promise<void>}
+ */
+export async function login(loginRequest, options = {
+  onSuccess: () => { },
+  onUnauthorized: () => { },
+  onNotFound: () => { },
+}) {
   const { onSuccess, onUnauthorized, onNotFound } = options;
   const response = await fetch(makeUrl("/auth/login"), {
     method: "POST",

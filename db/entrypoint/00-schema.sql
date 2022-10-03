@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
   `eventDuration` INT NOT NULL,
   `eventNotes` VARCHAR(500) NULL,
   `eventCategoryId` INT NOT NULL,
-  `userId` INT NOT NULL,
+  `userId` INT NULL DEFAULT NULL,
   PRIMARY KEY (`eventId`),
   INDEX `fk_event_eventCategory_idx` (`eventCategoryId` ASC) VISIBLE,
   INDEX `fk_event_user1_idx` (`userId` ASC) VISIBLE,
