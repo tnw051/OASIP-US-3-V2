@@ -10,7 +10,7 @@ INSERT INTO
   user (
     name,
     email,
-    password,
+    PASSWORD,
     role,
     createdOn,
     updatedOn
@@ -51,7 +51,7 @@ VALUES
   (
     'Siam Yamsaengsung',
     'siam.yam@kmutt.ac.th',
-    '$argon2id$v=19$m=4096,t=3,p=1$wTQSpCANrDkwNngTIuy6Tw$MbNNuhG/wYxqkBi4mET2AT6hyEDSHs7pnhfaZeXE4Qs',
+    '$argon2id$v=19$m=4096,t=3,p=1$C4pPaNWKTnZQX2mPs14jlg$rQ5W5NYKqGOu1B4GkUWq8cFbcg2peFWGjpUMr9Nkm8g',
     'lecturer',
     '2022-08-08 15:00:03+07:00',
     '2022-08-08 15:00:03+07:00'
