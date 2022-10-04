@@ -195,7 +195,7 @@ public class EventService {
         return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
-    public static enum EventTimeType {
+    public enum EventTimeType {
         UPCOMING, PAST, DAY;
 
         public static EventTimeType fromString(String type) {
