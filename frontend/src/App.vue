@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { useAuth } from './utils/useAuth';
 
 const router = useRouter()
-const { logout, isAdmin, isAuthenticated, user } = useAuth();
+const { logout, isAdmin, isLecturer, isAuthenticated, user } = useAuth();
 
 async function handleLogout() {
   const success = await logout();
@@ -21,7 +21,7 @@ async function handleLogout() {
       <img src="https://cdn.7tv.app/emote/611cb0c5f20f644c3fadb992/3x" width="64" />
       <img src="https://cdn.betterttv.net/emote/60a21baf67644f1d67e87a6c/3x" width="64" />
       <router-link to="/" class="ml-6 p-2 rounded-md text-gray-700 hover:text-sky-600">Events</router-link>
-      <router-link :to="{ name: 'createEvent' }" class="p-2 rounded-md text-gray-700 hover:text-sky-600">Create
+      <router-link v-if="!isLecturer" :to="{ name: 'createEvent' }" class="p-2 rounded-md text-gray-700 hover:text-sky-600">Create
         Event</router-link>
       <router-link :to="{ name: 'categories' }" class="p-2 ml-2 text-gray-700 hover:text-sky-600">Categories
       </router-link>

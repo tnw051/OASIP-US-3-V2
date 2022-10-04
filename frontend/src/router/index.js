@@ -53,16 +53,21 @@ const router = createRouter({
   routes,
 });
 
-const { isAuthenticated, user } = useAuth();
+const { isAuthenticated, isLecturer, isAdmin, isAuthLoading } = useAuth();
 
-// guard /users route
-router.beforeEach((to, from) => {
-  const isAuth = isAuthenticated.value;
-  if (to.name === "users" && (!isAuth || user.value?.role?.toLowerCase() !== "admin")) {
+router.beforeEach(async (to, from) => {
+  // wait for auth to initialize before each route
+  while (isAuthLoading.value) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  if (to.name === "users" && !isAdmin.value) {
     return { name: "login" };
   }
 
-  if (to.name === "login" && isAuth) {
+  if ((to.name === "login" && isAuthenticated.value) ||
+    (to.name === "createEvent" && isLecturer.value)
+  ) {
     return { name: "home" };
   }
 });
