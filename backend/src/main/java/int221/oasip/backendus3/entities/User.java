@@ -43,5 +43,6 @@ public class User {
     private Instant updatedOn;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<EventCategoryOwner> ownCategories;
 }
