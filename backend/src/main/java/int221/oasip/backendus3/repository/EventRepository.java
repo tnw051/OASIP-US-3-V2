@@ -3,7 +3,6 @@ package int221.oasip.backendus3.repository;
 import int221.oasip.backendus3.entities.Event;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.lang.Nullable;
 
 import java.time.Instant;
@@ -84,7 +83,7 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
                     "WHERE (:#{#categoryIds == null} = true OR e.eventCategoryId IN :#{#categoryIds == null ? (new java.util.ArrayList()) : #categoryIds}) AND " +
                     "(:userId IS NULL OR e.userId = :userId) AND " +
                     "TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) > :startAt")
-    List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Param("categoryIds") @Nullable List<Integer> categoryIds, @Nullable Integer userId);
+    List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable List<Integer> categoryIds, @Nullable Integer userId);
 
     /**
      * Get past events (events that ended before or at the {@code startAt} time)
@@ -102,7 +101,7 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
                     "WHERE (:#{#categoryIds == null} = true OR e.eventCategoryId IN :#{#categoryIds == null ? (new java.util.ArrayList()) : #categoryIds}) AND " +
                     "(:userId IS NULL OR e.userId = :userId) AND " +
                     "TIMESTAMPADD(MINUTE, e.eventDuration, e.eventStartTime) <= :startAt")
-    List<Event> findPastEvents(Instant startAt, @Param("categoryIds") @Nullable List<Integer> categoryIds, Integer userId);
+    List<Event> findPastEvents(Instant startAt, @Nullable List<Integer> categoryIds, Integer userId);
 
     List<Event> findByUser_Id(Integer userId);
 
