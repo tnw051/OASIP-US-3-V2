@@ -1,17 +1,17 @@
-<script setup>
-import { onBeforeMount, ref } from "vue";
+<script setup lang="ts">
+import { ref, watchEffect } from "vue";
 import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
-import { deleteEvent, getCategories, getEvents, getEventsByFilter, updateEvent } from "../service/api";
+import { deleteEvent, getCategories, getEvents, getEventsByFilter, getLecturerCategories, updateEvent } from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated } = useAuth();
+const { isAuthenticated, isLecturer, isAuthLoading } = useAuth();
 
 const events = ref([]);
 const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
@@ -40,16 +40,26 @@ const filter = ref({
   date: ''
 });
 
-onBeforeMount(async () => {
+// only call method if and only if isLoading is false
+watchEffect(async () => {
+  console.log('useAuth.isLoading', isAuthLoading.value);
+  if (isAuthLoading.value) {
+    return;
+  }
+
   if (!isAuthenticated.value) {
     setIsLoading(false);
     return;
   }
   const events = await getEvents();
   setEvents(events);
-  categories.value = await getCategories();
+  if (isLecturer) {
+    categories.value = await getLecturerCategories();
+  } else {
+    categories.value = await getCategories();
+  }
   setIsLoading(false);
-});
+})
 
 function setEvents(_events, sort = sortDirections.DESC) {
   const dateExtractor = (event) => event.eventStartTime;
@@ -225,7 +235,7 @@ async function filterEvents() {
             <span v-else>
               Please <router-link to="/login" class="text-sky-500 underline">login</router-link> to view events
             </span>
-            
+
           </template>
         </Table>
 
@@ -256,4 +266,5 @@ async function filterEvents() {
 </template>
 
 <style scoped>
+
 </style>

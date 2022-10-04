@@ -30,6 +30,20 @@ export async function getCategories(): Promise<CategoryResponse[]> {
   }
 }
 
+export async function getLecturerCategories(): Promise<CategoryResponse[]> {
+  const response = await fetch(makeUrl("/categories/lecturer"), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    }
+  });
+  if (response.status === 200) {
+    const categories = response.json();
+    return categories;
+  } else {
+    console.log("Cannot fetch events");
+  }
+}
+
 //CREATE
 export async function createEvent(newEvent: CreateEventRequest): Promise<EventResponse> {
   const token = localStorage.getItem(accessTokenKey);
@@ -339,11 +353,12 @@ export async function login(loginRequest: LoginRequest, options: LoginOptions = 
 
   const data = await response.json();
   if (response.status === 200) {
-    onSuccess(data);
+    localStorage.setItem(accessTokenKey, data.accessToken);
+    onSuccess(data as LoginResponse);
   } else if (response.status === 401) {
-    onUnauthorized(data);
+    onUnauthorized(data as ErrorResponse);
   } else if (response.status === 404) {
-    onNotFound(data);
+    onNotFound(data as ErrorResponse);
   } else {
     console.log("Cannot login");
   }
