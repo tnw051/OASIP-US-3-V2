@@ -12,7 +12,7 @@ const isLecturer = computed(() => {
   return user.value?.role === 'LECTURER';
 });
 
-function _login(user, onSuccess = () => { }) {
+function _login(user: LoginRequest, onSuccess = () => { }) {
   try {
     login(user, {
       onSuccess: (response) => {
@@ -40,8 +40,9 @@ async function _logout() {
   const success = await logout();
   if (success) {
     user.value = null;
+    return true;
   }
-  return success;
+  return false;
 }
 
 (function init() {
@@ -59,7 +60,7 @@ async function _logout() {
   }
 })();
 
-function setUserFromToken(token) {
+function setUserFromToken(token: string) {
   if (!token) {
     console.log("No access token found");
     return;
