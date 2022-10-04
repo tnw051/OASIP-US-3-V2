@@ -11,19 +11,17 @@ import javax.persistence.*;
 @Setter
 @Getter
 @NoArgsConstructor
-
 public class EventCategoryOwner {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "eventCategoryOwnerId", nullable = false)
     private Integer id;
 
-    @Column(name = "userId", nullable = false)
-    private Integer userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "userId", nullable = false)
+    private User user;
 
-    @Column(name = "eventCategoryId", nullable = false)
-    private Integer eventCategoryId;
-
-
-
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "eventCategoryId", nullable = false)
+    private EventCategory eventCategory;
 }

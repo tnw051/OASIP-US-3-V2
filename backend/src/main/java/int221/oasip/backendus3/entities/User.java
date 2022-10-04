@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -19,12 +20,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId", nullable = false)
     private Integer id;
-
-//    @ManyToOne
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "eventCategoryOwnerId", nullable = false)
-    private EventCategoryOwner eventCategoryOwner;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
@@ -46,4 +41,7 @@ public class User {
     @Generated(GenerationTime.ALWAYS)
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<EventCategoryOwner> ownCategories;
 }

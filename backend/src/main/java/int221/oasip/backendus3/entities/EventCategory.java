@@ -32,4 +32,7 @@ public class EventCategory {
         this.eventCategoryDescription = eventCategoryDescription;
         this.eventDuration = eventDuration;
     }
+
+    @OneToMany(mappedBy = "eventCategory", fetch = FetchType.LAZY)
+    private List<EventCategoryOwner> owners;
 }
