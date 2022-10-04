@@ -53,4 +53,7 @@ public class EventCategoryService {
         return modelMapper.map(repository.saveAndFlush(category), CategoryResponse.class);
     }
 
+    public List<CategoryResponse> getLecturerCategories(String email) {
+        return modelMapperUtils.mapList(repository.findByOwners_User_Email(email), CategoryResponse.class);
+    }
 }
