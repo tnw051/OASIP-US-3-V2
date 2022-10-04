@@ -34,7 +34,7 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
                     "(e.eventStartTime >= :startAt AND e.eventStartTime < :endAt))")
     List<Event> findOverlapEventsByCategoryId(Instant startAt, Instant endAt, Integer categoryId, @Nullable Integer currentEventId);
 
-    @Query("SELECT E FROM Event E WHERE (:categoryIds IS NULL OR E.eventCategory.id IN :categoryIds) AND " +
+    @Query("SELECT E FROM Event E WHERE (:#{#categoryIds == null} = true OR E.eventCategory.id IN :#{#categoryIds == null ? (new java.util.ArrayList()) : #categoryIds}) AND " +
             "(:userId IS NULL OR E.user.id = :userId) AND " +
             "E.eventStartTime >= :fromInclusive AND E.eventStartTime < :toExclusive")
     List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable List<Integer> categoryIds, Integer userId);
