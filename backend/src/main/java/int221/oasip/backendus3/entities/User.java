@@ -23,8 +23,8 @@ public class User {
 //    @ManyToOne
 
     @ManyToOne(fetch = FetchType.LAZY)
-
-
+    @JoinColumn(name = "eventCategoryOwnerId", nullable = false)
+    private EventCategoryOwner eventCategoryOwner;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
