@@ -105,13 +105,5 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     List<Event> findByUser_Id(Integer userId);
 
-    List<Event> findByEventCategory_Lecturer_Email(String email);
-
-    List<Event> findByEventCategory_Id(Integer categoryId);
-
-    List<Event> findPastEvents(Instant now, Integer categoryId);
-
-    List<Event> findUpcomingAndOngoingEvents(Instant now, Integer categoryId);
-
-    List<Event> findByDateRangeOfOneDay(Instant startAt, Integer categoryId);
+//    List<Event> findByEventCategory_Lecturer_Email(String email);
 }
