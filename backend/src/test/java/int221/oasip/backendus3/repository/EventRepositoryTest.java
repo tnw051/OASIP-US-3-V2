@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +71,7 @@ class EventRepositoryTest {
         eventRepository.save(upcomingEvent2);
         eventRepository.save(pastEvent1);
 
-        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, targetCategory.getId(), null);
+        List<Event> events = eventRepository.findUpcomingAndOngoingEvents(startAt, Collections.singletonList(targetCategory.getId()), null);
 
         assertEquals(2, events.size());
     }
@@ -115,7 +116,7 @@ class EventRepositoryTest {
         eventRepository.save(pastEvent2);
         eventRepository.save(ongoingEvent1);
 
-        List<Event> events = eventRepository.findPastEvents(startAt, targetCategory.getId(), null);
+        List<Event> events = eventRepository.findPastEvents(startAt, Collections.singletonList(targetCategory.getId()), null);
 
         assertEquals(1, events.size());
     }

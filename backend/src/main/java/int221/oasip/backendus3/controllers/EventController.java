@@ -126,12 +126,4 @@ public class EventController {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
-
-    @GetMapping("/test-lecturer")
-    public List<EventResponse> getEvents(Authentication auth) {
-        String email = auth.getName();
-        System.out.println(email);
-        return service.getEventsForLecturer(email);
-    }
-
 }
