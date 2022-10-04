@@ -4,21 +4,21 @@ import { accessTokenKey, login, logout } from "../service/api";
 
 const user = ref(null);
 const isAuthenticated = computed(() => user.value !== null);
+const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
-  if (user.value) {
-    return user.value.role === 'ADMIN';
-  }
-  return false;
+  return user.value?.role === 'ADMIN';
+});
+const isLecturer = computed(() => {
+  return user.value?.role === 'LECTURER';
 });
 
-function _login(user, onSuccess = () => {}) {
+function _login(user, onSuccess = () => { }) {
   try {
     login(user, {
       onSuccess: (response) => {
         console.log(response);
         alert("Login successful");
         const token = response.accessToken;
-        localStorage.setItem(accessTokenKey, token);
         setUserFromToken(token);
         onSuccess();
       },
@@ -40,15 +40,24 @@ async function _logout() {
   const success = await logout();
   if (success) {
     user.value = null;
-    return true;
-  } 
-  return false;
+  }
+  return success;
 }
 
 (function init() {
   const token = localStorage.getItem(accessTokenKey);
-  setUserFromToken(token);
-})()
+  const loadingDelay = import.meta.env.VITE_AUTH_LOADING_DELAY;
+  if (loadingDelay) {
+    setTimeout(work, import.meta.env.VITE_AUTH_LOADING_DELAY);
+  } else {
+    work();
+  }
+
+  function work() {
+    setUserFromToken(token);
+    isAuthLoading.value = false;
+  }
+})();
 
 function setUserFromToken(token) {
   if (!token) {
@@ -58,7 +67,6 @@ function setUserFromToken(token) {
   const claims = decodeJwt(token);
   user.value = claims;
   console.log("Loaded user", user.value);
-  return
 }
 
 export function useAuth() {
@@ -68,5 +76,7 @@ export function useAuth() {
     login: _login,
     logout: _logout,
     isAdmin,
+    isLecturer,
+    isAuthLoading,
   };
 }
