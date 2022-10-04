@@ -1,13 +1,13 @@
 USE oasip;
 
 DELETE FROM
-  event_category_owner;
+  eventCategoryOwner;
 
 ALTER TABLE
-  event_category_owner AUTO_INCREMENT = 1;
+  eventCategoryOwner AUTO_INCREMENT = 1;
 
 INSERT INTO
-  event_category_owner (userId, eventCategoryId)
+  eventCategoryOwner (userId, eventCategoryId)
 VALUES
   (2, 1),
   (5, 2),

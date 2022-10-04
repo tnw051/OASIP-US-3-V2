@@ -78,12 +78,13 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `oasip`.`event_category_owner`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `oasip`.`event_category_owner` (
+CREATE TABLE IF NOT EXISTS `oasip`.`eventCategoryOwner` (
+  `eventCategoryOwnerId` INT NOT NULL AUTO_INCREMENT,
   `userId` INT NOT NULL,
   `eventCategoryId` INT NOT NULL,
-  PRIMARY KEY (`userId`, `eventCategoryId`),
   INDEX `fk_user_has_eventCategory_eventCategory1_idx` (`eventCategoryId` ASC) VISIBLE,
   INDEX `fk_user_has_eventCategory_user1_idx` (`userId` ASC) VISIBLE,
+  PRIMARY KEY (`eventCategoryOwnerId`),
   CONSTRAINT `fk_user_has_eventCategory_user1`
     FOREIGN KEY (`userId`)
     REFERENCES `oasip`.`user` (`userId`)
