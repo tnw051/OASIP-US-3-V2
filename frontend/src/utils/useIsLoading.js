@@ -9,6 +9,6 @@ export function useIsLoading(val) {
 
   return {
     isLoading,
-    setIsLoading
+    setIsLoading,
   };
 }
