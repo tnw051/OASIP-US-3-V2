@@ -1,16 +1,16 @@
 <script setup>
-import { formatDateAndFromToTime } from '../utils';
-import Badge from './Badge.vue';
+import { formatDateAndFromToTime } from "../utils";
+import Badge from "./Badge.vue";
 
 const props = defineProps({
   currentEvent: {
     type: Object,
-    default: {},
-  }
+    default: () => ({}),
+  },
 });
 
 const emits = defineEmits([
-  'close'
+  "close",
 ]);
 </script>
  
@@ -19,29 +19,40 @@ const emits = defineEmits([
     <!-- close button -->
     <div
       class="absolute top-1 right-1 mt-1 mr-1 cursor-pointer text-gray-500 hover:bg-gray-50 rounded-full w-10 h-10 transition flex justify-center items-center font-bold"
-      @click="$emit('close')">
+      @click="$emit('close')"
+    >
       ⨉
     </div>
     <div>
-      <p class="text-xl">{{ props.currentEvent.bookingName }}</p>
-      <p class="text-gray-500">{{ props.currentEvent.bookingEmail }}</p>
+      <p class="text-xl">
+        {{ props.currentEvent.bookingName }}
+      </p>
+      <p class="text-gray-500">
+        {{ props.currentEvent.bookingEmail }}
+      </p>
     </div>
 
-    <Badge :text="props.currentEvent.eventCategory.eventCategoryName" class="self-baseline mb-2" />
+    <Badge
+      :text="props.currentEvent.eventCategory.eventCategoryName"
+      class="self-baseline mb-2"
+    />
 
     <div>
       <p>{{ formatDateAndFromToTime(props.currentEvent.eventStartTime, props.currentEvent.eventDuration) }}</p>
-      <p class="text-gray-500 text-sm">{{ props.currentEvent.eventDuration }} {{ props.currentEvent.eventDuration > 1 ?
+      <p class="text-gray-500 text-sm">
+        {{ props.currentEvent.eventDuration }} {{ props.currentEvent.eventDuration > 1 ?
           'minutes' : 'minute'
-      }}</p>
+        }}
+      </p>
     </div>
 
     <div>
-      <p class="text-gray-500 text-sm">Notes</p>
+      <p class="text-gray-500 text-sm">
+        Notes
+      </p>
       <p>{{ props.currentEvent.eventNotes || '–' }}</p>
     </div>
   </div>
-
 </template>
  
 <style scoped>

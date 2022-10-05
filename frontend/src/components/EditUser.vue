@@ -1,30 +1,29 @@
 <script setup>
-import { computed } from '@vue/reactivity';
-import { ref } from 'vue';
+import { computed, ref } from "vue";
 
 const props = defineProps({
   currentUser: {
     type: Object,
-    default: {},
+    default: () => ({}),
   },
   roles: {
     type: Array,
-    default: [],
+    default: () => [],
   },
 });
 
 const emits = defineEmits([
-  'save',
-  'cancel'
+  "save",
+  "cancel",
 ]);
 
 
 function makeDefaultValues() {
-  const defaultValue = '';
+  const defaultValue = "";
   return {
     name: defaultValue,
     email: defaultValue,
-    role: "STUDENT"
+    role: "STUDENT",
   };
 }
 
@@ -37,7 +36,7 @@ const errors = ref({
 
 const canSubmit = computed(() => {
   const noErrors = Object.values(errors.value).every((error) => error.length === 0);
-  const noEmptyFields = Object.values(inputs.value).every((value) => value !== '');
+  const noEmptyFields = Object.values(inputs.value).every((value) => value !== "");
 
   return noErrors && noEmptyFields;
 });
@@ -77,7 +76,7 @@ function validateEmail(e) {
 inputs.value = {
   name: props.currentUser.name,
   email: props.currentUser.email,
-  role: props.currentUser.role
+  role: props.currentUser.role,
 };
 
 function handleSaveClick() {
@@ -96,9 +95,9 @@ function handleSaveClick() {
   }
 
   if (Object.keys(updates).length == 0) {
-    emits('cancel');
+    emits("cancel");
   } else {
-    emits('save', updates);
+    emits("save", updates);
   }
 }
 
@@ -112,45 +111,102 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
  
 <template>
   <div
-    class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full">
+    class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full"
+  >
     <div class="flex flex-col gap-2">
-      <label for="name" class="text-sm font-medium text-gray-700"
-        :class="{ 'font-bold changed': isNameChanged }">Name</label>
-      <input id="name" type="text" v-model="inputs.name" class="bg-gray-100 p-2 rounded" @input="validateName"
-        placeholder="What's your name?">
-      <div v-if="errors.name.length > 0" class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-        <span v-for="error in errors.name">{{ error }}</span>
+      <label
+        for="name"
+        class="text-sm font-medium text-gray-700"
+        :class="{ 'font-bold changed': isNameChanged }"
+      >Name</label>
+      <input
+        id="name"
+        v-model="inputs.name"
+        type="text"
+        class="bg-gray-100 p-2 rounded"
+        placeholder="What's your name?"
+        @input="validateName"
+      >
+      <div
+        v-if="errors.name.length > 0"
+        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+      >
+        <span
+          v-for="error in errors.name"
+          :key="error"
+        >{{ error }}</span>
       </div>
     </div>
 
     <div class="flex flex-col gap-2">
-      <label for="email" class="text-sm font-medium text-gray-700"
-        :class="{ 'font-bold changed': isEmailChanged }">Email</label>
-      <input id="email" type="email" v-model="inputs.email" class="bg-gray-100 p-2 rounded" @input="validateEmail"
-        placeholder="What's your email?">
-      <div v-if="errors.email.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-        <span v-for="error in errors.email">{{ error }}</span>
+      <label
+        for="email"
+        class="text-sm font-medium text-gray-700"
+        :class="{ 'font-bold changed': isEmailChanged }"
+      >Email</label>
+      <input
+        id="email"
+        v-model="inputs.email"
+        type="email"
+        class="bg-gray-100 p-2 rounded"
+        placeholder="What's your email?"
+        @input="validateEmail"
+      >
+      <div
+        v-if="errors.email.length > 0"
+        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+      >
+        <span
+          v-for="error in errors.email"
+          :key="error"
+        >{{ error }}</span>
       </div>
     </div>
 
     <div class="flex flex-col gap-2">
-      <label for="role" class="text-sm font-medium text-gray-700"
-        :class="{ 'font-bold changed': isRoleChanged }">Role</label>
-      <select v-model="inputs.role" class="bg-gray-100 p-2 rounded" id="category">
-        <option disabled selected value="">Select role</option>
-        <option v-for="role in roles" :value="role">{{ role }}</option>
+      <label
+        for="role"
+        class="text-sm font-medium text-gray-700"
+        :class="{ 'font-bold changed': isRoleChanged }"
+      >Role</label>
+      <select
+        id="category"
+        v-model="inputs.role"
+        class="bg-gray-100 p-2 rounded"
+      >
+        <option
+          disabled
+          selected
+          value=""
+        >
+          Select role
+        </option>
+        <option
+          v-for="role in roles"
+          :key="role"
+          :value="role"
+        >
+          {{ role }}
+        </option>
       </select>
     </div>
 
     <div class="flex gap-2">
-      <button class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded mt-2 flex-1"
-        @click="$emit('cancel')">Cancel</button>
+      <button
+        class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded mt-2 flex-1"
+        @click="$emit('cancel')"
+      >
+        Cancel
+      </button>
 
-      <button type="submit"
+      <button
+        type="submit"
         class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2 flex-1"
-        @click="handleSaveClick" :disabled="!canSubmit || !isChanged">Save</button>
-
+        :disabled="!canSubmit || !isChanged"
+        @click="handleSaveClick"
+      >
+        Save
+      </button>
     </div>
   </div>
 </template>

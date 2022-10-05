@@ -1,12 +1,9 @@
 <script setup>
-import { formatDateAndFromToTime } from "../utils";
-import Badge from "./Badge.vue";
-
 const props = defineProps({
   currentCategory: {
     type: Object,
-    default: {}
-  }
+    default: () => ({}),
+  },
 });
 
 const emits = defineEmits(["close"]);
@@ -25,12 +22,19 @@ const emits = defineEmits(["close"]);
     </div>
 
     <div>
-      <p class="text-xl">{{ props.currentCategory.eventCategoryName }}</p>
-      <p class="text-gray-500">{{ props.currentCategory.eventCategoryDescription }}</p>
-      <p class="text-gray-500">{{ props.currentCategory.eventDuration }}</p>
+      <p class="text-xl">
+        {{ props.currentCategory.eventCategoryName }}
+      </p>
+      <p class="text-gray-500">
+        {{ props.currentCategory.eventCategoryDescription }}
+      </p>
+      <p class="text-gray-500">
+        {{ props.currentCategory.eventDuration }}
+      </p>
     </div>
-
   </div>
 </template>
 
-<style></style>
+<style>
+
+</style>
