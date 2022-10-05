@@ -15,6 +15,7 @@ const routes = [
     path: "/",
     name: "home",
     component: Events,
+    alias: ["/events", "/home"],
   },
   {
     path: "/create-event",
