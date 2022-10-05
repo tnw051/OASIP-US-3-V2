@@ -9,7 +9,7 @@ export async function getEvents(): Promise<EventResponse[]> {
   const response = await fetch(makeUrl("/events"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const events = response.json();
@@ -34,7 +34,7 @@ export async function getLecturerCategories(): Promise<CategoryResponse[]> {
   const response = await fetch(makeUrl("/categories/lecturer"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const categories = response.json();
@@ -72,7 +72,7 @@ export async function deleteEvent(id: Id) {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
 
   if (response.status === 200) {
@@ -104,10 +104,10 @@ export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<
 export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): Promise<EventResponse[]> {
   const response = await fetch(
     makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
-  }
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+      },
+    },
   );
   if (response.status === 200) {
     const events = response.json();
@@ -121,7 +121,7 @@ export async function getEventsByCategoryId(categoryId: Id): Promise<EventRespon
   const response = await fetch(makeUrl(`/events?categoryId=${categoryId}`), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const events = response.json();
@@ -162,7 +162,7 @@ export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventR
   const response = await fetch(makeUrl(uri), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const events = response.json();
@@ -197,7 +197,7 @@ export async function getUsers(options: GetUsersOptions = {}): Promise<UserRespo
   const response = await fetch(makeUrl("/users"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const users = response.json();
@@ -221,7 +221,7 @@ interface RefreshTokenResponse {
 }
 async function refreshAccessToken(): Promise<RefreshTokenResponse> {
   const response = await fetch(makeUrl("/auth/refresh"), {
-    method: "POST"
+    method: "POST",
   });
 
   if (response.status === 200) {
@@ -231,7 +231,7 @@ async function refreshAccessToken(): Promise<RefreshTokenResponse> {
     return {
       accessToken: data.accessToken,
       error: null,
-    }
+    };
   } else {
     // TODO: clear auth data in useAuth when refresh token is expired
     return {
@@ -245,7 +245,7 @@ export async function getRoles(): Promise<Role[]> {
   const response = await fetch(makeUrl("/users/roles"), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
   if (response.status === 200) {
     const roles = response.json();
@@ -286,7 +286,7 @@ export async function deleteUser(id: Id) {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    }
+    },
   });
 
   if (response.status === 204) {
