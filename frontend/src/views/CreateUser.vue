@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onBeforeMount, ref } from 'vue';
-import Modal from '../components/Modal.vue';
-import { createUser, getRoles } from '../service/api';
+import { computed, onBeforeMount, ref } from "vue";
+import Modal from "../components/Modal.vue";
+import { createUser, getRoles } from "../service/api";
 
 const roles = ref([]);
 
@@ -10,13 +10,13 @@ onBeforeMount(async () => {
 });
 
 function makeDefaultValues() {
-  const defaultValue = '';
+  const defaultValue = "";
   return {
     name: defaultValue,
     email: defaultValue,
     password: defaultValue,
     confirmPassword: defaultValue,
-    role: "STUDENT"
+    role: "STUDENT",
   };
 }
 
@@ -31,7 +31,7 @@ const errors = ref({
 
 const canSubmit = computed(() => {
   const noErrors = Object.values(errors.value).every((error) => error.length === 0);
-  const noEmptyFields = Object.values(inputs.value).every((value) => value !== '');
+  const noEmptyFields = Object.values(inputs.value).every((value) => value !== "");
 
   return noErrors && noEmptyFields;
 });
@@ -73,7 +73,7 @@ function validatePassword(e) {
   errors.value.password = [];
   
   if (password.length > 14 || password.length < 8) {
-    errors.value.password.push("Password must be between 8 and 14 characters")
+    errors.value.password.push("Password must be between 8 and 14 characters");
   }
 
   if (password.length === 0) {
@@ -127,72 +127,177 @@ function resetInputs() {
  
 <template>
   <div class="max-w-md mx-auto mt-8">
-    <form @submit.prevent="handleSubmit"
-      class="flex flex-col gap-4 bg-white py-10 px-8 border border-gray-100 rounded-xl shadow-xl shadow-black/5">
-
+    <form
+      class="flex flex-col gap-4 bg-white py-10 px-8 border border-gray-100 rounded-xl shadow-xl shadow-black/5"
+      @submit.prevent="handleSubmit"
+    >
       <div class="flex flex-col text-center mb-4 text-gray-700">
-        <h1 class="font-medium text-2xl">Create User</h1>
+        <h1 class="font-medium text-2xl">
+          Create User
+        </h1>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="name" class="required text-sm font-medium text-gray-700">Name</label>
-        <input id="name" type="text" v-model="inputs.name" required class="bg-gray-100 p-2 rounded"
-          @input="validateName" placeholder="What's your name?">
-        <div v-if="errors.name.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-          <span v-for="error in errors.name">{{ error }}</span>
+        <label
+          for="name"
+          class="required text-sm font-medium text-gray-700"
+        >Name</label>
+        <input
+          id="name"
+          v-model="inputs.name"
+          type="text"
+          required
+          class="bg-gray-100 p-2 rounded"
+          placeholder="What's your name?"
+          @input="validateName"
+        >
+        <div
+          v-if="errors.name.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        >
+          <span
+            v-for="error in errors.name"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="email" class="required text-sm font-medium text-gray-700">Email</label>
-        <input id="email" type="email" v-model="inputs.email" required class="bg-gray-100 p-2 rounded"
-          @input="validateEmail" placeholder="What's your email?">
-        <div v-if="errors.email.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-          <span v-for="error in errors.email">{{ error }}</span>
+        <label
+          for="email"
+          class="required text-sm font-medium text-gray-700"
+        >Email</label>
+        <input
+          id="email"
+          v-model="inputs.email"
+          type="email"
+          required
+          class="bg-gray-100 p-2 rounded"
+          placeholder="What's your email?"
+          @input="validateEmail"
+        >
+        <div
+          v-if="errors.email.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        >
+          <span
+            v-for="error in errors.email"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="password" class="required text-sm font-medium text-gray-700">Password</label>
-        <input id="password" type="password" v-model="inputs.password" required class="bg-gray-100 p-2 rounded"
-          @input="validatePassword" placeholder="What's your password?">
-        <div v-if="errors.password.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-          <span v-for="error in errors.password">{{ error }}</span>
+        <label
+          for="password"
+          class="required text-sm font-medium text-gray-700"
+        >Password</label>
+        <input
+          id="password"
+          v-model="inputs.password"
+          type="password"
+          required
+          class="bg-gray-100 p-2 rounded"
+          placeholder="What's your password?"
+          @input="validatePassword"
+        >
+        <div
+          v-if="errors.password.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        >
+          <span
+            v-for="error in errors.password"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="confirmPassword" class="required text-sm font-medium text-gray-700">Confirm password</label>
-        <input id="confirmPassword" type="password" v-model="inputs.confirmPassword" required class="bg-gray-100 p-2 rounded"
-          @input="validateConfirmPassword" placeholder="Confirm your password">
-        <div v-if="errors.confirmPassword.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col">
-          <span v-for="error in errors.confirmPassword">{{ error }}</span>
+        <label
+          for="confirmPassword"
+          class="required text-sm font-medium text-gray-700"
+        >Confirm password</label>
+        <input
+          id="confirmPassword"
+          v-model="inputs.confirmPassword"
+          type="password"
+          required
+          class="bg-gray-100 p-2 rounded"
+          placeholder="Confirm your password"
+          @input="validateConfirmPassword"
+        >
+        <div
+          v-if="errors.confirmPassword.length > 0"
+          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        >
+          <span
+            v-for="error in errors.confirmPassword"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="role" class="required text-sm font-medium text-gray-700">Role</label>
-        <select v-model="inputs.role" required class="bg-gray-100 p-2 rounded" id="category">
-          <option disabled selected value="">Select role</option>
-          <option v-for="role in roles" :value="role">{{ role }}</option>
+        <label
+          for="role"
+          class="required text-sm font-medium text-gray-700"
+        >Role</label>
+        <select
+          id="category"
+          v-model="inputs.role"
+          required
+          class="bg-gray-100 p-2 rounded"
+        >
+          <option
+            disabled
+            selected
+            value=""
+          >
+            Select role
+          </option>
+          <option
+            v-for="role in roles"
+            :key="role"
+            :value="role"
+          >
+            {{ role }}
+          </option>
         </select>
       </div>
 
-      <button type="submit"
+      <button
+        type="submit"
         class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-        :disabled="!canSubmit">Create User</button>
+        :disabled="!canSubmit"
+      >
+        Create User
+      </button>
     </form>
   </div>
 
-  <Modal title="Success" subtitle="User created successfully" :is-open="isSuccessModalOpen"
-    @close="isSuccessModalOpen = false" />
+  <Modal
+    title="Success"
+    subtitle="User created successfully"
+    :is-open="isSuccessModalOpen"
+    @close="isSuccessModalOpen = false"
+  />
 
-  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isErrorModalOpen"
-    variant="error" @close="isErrorModalOpen = false" />
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isErrorModalOpen"
+    variant="error"
+    @close="isErrorModalOpen = false"
+  />
 </template>
  
 <style scoped>

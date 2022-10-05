@@ -1,6 +1,5 @@
 <script setup>
-import { computed } from "@vue/reactivity";
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
@@ -32,34 +31,34 @@ function selectUser(user) {
 const headers = computed(() => {
   const parsedHeaders = [
     {
-      name: 'Name',
-      key: 'name',
+      name: "Name",
+      key: "name",
     },
     {
-      name: 'Email',
-      key: 'email',
+      name: "Email",
+      key: "email",
     },
     {
-      name: 'Role',
-      key: 'role',
+      name: "Role",
+      key: "role",
     },
   ];
 
   if (showDetails.value) {
     parsedHeaders.push(
       {
-        name: 'Created On',
-        key: 'createdOn',
+        name: "Created On",
+        key: "createdOn",
       },
       {
-        name: 'Updated On',
-        key: 'updatedOn',
+        name: "Updated On",
+        key: "updatedOn",
       },
     );
   }
 
   return parsedHeaders;
-})
+});
 
 function confirmDeleteUser(user) {
   if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
@@ -68,9 +67,9 @@ function confirmDeleteUser(user) {
   const isSuccess = deleteUser(user.id);
   if (isSuccess) {
     users.value = users.value.filter((u) => u.id !== user.id);
-    alert('User deleted successfully');
+    alert("User deleted successfully");
   } else {
-    alert('Failed to delete user');
+    alert("Failed to delete user");
   }
 }
 
@@ -97,18 +96,35 @@ async function saveUser(updates) {
 <template>
   <div class="py-8 px-12 max-w-[1440px] flex mx-auto">
     <div class="flex flex-col text-slate-700">
-      <h1 class="font-semibold text-4xl">Users</h1>
+      <h1 class="font-semibold text-4xl">
+        Users
+      </h1>
       <div class="flex justify-between mb-4">
-        <div class="mb-4 mt-2">{{ users.length }} users shown</div>
+        <div class="mb-4 mt-2">
+          {{ users.length }} users shown
+        </div>
         <div class="flex items-center">
           <label for="showDetails">Show Details</label>
-          <input type="checkbox" v-model="showDetails" id="showDetails" class="ml-2" />
+          <input
+            id="showDetails"
+            v-model="showDetails"
+            type="checkbox"
+            class="ml-2"
+          >
         </div>
       </div>
       <div class="flex">
-        <Table :headers="headers" :items="users" enable-edit enable-delete @edit="startEditing"
-          @delete="confirmDeleteUser" @select="selectUser" :selected-key="currentUser.id"
-          :key-extractor="(user) => user.id">
+        <Table
+          :headers="headers"
+          :items="users"
+          enable-edit
+          enable-delete
+          :selected-key="currentUser.id"
+          :key-extractor="(user) => user.id"
+          @edit="startEditing"
+          @delete="confirmDeleteUser"
+          @select="selectUser"
+        >
           <template #cell:name="{ item }">
             {{ item.name }}
           </template>
@@ -129,25 +145,46 @@ async function saveUser(updates) {
               No users found
             </span>
             <span v-else>
-              Please <router-link to="/login" class="text-sky-500 underline">login</router-link> to view users
+              Please <router-link
+                to="/login"
+                class="text-sky-500 underline"
+              >login</router-link> to view users
             </span>
-
           </template>
         </Table>
 
-        <div class="p-4 bg-slate-100 relative w-4/12" v-if="isEditing">
-          <EditUser class="sticky top-24" :current-user="currentUser" :roles="roles" @cancel="stopEditing"
-            v-if="isEditing" @save="saveUser" />
+        <div
+          v-if="isEditing"
+          class="p-4 bg-slate-100 relative w-4/12"
+        >
+          <EditUser
+            v-if="isEditing"
+            class="sticky top-24"
+            :current-user="currentUser"
+            :roles="roles"
+            @cancel="stopEditing"
+            @save="saveUser"
+          />
         </div>
       </div>
     </div>
   </div>
 
-  <Modal title="Success" subtitle="User has been saved" :is-open="isEditSuccessModalOpen"
-    @close="isEditSuccessModalOpen = false" />
+  <Modal
+    title="Success"
+    subtitle="User has been saved"
+    :is-open="isEditSuccessModalOpen"
+    @close="isEditSuccessModalOpen = false"
+  />
 
-  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isEditErrorModalOpen"
-    variant="error" @close="isEditErrorModalOpen = false" />
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isEditErrorModalOpen"
+    variant="error"
+    @close="isEditErrorModalOpen = false"
+  />
 </template>
 
 <style scoped>
