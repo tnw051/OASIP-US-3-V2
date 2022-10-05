@@ -2,8 +2,9 @@
 const props = defineProps({
   text: {
     type: String,
-  }
-})
+    required: true,
+  },
+});
 </script>
  
 <template>

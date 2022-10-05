@@ -1,4 +1,4 @@
-import { decodeJwt } from 'jose';
+import { decodeJwt } from "jose";
 import { computed, ref } from "vue";
 import { accessTokenKey, login, logout } from "../service/api";
 
@@ -6,12 +6,13 @@ const user = ref(null);
 const isAuthenticated = computed(() => user.value !== null);
 const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
-  return user.value?.role === 'ADMIN';
+  return user.value?.role === "ADMIN";
 });
 const isLecturer = computed(() => {
-  return user.value?.role === 'LECTURER';
+  return user.value?.role === "LECTURER";
 });
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 function _login(user: LoginRequest, onSuccess = () => { }) {
   try {
     login(user, {

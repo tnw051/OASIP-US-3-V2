@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeMount, ref } from "vue";
+import { computed, ref } from "vue";
 import { match } from "../service/api";
 
 function makeDefaultValues() {
@@ -19,10 +19,10 @@ const errors = ref({
 
 const canSubmit = computed(() => {
   const noErrors = Object.values(errors.value).every(
-    (error) => error.length === 0
+    (error) => error.length === 0,
   );
   const noEmptyFields = Object.values(inputs.value).every(
-    (value) => value !== ""
+    (value) => value !== "",
   );
 
   return noErrors && noEmptyFields;
@@ -84,50 +84,64 @@ async function handleSubmit() {
 <template>
   <div class="max-w-md mx-auto mt-8">
     <form
-      @submit.prevent="handleSubmit"
       class="flex flex-col gap-4 bg-white py-10 px-8 border border-gray-100 rounded-xl shadow-xl shadow-black/5"
+      @submit.prevent="handleSubmit"
     >
       <div class="flex flex-col text-center mb-4 text-gray-700">
-        <h1 class="font-medium text-2xl">Match Password</h1>
+        <h1 class="font-medium text-2xl">
+          Match Password
+        </h1>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="email" class="required text-sm font-medium text-gray-700"
-          >Email</label
-        >
+        <label
+          for="email"
+          class="required text-sm font-medium text-gray-700"
+        >Email</label>
         <input
           id="email"
-          type="email"
           v-model="inputs.email"
+          type="email"
           required
           class="bg-gray-100 p-2 rounded"
           @input="validateEmail"
-        />
+        >
         <div
           v-if="errors.email.length > 0"
           class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
         >
-          <span v-for="error in errors.email">{{ error }}</span>
+          <span
+            v-for="error in errors.email"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label for="password" class="required text-sm font-medium text-gray-700"
-          >Password</label
-        >
+        <label
+          for="password"
+          class="required text-sm font-medium text-gray-700"
+        >Password</label>
         <input
           id="password"
-          type="password"
           v-model="inputs.password"
+          type="password"
           required
           class="bg-gray-100 p-2 rounded"
           @input="validatePassword"
-        />
+        >
         <div
           v-if="errors.password.length > 0"
           class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
         >
-          <span v-for="error in errors.password">{{ error }}</span>
+          <span
+            v-for="error in errors.password"
+            :key="error"
+          >
+            {{ error }}
+          </span>
         </div>
       </div>
 

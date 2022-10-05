@@ -1,7 +1,7 @@
 export const sortDirections = {
   ASC: "asc",
   DESC: "desc",
-}
+};
 
 export function sortByDateInPlace(arr, dateExtractor, direction = sortDirections.DESC) {
   if (direction === sortDirections.DESC) {
@@ -36,14 +36,14 @@ export function formatDateTime(date) {
 }
 
 export function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 export function formatDate(date) {
   return date.toLocaleDateString([], {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -52,7 +52,7 @@ export function findOverlap(eventStartTime, duration, existingEvents, eventId) {
   const startTime = new Date(eventStartTime);
   const endTime = new Date(startTime);
   endTime.setMinutes(startTime.getMinutes() + duration);
-  const formatter = Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'short' })
+  const formatter = Intl.DateTimeFormat([], { dateStyle: "medium", timeStyle: "short" });
 
   console.log(`=== checking overlap for ${formatter.format(startTime)} | ${formatter.format(endTime)} ===`);
 
@@ -73,10 +73,10 @@ export function findOverlap(eventStartTime, duration, existingEvents, eventId) {
 
     if (isPastOverlap || isFutureOverlap) {
       if (isPastOverlap) {
-        console.log('> type: past overlap');
+        console.log("> type: past overlap");
       }
       if (isFutureOverlap) {
-        console.log('> type: future overlap');
+        console.log("> type: future overlap");
       }
 
       console.log(`startTime: ${formatter.format(startTime)} | endTime: ${formatter.format(endTime)}`);

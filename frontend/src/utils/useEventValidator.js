@@ -4,7 +4,7 @@ import { computed, ref } from "vue";
 import { findOverlap } from ".";
 import { getEventsByCategoryIdOnDate } from "../service/api";
 
-const defaultValue = '';
+const defaultValue = "";
 
 export function useEventValidator() {
   function makeDefaultValues() {
@@ -22,7 +22,7 @@ export function useEventValidator() {
     bookingEmail: [],
     eventStartTime: [],
     eventNotes: [],
-    hasOverlappingEvents: false
+    hasOverlappingEvents: false,
   });
 
   const inputs = ref(makeDefaultValues());
@@ -110,19 +110,19 @@ export function useEventValidator() {
     errors.value.hasOverlappingEvents = false;
 
     if (startTime.getTime() <= now.getTime()) {
-      errors.value.eventStartTime.push("Start time must be in the future")
+      errors.value.eventStartTime.push("Start time must be in the future");
     }
 
-    const date = eventStartTime.split('T')[0];
+    const date = eventStartTime.split("T")[0];
     if (date !== previousDate.value) {
-      console.log('date changed', date);
+      console.log("date changed", date);
 
       if (eventCategoryId) {
         const dateMidnight = new Date(eventStartTime);
         dateMidnight.setHours(0, 0, 0, 0);
 
         eventsForSelectedCategoryAndDate.value = await getEventsByCategoryIdOnDate(eventCategoryId, dateMidnight.toISOString());
-        console.log('fetched events (start time changed)', eventsForSelectedCategoryAndDate.value);
+        console.log("fetched events (start time changed)", eventsForSelectedCategoryAndDate.value);
       }
     }
 
@@ -151,7 +151,7 @@ export function useEventValidator() {
     dateMidnight.setHours(0, 0, 0, 0);
 
     eventsForSelectedCategoryAndDate.value = await getEventsByCategoryIdOnDate(eventCategoryId, dateMidnight.toISOString());
-    console.log('fetched events (category id changed)', eventsForSelectedCategoryAndDate.value);
+    console.log("fetched events (category id changed)", eventsForSelectedCategoryAndDate.value);
 
     const overlapEvents = findOverlap(eventStartTime, eventDuration.value, eventsForSelectedCategoryAndDate.value);
     const hasOverlap = overlapEvents.length > 0;
@@ -168,7 +168,7 @@ export function useEventValidator() {
     const inputsWithoutNotes = { ...inputs.value };
     delete inputsWithoutNotes.eventNotes;
 
-    const noEmptyFields = Object.values(inputsWithoutNotes).every((value) => value !== '');
+    const noEmptyFields = Object.values(inputsWithoutNotes).every((value) => value !== "");
 
     return noErrors && noEmptyFields;
   });
@@ -186,6 +186,6 @@ export function useEventValidator() {
     validateCategoryId,
     resetInputs,
     canSubmit,
-    setCategoryId
+    setCategoryId,
   };
 }

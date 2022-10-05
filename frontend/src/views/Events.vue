@@ -32,17 +32,17 @@ const eventTypes = {
 
 const categoryTypes = {
   ALL: null,
-}
+};
 
 const filter = ref({
   categoryId: categoryTypes.ALL,
   type: eventTypes.ALL,
-  date: ''
+  date: "",
 });
 
 // only call method if and only if isLoading is false
 watchEffect(async () => {
-  console.log('useAuth.isLoading', isAuthLoading.value);
+  console.log("useAuth.isLoading", isAuthLoading.value);
   if (isAuthLoading.value) {
     return;
   }
@@ -59,7 +59,7 @@ watchEffect(async () => {
     categories.value = await getCategories();
   }
   setIsLoading(false);
-})
+});
 
 function setEvents(_events, sort = sortDirections.DESC) {
   const dateExtractor = (event) => event.eventStartTime;
@@ -77,7 +77,7 @@ const eventToBeDeleted = ref(null);
 
 function startConfirmCancel(event) {
   eventToBeDeleted.value = event;
-  isCancelConfirmModalOpen.value = true
+  isCancelConfirmModalOpen.value = true;
 }
 
 async function confirmCancelEvent(event) {
@@ -120,7 +120,7 @@ async function filterEvents() {
   const categoryId = filter.value.categoryId;
   const date = filter.value.date;
   let _type = filter.value.type;
-  const _filter = {
+  const _filter: Record<string, unknown> = {
     categoryId,
   };
 
@@ -152,63 +152,95 @@ async function filterEvents() {
 
 <template>
   <div class="py-8 px-12 max-w-[1440px] flex mx-auto">
-
     <div class="flex flex-col text-slate-700">
-      <h1 class="font-semibold text-4xl">Events</h1>
+      <h1 class="font-semibold text-4xl">
+        Events
+      </h1>
       <div class="flex justify-between mb-4">
-        <div class="mb-4 mt-2">{{ events.length }} events shown</div>
+        <div class="mb-4 mt-2">
+          {{ events.length }} events shown
+        </div>
         <div class="flex gap-6 flex-wrap">
-
           <div class="flex flex-col gap-1">
             <label class="text-xs text-slate-600">Category</label>
-            <select v-model="filter.categoryId"
+            <select
+              v-model="filter.categoryId"
               class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1 self-baseline"
-              @change="filterEvents">
-              <option :value="categoryTypes.ALL">All</option>
-              <option v-for="category in categories" :value="category.id">{{ category.eventCategoryName }}</option>
+              @change="filterEvents"
+            >
+              <option :value="categoryTypes.ALL">
+                All
+              </option>
+              <option
+                v-for="category in categories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.eventCategoryName }}
+              </option>
             </select>
           </div>
 
           <div class="flex gap-2">
             <div class="flex flex-col gap-1">
               <label class="text-xs text-slate-600">Type</label>
-              <select v-model="filter.type"
+              <select
+                v-model="filter.type"
                 class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1"
-                @change="filterEvents">
-                <option :value="eventTypes.ALL">All</option>
-                <option :value="eventTypes.UPCOMING">Upcoming</option>
-                <option :value="eventTypes.PAST">Past</option>
+                @change="filterEvents"
+              >
+                <option :value="eventTypes.ALL">
+                  All
+                </option>
+                <option :value="eventTypes.UPCOMING">
+                  Upcoming
+                </option>
+                <option :value="eventTypes.PAST">
+                  Past
+                </option>
               </select>
             </div>
 
             <div class="flex flex-col gap-1">
               <label class="text-xs text-slate-600">Date</label>
-              <input v-model="filter.date"
+              <input
+                v-model="filter.date"
                 class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1 disabled:bg-slate-200 disabled:text-slate-400"
-                type="date" @change="filterEvents" :disabled="filter.type !== eventTypes.ALL"
-                :max="inputConstraits.MAX_DATE" />
+                type="date"
+                :disabled="filter.type !== eventTypes.ALL"
+                :max="inputConstraits.MAX_DATE"
+                @change="filterEvents"
+              >
             </div>
           </div>
-
         </div>
       </div>
       <div class="flex">
-        <Table :headers="[
-          {
-            name: 'Name',
-            key: 'bookingName',
-          },
-          {
-            name: 'Date & Time',
-            key: 'eventStartTime',
-          },
-          {
-            name: 'Category',
-            key: 'eventCategory',
-          },
-        ]" :items="events" enable-edit enable-delete @edit="startEditing" @delete="startConfirmCancel"
-          @select="selectEvent" :selected-key="currentEvent.id" :key-extractor="(event) => event.id"
-          :is-loading="isLoading">
+        <Table
+          :headers="[
+            {
+              name: 'Name',
+              key: 'bookingName',
+            },
+            {
+              name: 'Date & Time',
+              key: 'eventStartTime',
+            },
+            {
+              name: 'Category',
+              key: 'eventCategory',
+            },
+          ]"
+          :items="events"
+          enable-edit
+          enable-delete
+          :selected-key="currentEvent.id"
+          :key-extractor="(event) => event.id"
+          :is-loading="isLoading"
+          @edit="startEditing"
+          @delete="startConfirmCancel"
+          @select="selectEvent"
+        >
           <template #cell:bookingName="{ item }">
             <span class="font-medium">{{ item.bookingName }}</span>
           </template>
@@ -233,36 +265,79 @@ async function filterEvents() {
               <span v-else>No Scheduled Event</span>
             </span>
             <span v-else>
-              Please <router-link to="/login" class="text-sky-500 underline">login</router-link> to view events
+              Please <router-link
+                to="/login"
+                class="text-sky-500 underline"
+              >login</router-link> to view events
             </span>
-
           </template>
         </Table>
 
-        <div class="p-4 bg-slate-100 relative w-4/12" v-if="currentEvent.id">
-          <EditEvent class="sticky top-24" :currentEvent="currentEvent" @cancel="isEditing = false" v-if="isEditing"
-            @save="saveEvent" />
-          <EventDetails class="sticky top-24" :currentEvent="currentEvent" @close="currentEvent = {}" v-else />
+        <div
+          v-if="currentEvent.id"
+          class="p-4 bg-slate-100 relative w-4/12"
+        >
+          <EditEvent
+            v-if="isEditing"
+            class="sticky top-24"
+            :current-event="currentEvent"
+            @cancel="isEditing = false"
+            @save="saveEvent"
+          />
+          <EventDetails
+            v-else
+            class="sticky top-24"
+            :current-event="currentEvent"
+            @close="currentEvent = {}"
+          />
         </div>
       </div>
     </div>
   </div>
 
-  <Modal title="Success" subtitle="Event has been saved" :is-open="isEditSuccessModalOpen"
-    @close="isEditSuccessModalOpen = false" />
+  <Modal
+    title="Success"
+    subtitle="Event has been saved"
+    :is-open="isEditSuccessModalOpen"
+    @close="isEditSuccessModalOpen = false"
+  />
 
-  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isEditErrorModalOpen"
-    variant="error" @close="isEditErrorModalOpen = false" />
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isEditErrorModalOpen"
+    variant="error"
+    @close="isEditErrorModalOpen = false"
+  />
 
-  <Modal title="Success" subtitle="Event has been cancelled" :is-open="isCancelSuccessModalOpen"
-    @close="isCancelSuccessModalOpen = false" />
+  <Modal
+    title="Success"
+    subtitle="Event has been cancelled"
+    :is-open="isCancelSuccessModalOpen"
+    @close="isCancelSuccessModalOpen = false"
+  />
 
-  <Modal title="Error" subtitle="Something went wrong" button-text="Try Again" :is-open="isCancelErrorModalOpen"
-    variant="error" @close="isCancelErrorModalOpen = false" />
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isCancelErrorModalOpen"
+    variant="error"
+    @close="isCancelErrorModalOpen = false"
+  />
 
-  <Modal title="Are you sure?" subtitle="This action cannot be undone" type="confirm" button-cancel-text="Cancel"
-    button-confirm-text="Confirm" variant="error" :is-open="isCancelConfirmModalOpen"
-    @close="isCancelConfirmModalOpen = false" @confirm="confirmCancelEvent(eventToBeDeleted)" />
+  <Modal
+    title="Are you sure?"
+    subtitle="This action cannot be undone"
+    type="confirm"
+    button-cancel-text="Cancel"
+    button-confirm-text="Confirm"
+    variant="error"
+    :is-open="isCancelConfirmModalOpen"
+    @close="isCancelConfirmModalOpen = false"
+    @confirm="confirmCancelEvent(eventToBeDeleted)"
+  />
 </template>
 
 <style scoped>
