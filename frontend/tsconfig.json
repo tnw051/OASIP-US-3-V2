@@ -9,7 +9,7 @@
       "vite/client",
     ],
     "lib": [
-      "ES2015",
+      "ES2021",
       "DOM"
     ],
   },
