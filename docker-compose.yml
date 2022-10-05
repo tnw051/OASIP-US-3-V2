@@ -2,10 +2,11 @@ version: "3"
 
 services:
   db:
-    build: ./db
+    image: mysql:8.0
     volumes:
       - ./db/data:/var/lib/mysql
       - ./db/scripts:/scripts
+      - ./db/scripts/entrypoint:/docker-entrypoint-initdb.d
     restart: always
     env_file:
       - ./db/.env
