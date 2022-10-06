@@ -58,7 +58,7 @@ function handleSaveClick() {
  
 <template>
   <div
-    class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full"
+    class=" flex w-full flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5"
   >
     <div>
       <p class="text-xl">
@@ -71,10 +71,10 @@ function handleSaveClick() {
 
     <Badge
       :text="props.currentEvent.eventCategory.eventCategoryName"
-      class="self-baseline mb-2"
+      class="mb-2 self-baseline"
     />
 
-    <p class="text-gray-500 text-sm">
+    <p class="text-sm text-gray-500">
       {{ props.currentEvent.eventDuration }} {{ props.currentEvent.eventDuration > 1 ?
         'minutes' : 'minute'
       }}
@@ -92,12 +92,12 @@ function handleSaveClick() {
         :min="minDateTImeLocal"
         :max="inputConstraits.MAX_DATETIME_LOCAL"
         required
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         @input="validateStartTime"
       >
       <div
         v-if="errors.eventStartTime.length > 0 || errors.hasOverlappingEvents"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.eventStartTime"
@@ -114,18 +114,18 @@ function handleSaveClick() {
         for="notes"
         class="text-sm font-medium text-gray-700"
       >Notes <span
-        class="text-gray-400 font-normal"
+        class="font-normal text-gray-400"
       >(optional)</span></label>
       <textarea
         id="notes"
         v-model="inputs.eventNotes"
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         placeholder="What's your event about?"
         @input="validateEventNotes"
       />
       <div
         v-if="errors.eventNotes.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.eventNotes"
@@ -138,7 +138,7 @@ function handleSaveClick() {
 
     <div class="flex gap-2">
       <button
-        class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-gray-500 py-2 px-4 font-medium text-white hover:bg-gray-600"
         @click="$emit('cancel')"
       >
         Cancel
@@ -146,7 +146,7 @@ function handleSaveClick() {
 
       <button
         type="submit"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="!canSubmit"
         @click="handleSaveClick"
       >

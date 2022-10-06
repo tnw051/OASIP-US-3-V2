@@ -15,10 +15,10 @@ const emits = defineEmits([
 </script>
  
 <template>
-  <div class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full">
+  <div class=" flex w-full flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5">
     <!-- close button -->
     <div
-      class="absolute top-1 right-1 mt-1 mr-1 cursor-pointer text-gray-500 hover:bg-gray-50 rounded-full w-10 h-10 transition flex justify-center items-center font-bold"
+      class="absolute top-1 right-1 mt-1 mr-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full font-bold text-gray-500 transition hover:bg-gray-50"
       @click="$emit('close')"
     >
       ⨉
@@ -34,12 +34,12 @@ const emits = defineEmits([
 
     <Badge
       :text="props.currentEvent.eventCategory.eventCategoryName"
-      class="self-baseline mb-2"
+      class="mb-2 self-baseline"
     />
 
     <div>
       <p>{{ formatDateAndFromToTime(props.currentEvent.eventStartTime, props.currentEvent.eventDuration) }}</p>
-      <p class="text-gray-500 text-sm">
+      <p class="text-sm text-gray-500">
         {{ props.currentEvent.eventDuration }} {{ props.currentEvent.eventDuration > 1 ?
           'minutes' : 'minute'
         }}
@@ -47,7 +47,7 @@ const emits = defineEmits([
     </div>
 
     <div>
-      <p class="text-gray-500 text-sm">
+      <p class="text-sm text-gray-500">
         Notes
       </p>
       <p>{{ props.currentEvent.eventNotes || '–' }}</p>

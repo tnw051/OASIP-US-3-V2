@@ -3,11 +3,11 @@
 </script>
  
 <template>
-  <div class="flex flex-col items-center justify-center mt-[15vh] text-gray-600">
+  <div class="mt-[15vh] flex flex-col items-center justify-center text-gray-600">
     <h1 class="text-9xl font-light">
       404
     </h1>
-    <h2 class="text-3xl mb-8">
+    <h2 class="mb-8 text-3xl">
       Page not found
     </h2>
     <img
@@ -16,7 +16,7 @@
     >
     <router-link
       to="/"
-      class="text-2xl text-blue-500 hover:underline mt-8"
+      class="mt-8 text-2xl text-blue-500 hover:underline"
     >
       Go back home
     </router-link>

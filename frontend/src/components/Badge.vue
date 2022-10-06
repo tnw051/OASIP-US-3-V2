@@ -8,7 +8,7 @@ const props = defineProps({
 </script>
  
 <template>
-  <div class="text-sm text-sky-600 font-medium truncate rounded-md bg-sky-50 px-2">
+  <div class=" truncate rounded-md bg-sky-50 px-2 text-sm font-medium text-sky-600">
     {{ props.text }}
   </div>
 </template>
