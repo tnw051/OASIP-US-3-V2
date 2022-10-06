@@ -16,7 +16,7 @@ async function handleLogout() {
 </script>
  
 <template>
-  <nav class="bg-white px-12 py-4 flex border-b border-gray-200 justify-between items-center">
+  <nav class="flex items-center justify-between border-b border-gray-200 bg-white px-12 py-4">
     <div class="flex items-center gap-1 text-sm font-medium">
       <img
         src="https://cdn.7tv.app/emote/611cb0c5f20f644c3fadb992/3x"
@@ -28,42 +28,42 @@ async function handleLogout() {
       >
       <router-link
         to="/"
-        class="ml-6 p-2 rounded-md text-gray-700 hover:text-sky-600"
+        class="ml-6 rounded-md p-2 text-gray-700 hover:text-sky-600"
       >
         Events
       </router-link>
       <router-link
         v-if="!isLecturer"
         :to="{ name: 'createEvent' }"
-        class="p-2 rounded-md text-gray-700 hover:text-sky-600"
+        class="rounded-md p-2 text-gray-700 hover:text-sky-600"
       >
         Create
         Event
       </router-link>
       <router-link
         :to="{ name: 'categories' }"
-        class="p-2 ml-2 text-gray-700 hover:text-sky-600"
+        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
       >
         Categories
       </router-link>
       <router-link
         v-if="isAdmin"
         :to="{ name: 'users' }"
-        class="p-2 ml-2 text-gray-700 hover:text-sky-600"
+        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
       >
         Users
       </router-link>
       <router-link
         v-if="isAdmin"
         :to="{ name: 'createUser' }"
-        class="p-2 ml-2 text-gray-700 hover:text-sky-600"
+        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
       >
         Create User
       </router-link>
       <router-link
         v-if="!isAuthenticated"
         :to="{ name: 'login' }"
-        class="p-2 ml-2 text-gray-700 hover:text-sky-600"
+        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
       >
         Login
       </router-link>
@@ -75,7 +75,7 @@ async function handleLogout() {
       >{{ user.sub }}</span>
       <a
         v-if="isAuthenticated"
-        class="cursor-pointer p-2 ml-2 text-gray-700 hover:text-sky-600"
+        class="ml-2 cursor-pointer p-2 text-gray-700 hover:text-sky-600"
         @click="handleLogout"
       >Logout</a>
     </div>

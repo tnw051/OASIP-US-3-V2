@@ -7,7 +7,8 @@
     "extends": [
         "eslint:recommended",
         "plugin:vue/vue3-recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:tailwindcss/recommended"
     ],
     "overrides": [],
     "parser": "vue-eslint-parser",
@@ -18,7 +19,8 @@
     },
     "plugins": [
         "vue",
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "tailwindcss"
     ],
     "rules": {
         "indent": [
@@ -37,6 +39,7 @@
         "comma-dangle": [
             "error",
             "always-multiline"
-        ] 
+        ],
+        "tailwindcss/no-custom-classname": "off"
     }
 }

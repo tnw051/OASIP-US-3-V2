@@ -82,13 +82,13 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto mt-8">
+  <div class="mx-auto mt-8 max-w-md">
     <form
-      class="flex flex-col gap-4 bg-white py-10 px-8 border border-gray-100 rounded-xl shadow-xl shadow-black/5"
+      class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
       @submit.prevent="handleSubmit"
     >
-      <div class="flex flex-col text-center mb-4 text-gray-700">
-        <h1 class="font-medium text-2xl">
+      <div class="mb-4 flex flex-col text-center text-gray-700">
+        <h1 class="text-2xl font-medium">
           Match Password
         </h1>
       </div>
@@ -103,12 +103,12 @@ async function handleSubmit() {
           v-model="inputs.email"
           type="email"
           required
-          class="bg-gray-100 p-2 rounded"
+          class="rounded bg-gray-100 p-2"
           @input="validateEmail"
         >
         <div
           v-if="errors.email.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in errors.email"
@@ -129,12 +129,12 @@ async function handleSubmit() {
           v-model="inputs.password"
           type="password"
           required
-          class="bg-gray-100 p-2 rounded"
+          class="rounded bg-gray-100 p-2"
           @input="validatePassword"
         >
         <div
           v-if="errors.password.length > 0"
-          class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in errors.password"
@@ -147,7 +147,7 @@ async function handleSubmit() {
 
       <button
         type="submit"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+        class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="!canSubmit"
       >
         Match Password

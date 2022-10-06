@@ -111,7 +111,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
  
 <template>
   <div
-    class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full"
+    class=" flex w-full flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5"
   >
     <div class="flex flex-col gap-2">
       <label
@@ -123,13 +123,13 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         id="name"
         v-model="inputs.name"
         type="text"
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         placeholder="What's your name?"
         @input="validateName"
       >
       <div
         v-if="errors.name.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.name"
@@ -148,13 +148,13 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         id="email"
         v-model="inputs.email"
         type="email"
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         placeholder="What's your email?"
         @input="validateEmail"
       >
       <div
         v-if="errors.email.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.email"
@@ -172,7 +172,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
       <select
         id="category"
         v-model="inputs.role"
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
       >
         <option
           disabled
@@ -193,7 +193,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
 
     <div class="flex gap-2">
       <button
-        class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-gray-500 py-2 px-4 font-medium text-white hover:bg-gray-600"
         @click="$emit('cancel')"
       >
         Cancel
@@ -201,7 +201,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
 
       <button
         type="submit"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="!canSubmit || !isChanged"
         @click="handleSaveClick"
       >

@@ -65,36 +65,36 @@ const emits = defineEmits(["close", "confirm"]);
   <Teleport to="body">
     <div
       v-if="props.isOpen"
-      class="absolute inset-0 bg-black/50 flex text-slate-700 shadow-2xl z-50"
+      class="absolute inset-0 z-50 flex bg-black/50 text-slate-700 shadow-2xl"
       @click="$emit('close')"
     >
       <div
-        class="m-auto -translate-y-8 pt-8 px-12 bg-white flex flex-col gap-4 max-w-lg w-80 rounded-lg overflow-hidden"
+        class="m-auto flex w-80 max-w-lg -translate-y-8 flex-col gap-4 overflow-hidden rounded-lg bg-white px-12 pt-8"
         @click.stop=""
       >
         <div class="flex flex-col items-center gap-2">
           <div>
             <span
-              class="material-symbols-outlined text-8xl border-4 rounded-full"
+              class="material-symbols-outlined rounded-full border-4 text-8xl"
               :class="iconClass"
             >
               {{ props.variant === 'success' ? 'done' : 'exclamation' }}
             </span>
           </div>
 
-          <h1 class="font-semibold text-2xl">
+          <h1 class="text-2xl font-semibold">
             {{ props.title }}
           </h1>
 
-          <p class="text-gray-500 text-center">
+          <p class="text-center text-gray-500">
             {{ props.subtitle }}
           </p>
         </div>
-        <div class="flex items-center justify-center p-4 border-t border-gray-200 w-full">
+        <div class="flex w-full items-center justify-center border-t border-gray-200 p-4">
           <div class="flex gap-2">
             <template v-if="props.type === 'close'">
               <button
-                class="text-white font-medium py-2 px-12 rounded disabled:opacity-60 disabled:cursor-not-allowed flex-1"
+                class="flex-1 rounded py-2 px-12 font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                 :class="buttonClass"
                 @click="$emit('close')"
               >
@@ -103,13 +103,13 @@ const emits = defineEmits(["close", "confirm"]);
             </template>
             <template v-if="props.type === 'confirm'">
               <button
-                class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-8 rounded disabled:opacity-60 disabled:cursor-not-allowed flex-1"
+                class="flex-1 rounded bg-gray-500 py-2 px-8 font-medium text-white hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
                 @click="$emit('close')"
               >
                 {{ props.buttonCancelText }}
               </button>
               <button
-                class="text-white font-medium py-2 px-8 rounded flex-1"
+                class="flex-1 rounded py-2 px-8 font-medium text-white"
                 :class="buttonClass"
                 @click="$emit('confirm')"
               >

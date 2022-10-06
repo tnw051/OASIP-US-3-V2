@@ -94,12 +94,12 @@ async function saveUser(updates) {
 </script>
 
 <template>
-  <div class="py-8 px-12 max-w-[1440px] flex mx-auto">
+  <div class="mx-auto flex max-w-[1440px] py-8 px-12">
     <div class="flex flex-col text-slate-700">
-      <h1 class="font-semibold text-4xl">
+      <h1 class="text-4xl font-semibold">
         Users
       </h1>
-      <div class="flex justify-between mb-4">
+      <div class="mb-4 flex justify-between">
         <div class="mb-4 mt-2">
           {{ users.length }} users shown
         </div>
@@ -155,7 +155,7 @@ async function saveUser(updates) {
 
         <div
           v-if="isEditing"
-          class="p-4 bg-slate-100 relative w-4/12"
+          class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditUser
             v-if="isEditing"

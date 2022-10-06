@@ -151,21 +151,21 @@ async function filterEvents() {
 </script>
 
 <template>
-  <div class="py-8 px-12 max-w-[1440px] flex mx-auto">
+  <div class="mx-auto flex max-w-[1440px] py-8 px-12">
     <div class="flex flex-col text-slate-700">
-      <h1 class="font-semibold text-4xl">
+      <h1 class="text-4xl font-semibold">
         Events
       </h1>
-      <div class="flex justify-between mb-4">
+      <div class="mb-4 flex justify-between">
         <div class="mb-4 mt-2">
           {{ events.length }} events shown
         </div>
-        <div class="flex gap-6 flex-wrap">
+        <div class="flex flex-wrap gap-6">
           <div class="flex flex-col gap-1">
             <label class="text-xs text-slate-600">Category</label>
             <select
               v-model="filter.categoryId"
-              class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1 self-baseline"
+              class="self-baseline rounded-sm border border-gray-200 bg-white p-1 text-sm shadow-md shadow-gray-500/5"
               @change="filterEvents"
             >
               <option :value="categoryTypes.ALL">
@@ -186,7 +186,7 @@ async function filterEvents() {
               <label class="text-xs text-slate-600">Type</label>
               <select
                 v-model="filter.type"
-                class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1"
+                class="rounded-sm border border-gray-200 bg-white p-1 text-sm shadow-md shadow-gray-500/5"
                 @change="filterEvents"
               >
                 <option :value="eventTypes.ALL">
@@ -205,7 +205,7 @@ async function filterEvents() {
               <label class="text-xs text-slate-600">Date</label>
               <input
                 v-model="filter.date"
-                class="text-sm bg-white border border-gray-200 shadow-md shadow-gray-500/5 rounded-sm p-1 disabled:bg-slate-200 disabled:text-slate-400"
+                class="rounded-sm border border-gray-200 bg-white p-1 text-sm shadow-md shadow-gray-500/5 disabled:bg-slate-200 disabled:text-slate-400"
                 type="date"
                 :disabled="filter.type !== eventTypes.ALL"
                 :max="inputConstraits.MAX_DATE"
@@ -275,7 +275,7 @@ async function filterEvents() {
 
         <div
           v-if="currentEvent.id"
-          class="p-4 bg-slate-100 relative w-4/12"
+          class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditEvent
             v-if="isEditing"

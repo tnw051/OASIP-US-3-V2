@@ -38,20 +38,20 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
  
 <template>
   <table
-    class="table-fixed text-left w-8/12 flex-1 break-words border border-slate-200 shadow-xl shadow-black/5 p-4 h-full"
+    class="h-full w-8/12 flex-1 table-fixed break-words border border-slate-200 p-4 text-left shadow-xl shadow-black/5"
   >
-    <thead class="text-xs text-slate-500 uppercase bg-slate-100 text-left">
+    <thead class="bg-slate-100 text-left text-xs uppercase text-slate-500">
       <tr>
         <th
           v-for="header in headers"
           :key="header"
-          class="pl-2 py-3"
+          class="py-3 pl-2"
         >
           {{ header.name }}
         </th>
         <th
           v-if="enableActions"
-          class="pl-2 py-3"
+          class="py-3 pl-2"
         >
           Actions
         </th>
@@ -63,7 +63,7 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
       <tr
         v-for="item in items"
         :key="keyExtractor(item)"
-        class=" my-10 bg-white rounded-lg border-b border-gray-200 shadow-black/5 relative hover:bg-gray-50 transition box-border"
+        class=" relative my-10 box-border rounded-lg border-b border-gray-200 bg-white shadow-black/5 transition hover:bg-gray-50"
         :class="[
           {
             'z-10 bg-blue-200/10 hover:bg-blue-200/20 ring-2 ring-blue-400/50 ':
@@ -75,7 +75,7 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
         <td
           v-for="header in headers"
           :key="header"
-          class="py-2 px-2"
+          class="p-2"
         >
           <slot
             :name="`cell:${header.key}`"
@@ -85,12 +85,12 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
 
         <td
           v-if="enableActions"
-          class="py-2 px-2"
+          class="p-2"
         >
           <div class="flex">
             <button
               v-if="props.enableEdit"
-              class="text-slate-400 hover:text-yellow-500 disabled:hover:text-slate-400 text-xs flex items-center justify-center w-8 h-8 rounded-full transition"
+              class="flex h-8 w-8 items-center justify-center rounded-full text-xs text-slate-400 transition hover:text-yellow-500 disabled:hover:text-slate-400"
               :disabled="props.selectedItem"
               @click.stop="emits('edit', item)"
             >
@@ -101,7 +101,7 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
 
             <button
               v-if="props.enableDelete"
-              class="text-slate-400 hover:text-red-500 disabled:hover:text-slate-400 text-xs flex items-center justify-center w-8 h-8 rounded-full transition"
+              class="flex h-8 w-8 items-center justify-center rounded-full text-xs text-slate-400 transition hover:text-red-500 disabled:hover:text-slate-400"
               :disabled="props.selectedItem"
               @click.stop="emits('delete', item)"
             >

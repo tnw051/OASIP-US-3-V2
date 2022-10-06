@@ -90,7 +90,7 @@ const canSubmit = computed(() => {
  
 <template>
   <div
-    class=" bg-white p-6 rounded-2xl flex flex-col gap-3 shadow-xl border-b-2 border-white/50 shadow-black/5 break-words w-full"
+    class=" flex w-full flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5"
   >
     <div class="flex flex-col gap-2">
       <label
@@ -102,12 +102,12 @@ const canSubmit = computed(() => {
         v-model="inputs.name"
         type="text"
         required
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         @input="validateName"
       >
       <div
         v-if="errors.name.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.name"
@@ -128,14 +128,14 @@ const canSubmit = computed(() => {
         v-model="inputs.duration"
         type="number"
         required
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         min="1"
         max="480"
         @input="validateDuration"
       >
       <div
         v-if="errors.duration.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.duration"
@@ -151,19 +151,19 @@ const canSubmit = computed(() => {
         for="descriptions"
         class="text-sm font-medium text-gray-700"
       >Description <span
-        class="text-gray-400 font-normal"
+        class="font-normal text-gray-400"
       >(optional)</span>
       </label>
       <textarea
         id="descriptions"
         v-model="inputs.description"
-        class="bg-gray-100 p-2 rounded"
+        class="rounded bg-gray-100 p-2"
         placeholder="What's your category about?"
         @input="validateDescription"
       />
       <div
         v-if="errors.description.length > 0"
-        class="text-red-500 text-sm bg-red-50 py-1 px-2 mx-1 rounded-md flex flex-col"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.description"
@@ -177,7 +177,7 @@ const canSubmit = computed(() => {
 
     <div class="flex gap-2">
       <button
-        class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-gray-500 py-2 px-4 font-medium text-white hover:bg-gray-600"
         @click="$emit('cancel')"
       >
         Cancel
@@ -185,7 +185,7 @@ const canSubmit = computed(() => {
 
       <button
         type="submit"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-60 disabled:cursor-not-allowed mt-2 flex-1"
+        class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="!canSubmit"
         @click="handleSaveClick"
       >
