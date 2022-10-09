@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from "vue";
 import Modal from "../components/Modal.vue";
 import { Role } from "../gen-types";
 import { createUser, getRoles } from "../service/api";
+import { validateName, validateEmail, validatePassword, validateConfirmPassword } from "../utils/validators/user";
 
 const roles = ref<Role[]>([]);
 
@@ -37,61 +38,26 @@ const canSubmit = computed(() => {
   return noErrors && noEmptyFields;
 });
 
-function validateName(e) {
-  const bookingName = e.target.value;
-  errors.value.name = [];
-
-  if (bookingName.length > 100) {
-    errors.value.name.push("Name must be less than 100 characters");
-  }
-
-  if (bookingName.trim().length === 0) {
-    errors.value.name.push("Name must not be blank");
-  }
+function handleNameInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.name = validateName(target.value).errors;
 }
 
-function validateEmail(e) {
-  const email = e.target.value;
-  errors.value.email = [];
-
-  if (email.length > 50) {
-    errors.value.email.push("Email must be less than 50 characters");
-  }
-
-  if (email.trim().length === 0) {
-    errors.value.email.push("Email must not be blank");
-  }
-
-  // RFC2822 https://regexr.com/2rhq7
-  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-  if (!emailRegex.test(email)) {
-    errors.value.email.push("Email is invalid");
-  }
+function handleEmailInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.email = validateEmail(target.value).errors;
 }
 
-function validatePassword(e) {
-  const password = e.target.value;
-  errors.value.password = [];
-  
-  if (password.length > 14 || password.length < 8) {
-    errors.value.password.push("Password must be between 8 and 14 characters");
-  }
-
-  if (password.length === 0) {
-    errors.value.password.push("Password must not be blank");
-  }
+function handlePasswordInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.password = validatePassword(target.value).errors;
 }
 
-function validateConfirmPassword(e) {
+function handleConfirmPasswordInput(e: Event) {
+  const target = e.target as HTMLInputElement;
   const password = inputs.value.password;
-  const confirmPassword = e.target.value;
-  errors.value.confirmPassword = [];
-
-  if (confirmPassword !== password) {
-    errors.value.confirmPassword.push("Passwords do not match");
-  }
+  errors.value.confirmPassword = validateConfirmPassword(password, target.value).errors;
 }
-
 
 const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
@@ -150,7 +116,7 @@ function resetInputs() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your name?"
-          @input="validateName"
+          @input="handleNameInput"
         >
         <div
           v-if="errors.name.length > 0"
@@ -177,7 +143,7 @@ function resetInputs() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your email?"
-          @input="validateEmail"
+          @input="handleEmailInput"
         >
         <div
           v-if="errors.email.length > 0"
@@ -204,7 +170,7 @@ function resetInputs() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your password?"
-          @input="validatePassword"
+          @input="handlePasswordInput"
         >
         <div
           v-if="errors.password.length > 0"
@@ -231,7 +197,7 @@ function resetInputs() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="Confirm your password"
-          @input="validateConfirmPassword"
+          @input="handleConfirmPasswordInput"
         >
         <div
           v-if="errors.confirmPassword.length > 0"

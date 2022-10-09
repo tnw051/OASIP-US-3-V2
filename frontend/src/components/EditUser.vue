@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { EditUserRequest, Role, UserResponse } from "../gen-types";
+import { validateEmail, validateName } from "../utils/validators/user";
 
 interface Props {
   currentUser: UserResponse | null;
@@ -14,17 +15,11 @@ const emits = defineEmits([
   "cancel",
 ]);
 
-
-function makeDefaultValues() {
-  const defaultValue = "";
-  return {
-    name: defaultValue,
-    email: defaultValue,
-    role: "STUDENT",
-  };
-}
-
-const inputs = ref(makeDefaultValues());
+const inputs = ref({
+  name: props.currentUser.name,
+  email: props.currentUser.email,
+  role: props.currentUser.role,
+});
 
 const errors = ref({
   name: [],
@@ -38,43 +33,15 @@ const canSubmit = computed(() => {
   return noErrors && noEmptyFields;
 });
 
-function validateName(e) {
-  const name = e.target.value;
-  errors.value.name = [];
-
-  if (name.length > 100) {
-    errors.value.name.push("Name must be less than 100 characters");
-  }
-
-  if (name.trim().length === 0) {
-    errors.value.name.push("Name must not be blank");
-  }
+function handleNameInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.name = validateName(target.value).errors;
 }
 
-function validateEmail(e) {
-  const email = e.target.value;
-  errors.value.email = [];
-
-  if (email.length > 50) {
-    errors.value.email.push("Email must be less than 50 characters");
-  }
-
-  if (email.trim().length === 0) {
-    errors.value.email.push("Email must not be blank");
-  }
-
-  // RFC2822 https://regexr.com/2rhq7
-  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-  if (!emailRegex.test(email)) {
-    errors.value.email.push("Email is invalid");
-  }
+function handleEmailInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.email = validateEmail(target.value).errors;
 }
-
-inputs.value = {
-  name: props.currentUser.name,
-  email: props.currentUser.email,
-  role: props.currentUser.role,
-};
 
 function handleSaveClick() {
   const updates: EditUserRequest = {};
@@ -122,7 +89,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="text"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your name?"
-        @input="validateName"
+        @input="handleNameInput"
       >
       <div
         v-if="errors.name.length > 0"
@@ -147,7 +114,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="email"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your email?"
-        @input="validateEmail"
+        @input="handleEmailInput"
       >
       <div
         v-if="errors.email.length > 0"
