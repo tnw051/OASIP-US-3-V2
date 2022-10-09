@@ -2,7 +2,7 @@ import { Role } from "./gen-types";
 
 type Id = number;
 
-interface ErrorResponse {
+export interface ErrorResponse {
     timestamp: string;
     status: number;
     error: string;
@@ -10,7 +10,7 @@ interface ErrorResponse {
 }
 
 // require manually sync to the payload from the backend for now
-interface OasipJwtPayload {
+export interface OasipJwtPayload {
     iss: string;
     sub: string;
     role: Role;
