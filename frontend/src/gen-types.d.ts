@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.37.1128 on 2022-10-01 14:36:16.
+// Generated using typescript-generator version 2.37.1128 on 2022-10-09 11:20:13.
 
 interface CategoryResponse {
     id: number;
@@ -75,9 +75,11 @@ interface UserResponse {
     id: number;
     name: string;
     email: string;
-    role: string;
+    role: Role;
     createdOn: DateAsString;
     updatedOn: DateAsString;
 }
 
 type DateAsString = string;
+
+type Role = "ADMIN" | "STUDENT" | "LECTURER";
