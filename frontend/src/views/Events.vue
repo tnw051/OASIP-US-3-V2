@@ -2,10 +2,17 @@
 import { ref, watchEffect } from "vue";
 import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
-import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
+import EventDetails from "../components/EventDetails.vue";
 import Table from "../components/Table.vue";
-import { deleteEvent, getCategories, getEvents, getEventsByFilter, getLecturerCategories, updateEvent } from "../service/api";
+import {
+  deleteEvent,
+  getCategories,
+  getEvents,
+  getEventsByFilter,
+  getLecturerCategories,
+  updateEvent,
+} from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";

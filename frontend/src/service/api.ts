@@ -1,4 +1,17 @@
-import { CategoryResponse, CreateEventRequest, CreateUserRequest, EditCategoryRequest, EditEventRequest, EditUserRequest, EventResponse, LoginRequest, LoginResponse, MatchRequest, Role, UserResponse } from "../gen-types";
+import {
+  CategoryResponse,
+  CreateEventRequest,
+  CreateUserRequest,
+  EditCategoryRequest,
+  EditEventRequest,
+  EditUserRequest,
+  EventResponse,
+  LoginRequest,
+  LoginResponse,
+  MatchRequest,
+  Role,
+  UserResponse,
+} from "../gen-types";
 
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 
