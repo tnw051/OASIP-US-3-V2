@@ -1,3 +1,5 @@
+import { Role } from "./gen-types";
+
 type Id = number;
 
 interface ErrorResponse {
