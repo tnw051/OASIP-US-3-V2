@@ -1,12 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeMount, ref } from "vue";
 import EditCategory from "../components/EditCategory.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
+import { CategoryResponse, EditCategoryRequest } from "../gen-types";
 import { getCategories, updateCategory } from "../service/api";
 import { useEditing } from "../utils/useEditing";
 
-const categories = ref([]);
+const categories = ref<CategoryResponse[]>([]);
 const { editingItem: currentCategory, isEditing, startEditing, stopEditing } = useEditing({});
 
 onBeforeMount(async () => {
@@ -19,9 +20,9 @@ onBeforeMount(async () => {
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 
-async function saveCategory(newValues) {
+async function saveCategory(newValues: EditCategoryRequest) {
   const categoryId = currentCategory.value.id;
-  const updates = {};
+  const updates: EditCategoryRequest = {};
 
   if (newValues.eventCategoryName !== currentCategory.value.eventCategoryName) {
     updates.eventCategoryName = newValues.eventCategoryName;

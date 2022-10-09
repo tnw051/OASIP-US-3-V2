@@ -1,14 +1,14 @@
-<script setup>
+<script setup lang="ts">
+import { EditEventRequest, EventResponse } from "../gen-types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidator";
 import Badge from "./Badge.vue";
 
-const props = defineProps({
-  currentEvent: {
-    type: Object,
-    default: () => ({}),
-  },
-});
+interface Props {
+  currentEvent: EventResponse;
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "save",
@@ -40,7 +40,7 @@ setEventDuration(props.currentEvent.eventDuration);
 setCategoryId(props.currentEvent.eventCategory.id);
 
 function handleSaveClick() {
-  const updates = {};
+  const updates: EditEventRequest = {};
 
   const newDate = new Date(inputs.value.eventStartTime);
   if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {

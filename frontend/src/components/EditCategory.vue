@@ -1,23 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue";
+import { CategoryResponse } from "../gen-types";
 
-const props = defineProps({
-  category: {
-    type: Object,
-    default: () => ({}),
-  },
-  categories: {
-    type: Array,
-    default: () => [],
-  },
-});
+interface Props {
+  category: CategoryResponse;
+  categories: CategoryResponse[];
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "save",
   "cancel",
 ]);
 
-const errors = ref({
+const errors = ref<{
+  name: string[];
+  description: string[];
+  duration: string[];
+}>({
   name: [],
   description: [],
   duration: [],
@@ -46,7 +47,7 @@ function validateName(e) {
   }
 }
 
-function isNameUnique(name) {
+function isNameUnique(name: string) {
   const existingCategory = props.categories.find((category) => category.eventCategoryName.toLowerCase() === name.trim().toLowerCase() && category.id != props.category.id);
   if (existingCategory) {
     return false;
@@ -82,7 +83,7 @@ function handleSaveClick() {
 }
 
 const canSubmit = computed(() => {
-  const noErrors = Object.values(errors.value).every((error) => error === false || error.length === 0);
+  const noErrors = Object.values(errors.value).every((error) => error.length === 0);
 
   return noErrors;
 });

@@ -1,12 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeMount, ref } from "vue";
 import Modal from "../components/Modal.vue";
+import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
 
-const categories = ref([]);
+const categories = ref<CategoryResponse[]>([]);
 const {
   errors,
   inputs,

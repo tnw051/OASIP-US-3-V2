@@ -1,16 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue";
+import { EditUserRequest, Role, UserResponse } from "../gen-types";
 
-const props = defineProps({
-  currentUser: {
-    type: Object,
-    default: () => ({}),
-  },
-  roles: {
-    type: Array,
-    default: () => [],
-  },
-});
+interface Props {
+  currentUser: UserResponse | null;
+  roles: Role[];
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "save",
@@ -80,7 +77,7 @@ inputs.value = {
 };
 
 function handleSaveClick() {
-  const updates = {};
+  const updates: EditUserRequest = {};
 
   if (inputs.value.name.trim() !== props.currentUser.name) {
     updates.name = inputs.value.name;

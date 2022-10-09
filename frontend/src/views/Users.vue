@@ -1,14 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeMount, ref } from "vue";
 import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
+import { EditUserRequest, Role, UserResponse } from "../gen-types";
 import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
 import { formatDateTime } from "../utils";
 import { useEditing } from "../utils/useEditing";
 
-const users = ref([]);
-const roles = ref([]);
+const users = ref<UserResponse[]>([]);
+const roles = ref<Role[]>([]);
 const showDetails = ref(false);
 const isLoggedIn = ref(true);
 const { editingItem: currentUser, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
@@ -22,7 +23,7 @@ onBeforeMount(async () => {
   roles.value = await getRoles();
 });
 
-function selectUser(user) {
+function selectUser(user: UserResponse) {
   withNoEditing(() => {
     currentUser.value = user;
   });
@@ -60,7 +61,7 @@ const headers = computed(() => {
   return parsedHeaders;
 });
 
-function confirmDeleteUser(user) {
+function confirmDeleteUser(user: UserResponse) {
   if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
     return;
   }
@@ -76,7 +77,7 @@ function confirmDeleteUser(user) {
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 
-async function saveUser(updates) {
+async function saveUser(updates: EditUserRequest) {
   const updatedUser = await updateUser(currentUser.value.id, updates);
   if (updatedUser) {
     const user = users.value.find((u) => u.id === updatedUser.id);

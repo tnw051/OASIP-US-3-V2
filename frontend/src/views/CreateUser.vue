@@ -1,9 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeMount, ref } from "vue";
 import Modal from "../components/Modal.vue";
+import { Role } from "../gen-types";
 import { createUser, getRoles } from "../service/api";
 
-const roles = ref([]);
+const roles = ref<Role[]>([]);
 
 onBeforeMount(async () => {
   roles.value = await getRoles();

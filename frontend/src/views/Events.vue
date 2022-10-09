@@ -2,9 +2,10 @@
 import { ref, watchEffect } from "vue";
 import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
-import Modal from "../components/Modal.vue";
 import EventDetails from "../components/EventDetails.vue";
+import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
+import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
 import {
   deleteEvent,
   getCategories,
@@ -20,9 +21,9 @@ import { useIsLoading } from "../utils/useIsLoading";
 
 const { isAuthenticated, isLecturer, isAuthLoading } = useAuth();
 
-const events = ref([]);
+const events = ref<EventResponse[]>([]);
+const categories = ref<CategoryResponse[]>([]);
 const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
-const categories = ref([]);
 const { isLoading, setIsLoading } = useIsLoading(true);
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
@@ -31,9 +32,9 @@ const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
 
 const eventTypes = {
-  DAY: "day",
-  UPCOMING: "upcoming",
-  PAST: "past",
+  DAY: "day" as const,
+  UPCOMING: "upcoming" as const,
+  PAST: "past" as const,
   ALL: null,
 };
 
@@ -41,7 +42,11 @@ const categoryTypes = {
   ALL: null,
 };
 
-const filter = ref({
+const filter = ref<{
+  categoryId: number | null;
+  type: "day" | "upcoming" | "past" | null;
+  date: string;
+}>({
   categoryId: categoryTypes.ALL,
   type: eventTypes.ALL,
   date: "",
@@ -69,7 +74,7 @@ watchEffect(async () => {
 });
 
 function setEvents(_events, sort = sortDirections.DESC) {
-  const dateExtractor = (event) => event.eventStartTime;
+  const dateExtractor = (event: EventResponse) => event.eventStartTime;
 
   if (sort === sortDirections.DESC) {
     sortByDateInPlace(_events, dateExtractor, sortDirections.DESC);
@@ -80,14 +85,14 @@ function setEvents(_events, sort = sortDirections.DESC) {
   events.value = _events;
 }
 
-const eventToBeDeleted = ref(null);
+const eventToBeDeleted = ref<EventResponse>(null);
 
-function startConfirmCancel(event) {
+function startConfirmCancel(event: EventResponse) {
   eventToBeDeleted.value = event;
   isCancelConfirmModalOpen.value = true;
 }
 
-async function confirmCancelEvent(event) {
+async function confirmCancelEvent(event: EventResponse) {
   const isSuccess = await deleteEvent(event.id);
   isCancelConfirmModalOpen.value = false;
   if (isSuccess) {
@@ -98,13 +103,13 @@ async function confirmCancelEvent(event) {
   }
 }
 
-function selectEvent(event) {
+function selectEvent(event: EventResponse) {
   withNoEditing(() => {
     currentEvent.value = event;
   });
 }
 
-async function saveEvent(updates) {
+async function saveEvent(updates: EditEventRequest) {
   const selectedEventId = currentEvent.value.id;
 
   if (new Date(updates.eventStartTime).getTime() !== new Date(currentEvent.value.eventStartTime).getTime() ||
@@ -145,9 +150,8 @@ async function filterEvents() {
 
   setIsLoading(true);
   const events = await getEventsByFilter(_filter);
-  const ascending = [eventTypes.UPCOMING, eventTypes.DAY];
 
-  if (ascending.includes(_type)) {
+  if (_type === eventTypes.UPCOMING || _type === eventTypes.DAY) {
     setEvents(events, sortDirections.ASC);
   } else {
     setEvents(events, sortDirections.DESC);
