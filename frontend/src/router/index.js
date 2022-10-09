@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { roles, useAuth } from "../utils/useAuth";
+import { useAuth } from "../utils/useAuth";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
@@ -23,7 +23,7 @@ const routes = [
     name: "createEvent",
     component: CreateEvent,
     meta: {
-      disallowRoles: [roles.LECTURER],
+      disallowRoles: ["LECTURER"],
     },
   },
   {

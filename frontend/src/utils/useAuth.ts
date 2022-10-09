@@ -1,15 +1,15 @@
-import { decodeJwt } from "jose";
+import { decodeJwt, JWTPayload } from "jose";
 import { computed, ref } from "vue";
 import { accessTokenKey, login, logout } from "../service/api";
 
-const user = ref(null);
+const user = ref<OasipJwtPayload>(null);
 const isAuthenticated = computed(() => user.value !== null);
 const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
-  return user.value?.role === roles.ADMIN;
+  return user.value?.role === "ADMIN";
 });
 const isLecturer = computed(() => {
-  return user.value?.role === roles.LECTURER;
+  return user.value?.role === "LECTURER";
 });
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -66,7 +66,7 @@ function setUserFromToken(token: string) {
     console.log("No access token found");
     return;
   }
-  const claims = decodeJwt(token);
+  const claims = decodeJwt(token) as JWTPayload & OasipJwtPayload;
   user.value = claims;
   console.log("Loaded user", user.value);
 }
@@ -82,8 +82,6 @@ export function useAuth() {
     isAuthLoading,
   };
 }
-
-export type Role = "ADMIN" | "LECTURER" | "STUDENT";
 
 export const roles = {
   ADMIN: "ADMIN" as Role,
