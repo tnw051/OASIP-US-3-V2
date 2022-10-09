@@ -1,9 +1,11 @@
 <script setup>
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router";
 import router from "../router";
 import { useAuth } from "../utils/useAuth";
 
 const { login } = useAuth();
+const route = useRoute();
 
 function makeDefaultValues() {
   const defaultValue = "";
@@ -70,7 +72,13 @@ async function handleSubmit() {
   };
 
   login(user, () => {
-    router.push({ name: "home" });
+    if (route.query.redirect) {
+      console.log("[Login] redirecting to", route.query.redirect);
+      router.push(route.query.redirect);
+    } else {
+      console.log("[Login] redirecting to home");
+      router.push({ name: "home" });
+    }
   });
 
   inputs.value.password = ""; // clear password every time user submits

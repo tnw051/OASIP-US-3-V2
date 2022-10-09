@@ -6,10 +6,10 @@ const user = ref(null);
 const isAuthenticated = computed(() => user.value !== null);
 const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
-  return user.value?.role === "ADMIN";
+  return user.value?.role === roles.ADMIN;
 });
 const isLecturer = computed(() => {
-  return user.value?.role === "LECTURER";
+  return user.value?.role === roles.LECTURER;
 });
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -82,3 +82,11 @@ export function useAuth() {
     isAuthLoading,
   };
 }
+
+export type Role = "ADMIN" | "LECTURER" | "STUDENT";
+
+export const roles = {
+  ADMIN: "ADMIN" as Role,
+  LECTURER: "LECTURER" as Role,
+  STUDENT: "STUDENT" as Role,
+};
