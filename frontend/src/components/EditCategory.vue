@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { CategoryResponse } from "../gen-types";
+import { validateDescription, validateDuration, validateName } from "../utils/validators/category";
 
 interface Props {
   category: CategoryResponse;
@@ -30,48 +31,19 @@ const inputs = ref({
   duration: props.category.eventDuration,
 });
 
-function validateName(e) {
-  const name = e.target.value;
-  errors.value.name = [];
-
-  if (name.length > 100) {
-    errors.value.name.push("Category name must be less than 100 characters");
-  }
-
-  if (name.trim().length === 0) {
-    errors.value.name.push("Category name must not be blank");
-  }
-
-  if (!isNameUnique(name)) {
-    errors.value.name.push("Category name is not unique");
-  }
+function handleNameInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.name = validateName(target.value, props.categories).errors;
 }
 
-function isNameUnique(name: string) {
-  const existingCategory = props.categories.find((category) => category.eventCategoryName.toLowerCase() === name.trim().toLowerCase() && category.id != props.category.id);
-  if (existingCategory) {
-    return false;
-  }
-
-  return true;
+function handleDurationInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.duration = validateDuration(Number(target.value)).errors;
 }
 
-function validateDuration(e) {
-  const duration = e.target.value;
-  errors.value.duration = [];
-
-  if (duration < 1 || duration > 480) {
-    errors.value.duration.push("Category duration must be between 1 and 480 minutes");
-  }
-}
-
-function validateDescription(e) {
-  const description = e.target.value;
-  errors.value.description = [];
-
-  if (description.length > 500) {
-    errors.value.description.push("Category descriptions must be less than 500 characters");
-  }
+function handleDescriptionInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  errors.value.description = validateDescription(target.value).errors;
 }
 
 function handleSaveClick() {
@@ -104,7 +76,7 @@ const canSubmit = computed(() => {
         type="text"
         required
         class="rounded bg-gray-100 p-2"
-        @input="validateName"
+        @input="handleNameInput"
       >
       <div
         v-if="errors.name.length > 0"
@@ -132,7 +104,7 @@ const canSubmit = computed(() => {
         class="rounded bg-gray-100 p-2"
         min="1"
         max="480"
-        @input="validateDuration"
+        @input="handleDurationInput"
       >
       <div
         v-if="errors.duration.length > 0"
@@ -160,7 +132,7 @@ const canSubmit = computed(() => {
         v-model="inputs.description"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your category about?"
-        @input="validateDescription"
+        @input="handleDescriptionInput"
       />
       <div
         v-if="errors.description.length > 0"
