@@ -1,4 +1,5 @@
 import "vue-router";
+import { Role } from "../gen-types";
 
 declare module "vue-router" {
   interface RouteMeta {

@@ -1,5 +1,6 @@
 import { decodeJwt, JWTPayload } from "jose";
 import { computed, ref } from "vue";
+import { LoginRequest, Role } from "../gen-types";
 import { accessTokenKey, login, logout } from "../service/api";
 
 const user = ref<OasipJwtPayload>(null);
