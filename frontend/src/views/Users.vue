@@ -4,8 +4,9 @@ import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { EditUserRequest, Role, UserResponse } from "../gen-types";
+import { BaseSlotProps } from "../types";
 import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
-import { formatDateTime } from "../utils";
+import { formatDateTime } from "../utils/index";
 import { useEditing } from "../utils/useEditing";
 
 const users = ref<UserResponse[]>([]);
@@ -92,6 +93,9 @@ async function saveUser(updates: EditUserRequest) {
 
   stopEditing();
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<UserResponse>;
 </script>
 
 <template>
@@ -126,19 +130,19 @@ async function saveUser(updates: EditUserRequest) {
           @delete="confirmDeleteUser"
           @select="selectUser"
         >
-          <template #cell:name="{ item }">
+          <template #cell:name="{ item }: SlotProps">
             {{ item.name }}
           </template>
-          <template #cell:email="{ item }">
+          <template #cell:email="{ item }: SlotProps">
             {{ item.email }}
           </template>
-          <template #cell:role="{ item }">
+          <template #cell:role="{ item }: SlotProps">
             {{ item.role }}
           </template>
-          <template #cell:createdOn="{ item }">
+          <template #cell:createdOn="{ item }: SlotProps">
             {{ formatDateTime(new Date(item.createdOn)) }}
           </template>
-          <template #cell:updatedOn="{ item }">
+          <template #cell:updatedOn="{ item }: SlotProps">
             {{ formatDateTime(new Date(item.updatedOn)) }}
           </template>
           <template #empty>
@@ -189,4 +193,5 @@ async function saveUser(updates: EditUserRequest) {
 </template>
 
 <style scoped>
+
 </style>

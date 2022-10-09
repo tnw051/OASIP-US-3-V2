@@ -14,6 +14,7 @@ import {
   getLecturerCategories,
   updateEvent,
 } from "../service/api";
+import { BaseSlotProps } from "../types";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
@@ -159,6 +160,9 @@ async function filterEvents() {
 
   setIsLoading(false);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<EventResponse>;
 </script>
 
 <template>
@@ -252,18 +256,18 @@ async function filterEvents() {
           @delete="startConfirmCancel"
           @select="selectEvent"
         >
-          <template #cell:bookingName="{ item }">
+          <template #cell:bookingName="{ item }: SlotProps">
             <span class="font-medium">{{ item.bookingName }}</span>
           </template>
 
-          <template #cell:eventStartTime="{ item }">
+          <template #cell:eventStartTime="{ item }: SlotProps">
             <div class="flex flex-col">
               <span class="">{{ formatDateTime(new Date(item.eventStartTime)) }}</span>
               <span class="text-sm text-slate-500">{{ item.eventDuration }} minutes</span>
             </div>
           </template>
 
-          <template #cell:eventCategory="{ item }">
+          <template #cell:eventCategory="{ item }: SlotProps">
             <div class="flex">
               <Badge :text="item.eventCategory.eventCategoryName" />
             </div>

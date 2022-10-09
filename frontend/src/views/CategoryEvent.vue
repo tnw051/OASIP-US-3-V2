@@ -5,6 +5,7 @@ import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { CategoryResponse, EditCategoryRequest } from "../gen-types";
 import { getCategories, updateCategory } from "../service/api";
+import { BaseSlotProps } from "../types";
 import { useEditing } from "../utils/useEditing";
 
 const categories = ref<CategoryResponse[]>([]);
@@ -47,6 +48,9 @@ async function saveCategory(newValues: EditCategoryRequest) {
 
   stopEditing();
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<CategoryResponse>;
 </script>
 
 <template>
@@ -82,15 +86,15 @@ async function saveCategory(newValues: EditCategoryRequest) {
           :key-extractor="(category) => category.id"
           @edit="startEditing"
         >
-          <template #cell:name="{ item }">
+          <template #cell:name="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventCategoryName }}</span>
           </template>
 
-          <template #cell:description="{ item }">
+          <template #cell:description="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventCategoryDescription }}</span>
           </template>
 
-          <template #cell:duration="{ item }">
+          <template #cell:duration="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventDuration }}</span>
           </template>
 

@@ -17,3 +17,7 @@ export interface OasipJwtPayload {
     exp: number;
     iat: number;
 }
+
+export interface BaseSlotProps<T> {
+    item: T;
+}
