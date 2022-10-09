@@ -122,6 +122,9 @@
                     <classPatterns>
                         <pattern>**.dtos.*</pattern>
                     </classPatterns>
+                    <classes>
+                        <class>int221.oasip.backendus3.entities.Role</class>
+                    </classes>
                     <outputKind>global</outputKind>
                     <outputFile>gen-types.d.ts</outputFile>
                     <optionalAnnotations>
