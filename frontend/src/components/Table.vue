@@ -19,7 +19,7 @@ const props = defineProps({
     default: false,
   },
   selectedKey: {
-    default: null,
+    default: "",
     type: String,
   },
   keyExtractor: {

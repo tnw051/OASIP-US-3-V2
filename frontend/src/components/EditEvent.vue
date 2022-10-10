@@ -42,7 +42,7 @@ setCategoryId(props.currentEvent.eventCategory.id);
 function handleSaveClick() {
   const updates: EditEventRequest = {};
 
-  const newDate = new Date(inputs.value.eventStartTime);
+  const newDate = new Date(inputs.value.eventStartTime || "");
   if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
     updates.eventStartTime = newDate.toISOString();
   }
