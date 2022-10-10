@@ -20,7 +20,7 @@ import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, isAuthLoading } = useAuth();
+const { isAuthenticated, isLecturer, onAuthLoaded } = useAuth();
 
 const events = ref<EventResponse[]>([]);
 const categories = ref<CategoryResponse[]>([]);
@@ -54,25 +54,18 @@ const filter = ref<{
   date: "",
 });
 
-// only call method if and only if isLoading is false
-watchEffect(async () => {
-  console.log("useAuth.isLoading", isAuthLoading.value);
-  if (isAuthLoading.value) {
-    return;
-  }
-
+// only call method if and only if auth is loaded
+onAuthLoaded(async () => {
   if (!isAuthenticated.value) {
     setIsLoading(false);
     return;
   }
   const events = await getEvents();
   setEvents(events);
-  if (isLecturer) {
-    console.log("isLecturer");
+  
+  if (isLecturer.value) {
     categories.value = await getLecturerCategories();
   } else {
-    console.log("isStudent");
-
     categories.value = await getCategories();
   }
   setIsLoading(false);
