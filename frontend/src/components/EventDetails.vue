@@ -4,7 +4,7 @@ import { formatDateAndFromToTime } from "../utils";
 import Badge from "./Badge.vue";
 
 interface Props {
-  currentEvent: EventResponse | Record<string, never>;
+  currentEvent: EventResponse;
 }
 
 const props = defineProps<Props>();

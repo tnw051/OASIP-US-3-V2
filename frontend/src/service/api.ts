@@ -12,6 +12,7 @@ import {
   Role,
   UserResponse,
 } from "../gen-types";
+import { ErrorResponse, Id } from "../types";
 
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 

@@ -14,22 +14,24 @@ import {
   getLecturerCategories,
   updateEvent,
 } from "../service/api";
+import { BaseSlotProps } from "../types";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, isAuthLoading } = useAuth();
+const { isAuthenticated, isLecturer, onAuthLoaded } = useAuth();
 
 const events = ref<EventResponse[]>([]);
 const categories = ref<CategoryResponse[]>([]);
-const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
+const { editingState, withNoEditing, startEditing, stopEditing } = useEditing<EventResponse>();
 const { isLoading, setIsLoading } = useIsLoading(true);
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 const isCancelSuccessModalOpen = ref(false);
 const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
+const selectedEvent = ref<EventResponse | null>(null);
 
 const eventTypes = {
   DAY: "day" as const,
@@ -52,20 +54,16 @@ const filter = ref<{
   date: "",
 });
 
-// only call method if and only if isLoading is false
-watchEffect(async () => {
-  console.log("useAuth.isLoading", isAuthLoading.value);
-  if (isAuthLoading.value) {
-    return;
-  }
-
+// only call method if and only if auth is loaded
+onAuthLoaded(async () => {
   if (!isAuthenticated.value) {
     setIsLoading(false);
     return;
   }
   const events = await getEvents();
   setEvents(events);
-  if (isLecturer) {
+  
+  if (isLecturer.value) {
     categories.value = await getLecturerCategories();
   } else {
     categories.value = await getCategories();
@@ -85,14 +83,19 @@ function setEvents(_events, sort = sortDirections.DESC) {
   events.value = _events;
 }
 
-const eventToBeDeleted = ref<EventResponse>(null);
+const eventToBeDeleted = ref<EventResponse>();
 
 function startConfirmCancel(event: EventResponse) {
   eventToBeDeleted.value = event;
   isCancelConfirmModalOpen.value = true;
 }
 
-async function confirmCancelEvent(event: EventResponse) {
+async function confirmCancelEvent() {
+  const event = eventToBeDeleted.value;
+  if (!event) {
+    return;
+  }
+
   const isSuccess = await deleteEvent(event.id);
   isCancelConfirmModalOpen.value = false;
   if (isSuccess) {
@@ -103,22 +106,32 @@ async function confirmCancelEvent(event: EventResponse) {
   }
 }
 
-function selectEvent(event: EventResponse) {
-  withNoEditing(() => {
-    currentEvent.value = event;
-  });
+function openEventDetails(event: EventResponse) {
+  selectedEvent.value = event;
+}
+
+function closeEventDetails() {
+  selectedEvent.value = null;
 }
 
 async function saveEvent(updates: EditEventRequest) {
-  const selectedEventId = currentEvent.value.id;
+  const currentEvent = editingState.item;
+  if (!currentEvent) {
+    return;
+  }
 
-  if (new Date(updates.eventStartTime).getTime() !== new Date(currentEvent.value.eventStartTime).getTime() ||
-    updates.eventNotes !== currentEvent.value.eventNotes) {
+  const selectedEventId = currentEvent.id;
+
+  if (updates.eventStartTime && new Date(updates.eventStartTime).getTime() !== new Date(currentEvent.eventStartTime).getTime() ||
+    updates.eventNotes !== currentEvent.eventNotes) {
     const updatedEvent = await updateEvent(selectedEventId, updates);
     if (updatedEvent) {
       const event = events.value.find((e) => e.id === selectedEventId);
-      event.eventStartTime = updatedEvent.eventStartTime;
-      event.eventNotes = updatedEvent.eventNotes;
+      if (!event) {
+        return;
+      }
+
+      Object.assign(event, updatedEvent);
       isEditSuccessModalOpen.value = true;
     } else {
       isEditErrorModalOpen.value = true;
@@ -159,6 +172,9 @@ async function filterEvents() {
 
   setIsLoading(false);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<EventResponse>;
 </script>
 
 <template>
@@ -245,25 +261,32 @@ async function filterEvents() {
           :items="events"
           enable-edit
           enable-delete
-          :selected-key="currentEvent.id"
+          :selected-key="editingState.item?.id.toString()"
           :key-extractor="(event) => event.id"
           :is-loading="isLoading"
-          @edit="startEditing"
+          @edit="(event) => {
+            closeEventDetails();
+            startEditing(event);
+          }"
           @delete="startConfirmCancel"
-          @select="selectEvent"
+          @select="(event) => {
+            withNoEditing(() => {
+              openEventDetails(event);
+            });
+          }"
         >
-          <template #cell:bookingName="{ item }">
+          <template #cell:bookingName="{ item }: SlotProps">
             <span class="font-medium">{{ item.bookingName }}</span>
           </template>
 
-          <template #cell:eventStartTime="{ item }">
+          <template #cell:eventStartTime="{ item }: SlotProps">
             <div class="flex flex-col">
               <span class="">{{ formatDateTime(new Date(item.eventStartTime)) }}</span>
               <span class="text-sm text-slate-500">{{ item.eventDuration }} minutes</span>
             </div>
           </template>
 
-          <template #cell:eventCategory="{ item }">
+          <template #cell:eventCategory="{ item }: SlotProps">
             <div class="flex">
               <Badge :text="item.eventCategory.eventCategoryName" />
             </div>
@@ -285,21 +308,21 @@ async function filterEvents() {
         </Table>
 
         <div
-          v-if="currentEvent.id"
+          v-if="editingState.isEditing || selectedEvent"
           class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditEvent
-            v-if="isEditing"
+            v-if="editingState.isEditing"
             class="sticky top-24"
-            :current-event="currentEvent"
-            @cancel="isEditing = false"
+            :current-event="editingState.item"
+            @cancel="stopEditing"
             @save="saveEvent"
           />
           <EventDetails
-            v-else
+            v-if="selectedEvent"
             class="sticky top-24"
-            :current-event="currentEvent"
-            @close="currentEvent = {}"
+            :current-event="selectedEvent"
+            @close="closeEventDetails"
           />
         </div>
       </div>
@@ -347,7 +370,7 @@ async function filterEvents() {
     variant="error"
     :is-open="isCancelConfirmModalOpen"
     @close="isCancelConfirmModalOpen = false"
-    @confirm="confirmCancelEvent(eventToBeDeleted)"
+    @confirm="confirmCancelEvent"
   />
 </template>
 

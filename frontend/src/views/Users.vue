@@ -4,15 +4,16 @@ import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
 import { EditUserRequest, Role, UserResponse } from "../gen-types";
+import { BaseSlotProps } from "../types";
 import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
-import { formatDateTime } from "../utils";
+import { formatDateTime } from "../utils/index";
 import { useEditing } from "../utils/useEditing";
 
 const users = ref<UserResponse[]>([]);
 const roles = ref<Role[]>([]);
 const showDetails = ref(false);
 const isLoggedIn = ref(true);
-const { editingItem: currentUser, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
+const { editingState, startEditing, stopEditing } = useEditing<UserResponse>();
 
 onBeforeMount(async () => {
   users.value = await getUsers({
@@ -22,12 +23,6 @@ onBeforeMount(async () => {
   }) || [];
   roles.value = await getRoles();
 });
-
-function selectUser(user: UserResponse) {
-  withNoEditing(() => {
-    currentUser.value = user;
-  });
-}
 
 const headers = computed(() => {
   const parsedHeaders = [
@@ -61,11 +56,11 @@ const headers = computed(() => {
   return parsedHeaders;
 });
 
-function confirmDeleteUser(user: UserResponse) {
+async function confirmDeleteUser(user: UserResponse) {
   if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
     return;
   }
-  const isSuccess = deleteUser(user.id);
+  const isSuccess = await deleteUser(user.id);
   if (isSuccess) {
     users.value = users.value.filter((u) => u.id !== user.id);
     alert("User deleted successfully");
@@ -78,13 +73,18 @@ const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 
 async function saveUser(updates: EditUserRequest) {
-  const updatedUser = await updateUser(currentUser.value.id, updates);
+  if (!editingState.isEditing) {
+    return;
+  }
+  const currentUser = editingState.item;
+  const updatedUser = await updateUser(currentUser.id, updates);
   if (updatedUser) {
     const user = users.value.find((u) => u.id === updatedUser.id);
-    user.name = updatedUser.name;
-    user.email = updatedUser.email;
-    user.role = updatedUser.role;
-    user.updatedOn = updatedUser.updatedOn;
+    if (!user) {
+      return;
+    }
+
+    Object.assign(user, updatedUser);
     isEditSuccessModalOpen.value = true;
   } else {
     isEditErrorModalOpen.value = true;
@@ -92,6 +92,9 @@ async function saveUser(updates: EditUserRequest) {
 
   stopEditing();
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<UserResponse>;
 </script>
 
 <template>
@@ -120,25 +123,24 @@ async function saveUser(updates: EditUserRequest) {
           :items="users"
           enable-edit
           enable-delete
-          :selected-key="currentUser.id"
+          :selected-key="editingState.item?.id.toString()"
           :key-extractor="(user) => user.id"
           @edit="startEditing"
           @delete="confirmDeleteUser"
-          @select="selectUser"
         >
-          <template #cell:name="{ item }">
+          <template #cell:name="{ item }: SlotProps">
             {{ item.name }}
           </template>
-          <template #cell:email="{ item }">
+          <template #cell:email="{ item }: SlotProps">
             {{ item.email }}
           </template>
-          <template #cell:role="{ item }">
+          <template #cell:role="{ item }: SlotProps">
             {{ item.role }}
           </template>
-          <template #cell:createdOn="{ item }">
+          <template #cell:createdOn="{ item }: SlotProps">
             {{ formatDateTime(new Date(item.createdOn)) }}
           </template>
-          <template #cell:updatedOn="{ item }">
+          <template #cell:updatedOn="{ item }: SlotProps">
             {{ formatDateTime(new Date(item.updatedOn)) }}
           </template>
           <template #empty>
@@ -155,13 +157,13 @@ async function saveUser(updates: EditUserRequest) {
         </Table>
 
         <div
-          v-if="isEditing"
+          v-if="editingState.isEditing"
           class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditUser
-            v-if="isEditing"
+            v-if="editingState.isEditing"
             class="sticky top-24"
-            :current-user="currentUser"
+            :current-user="editingState.item"
             :roles="roles"
             @cancel="stopEditing"
             @save="saveUser"
@@ -189,4 +191,5 @@ async function saveUser(updates: EditUserRequest) {
 </template>
 
 <style scoped>
+
 </style>

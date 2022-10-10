@@ -1,9 +1,10 @@
 import { decodeJwt, JWTPayload } from "jose";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { LoginRequest, Role } from "../gen-types";
 import { accessTokenKey, login, logout } from "../service/api";
+import { ErrorResponse, OasipJwtPayload } from "../types";
 
-const user = ref<OasipJwtPayload>(null);
+const user = ref<OasipJwtPayload | null>(null);
 const isAuthenticated = computed(() => user.value !== null);
 const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
@@ -34,7 +35,8 @@ function _login(user: LoginRequest, onSuccess = () => { }) {
       },
     });
   } catch (errorResponse) {
-    alert(errorResponse.message);
+    const error = errorResponse as ErrorResponse;
+    alert(error.message);
   }
 }
 
@@ -48,7 +50,6 @@ async function _logout() {
 }
 
 (function init() {
-  const token = localStorage.getItem(accessTokenKey);
   const loadingDelay = import.meta.env.VITE_AUTH_LOADING_DELAY;
   if (loadingDelay) {
     setTimeout(work, import.meta.env.VITE_AUTH_LOADING_DELAY);
@@ -57,19 +58,31 @@ async function _logout() {
   }
 
   function work() {
-    setUserFromToken(token);
+    const token = localStorage.getItem(accessTokenKey);
+    if (!token) {
+      console.log("No access token found");
+    } else {
+      console.log("Found access token");
+      setUserFromToken(token);
+    }
+
     isAuthLoading.value = false;
   }
 })();
 
 function setUserFromToken(token: string) {
-  if (!token) {
-    console.log("No access token found");
-    return;
-  }
   const claims = decodeJwt(token) as JWTPayload & OasipJwtPayload;
   user.value = claims;
   console.log("Loaded user", user.value);
+}
+
+function onAuthLoaded(callback: () => void) {
+  watchEffect(() => {
+    if (isAuthLoading.value) {
+      return;
+    }
+    callback();
+  });
 }
 
 export function useAuth() {
@@ -81,6 +94,7 @@ export function useAuth() {
     isAdmin,
     isLecturer,
     isAuthLoading,
+    onAuthLoaded,
   };
 }
 
