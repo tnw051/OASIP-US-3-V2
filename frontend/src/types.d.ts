@@ -7,6 +7,7 @@ export interface ErrorResponse {
     status: number;
     error: string;
     message: string;
+    errors?: Record<string, string[]>;
 }
 
 // require manually sync to the payload from the backend for now
