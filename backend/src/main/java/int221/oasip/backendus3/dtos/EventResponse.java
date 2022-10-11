@@ -15,4 +15,5 @@ public class EventResponse {
     private Instant eventStartTime;
     private Integer eventDuration;
     private String eventNotes;
+    private String bucketUuid;
 }

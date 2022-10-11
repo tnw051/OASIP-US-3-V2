@@ -1,7 +1,6 @@
 package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
-import int221.oasip.backendus3.dtos.CreateEventRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -12,13 +11,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
@@ -30,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/events")
@@ -74,7 +72,7 @@ public class EventController {
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("!hasRole('LECTURER')")
-    public EventResponse create(@Valid @RequestBody CreateEventRequest newEvent, Authentication authentication) {
+    public EventResponse create(@Valid CreateEventMultipartRequest newEvent, Authentication authentication) {
         if (authentication != null) {
             String email = authentication.getName();
             if (!isAdmin(authentication) && !email.equals(newEvent.getBookingEmail())) {
@@ -144,49 +142,30 @@ public class EventController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
-    @PostMapping("/file")
-    public String uploadFile(CreateEventMultipartRequest request) throws IOException {
-        MultipartFile file = request.getFile();
+    // with optional query parameter to only fetch the file name without the file content
+    @GetMapping("/files/{uuid}")
+    public ResponseEntity<?> getFile(
+            @PathVariable String uuid,
+            @RequestParam(required = false) Boolean noContent
+    ) throws IOException {
+        File file = service.getFileByBucketUuid(uuid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
 
-        System.out.println(file.getOriginalFilename());
-        System.out.println(file.getSize());
-
-        // generate uuid as a directory name to store the file
-        String uuidNewDir = UUID.randomUUID().toString();
-        String parentDir = "C:\\dev\\OASIP-US-3-V2\\backend\\uploads";
-        File uploadDir = new File(parentDir, uuidNewDir);
-        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
-
-        File destination = new File(uploadDir, file.getOriginalFilename());
-
-        // check that absolute path is the same as the canonical path to prevent path traversal
-        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file name");
-        }
-
-        System.out.println("Saving to " + destination.getAbsolutePath());
-        file.transferTo(new File(destination.getAbsolutePath()));
-
-        return "File Uploaded";
-    }
-
-    // endpoint for downloading file
-    @GetMapping("/file/{uuid}")
-    public ResponseEntity<Resource> download(@PathVariable String uuid) throws IOException {
-        String parentDir = "C:\\dev\\OASIP-US-3-V2\\backend\\uploads";
-        File uploadDir = new File(parentDir, uuid);
-        // get the only file in the directory
-        File file = uploadDir.listFiles()[0];
-
-        // return the file
         Path path = Paths.get(file.getAbsolutePath());
         Resource resource = new ByteArrayResource(Files.readAllBytes(path));
-
         String contentType = Files.probeContentType(path);
-        System.out.println(contentType);
 
-        return ResponseEntity.ok()
-                .contentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType))
-                .body(resource);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + file.getName());
+
+        ResponseEntity.BodyBuilder bodyBuilder = ResponseEntity.ok()
+                .headers(headers)
+                .contentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType));
+
+        if (noContent == null || !noContent) {
+            return bodyBuilder.body(resource);
+        } else {
+            return bodyBuilder.body(file.getName());
+        }
     }
 }

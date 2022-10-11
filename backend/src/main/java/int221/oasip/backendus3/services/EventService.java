@@ -1,6 +1,6 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CreateEventRequest;
+import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
@@ -14,33 +14,37 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EventService {
-    private EventRepository repository;
-    private ModelMapper modelMapper;
-    private ModelMapperUtils modelMapperUtils;
-    private EventCategoryRepository categoryRepository;
-    private UserRepository userRepository;
+    private final EventRepository repository;
+    private final ModelMapper modelMapper;
+    private final ModelMapperUtils modelMapperUtils;
+    private final EventCategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+
+    @Value("${upload.path}")
+    private String uploadPath;
 
     public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
@@ -52,7 +56,7 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) throws MessagingException, IOException {
+    public EventResponse create(CreateEventMultipartRequest newEvent, boolean isGuest) throws MessagingException, IOException {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
@@ -84,10 +88,46 @@ public class EventService {
         }
 
         e.setId(null);
+
+        String bucketUuid = uploadFile(newEvent.getFile());
+        e.setBucketUuid(bucketUuid);
+
         sendmail(e);
 
         return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
+
+    // refactor the above uploadFile method as a service method
+    public String uploadFile(MultipartFile file) throws IOException {
+        // generate uuid as a directory name to store the file
+        String uuidNewDir = UUID.randomUUID().toString();
+        File uploadDir = new File(uploadPath, uuidNewDir);
+        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
+
+        File destination = new File(uploadDir, file.getOriginalFilename());
+
+        // check that absolute path is the same as the canonical path to prevent path traversal
+        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
+            // not implmenented
+        }
+
+        System.out.println("Saving to " + destination.getAbsolutePath());
+        file.transferTo(new File(destination.getAbsolutePath()));
+
+        return uuidNewDir;
+    }
+
+    public Optional<File> getFileByBucketUuid(String uuid) {
+        File uploadDir = new File(uploadPath, uuid);
+        // get the only file in the directory
+        File[] files = uploadDir.listFiles();
+        if (files == null || files.length == 0) {
+            return Optional.empty();
+        }
+
+        return Optional.of(files[0]);
+    }
+
 
     public void delete(Integer id) {
         repository.deleteById(id);
