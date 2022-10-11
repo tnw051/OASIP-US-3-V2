@@ -20,7 +20,8 @@
     "plugins": [
         "vue",
         "@typescript-eslint",
-        "tailwindcss"
+        "tailwindcss",
+        "import-newlines"
     ],
     "rules": {
         "indent": [
@@ -40,6 +41,7 @@
             "error",
             "always-multiline"
         ],
-        "tailwindcss/no-custom-classname": "off"
+        "tailwindcss/no-custom-classname": "off",
+        "import-newlines/enforce": "error"
     }
 }

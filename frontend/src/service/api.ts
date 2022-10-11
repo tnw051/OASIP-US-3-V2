@@ -1,3 +1,18 @@
+import {
+  CategoryResponse,
+  CreateEventRequest,
+  CreateUserRequest,
+  EditCategoryRequest,
+  EditEventRequest,
+  EditUserRequest,
+  EventResponse,
+  LoginRequest,
+  LoginResponse,
+  MatchRequest,
+  Role,
+  UserResponse,
+} from "../gen-types";
+
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 
 function makeUrl(path: string) {
@@ -51,7 +66,9 @@ export async function createEvent(newEvent: CreateEventRequest): Promise<EventRe
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(token && {
+        Authorization: `Bearer ${token}`,
+      }),
     },
     body: JSON.stringify(newEvent),
   });
@@ -192,7 +209,8 @@ export const accessTokenKey = "accessToken";
 interface GetUsersOptions {
   onUnauthorized?: () => void;
 }
-export async function getUsers(options: GetUsersOptions = {}): Promise<UserResponse[]> {
+export async function getUsers(options: GetUsersOptions = {
+}): Promise<UserResponse[]> {
   const { onUnauthorized } = options;
   const response = await fetch(makeUrl("/users"), {
     headers: {
@@ -341,7 +359,8 @@ interface LoginOptions {
   onNotFound?: (r: ErrorResponse) => void;
 }
 
-export async function login(loginRequest: LoginRequest, options: LoginOptions = {}): Promise<void> {
+export async function login(loginRequest: LoginRequest, options: LoginOptions = {
+}): Promise<void> {
   const { onSuccess, onUnauthorized, onNotFound } = options;
   const response = await fetch(makeUrl("/auth/login"), {
     method: "POST",

@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateUserRequest;
+import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -50,5 +51,16 @@ public class UserController {
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
+    }
+
+    @PatchMapping("/{id}")
+    public UserResponse update(@PathVariable Integer id, @Valid @RequestBody EditUserRequest editUserRequest) {
+        if (editUserRequest.getName() == null &&
+                editUserRequest.getEmail() == null &&
+                editUserRequest.getRole() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of name, email or role must be provided");
+        }
+
+        return service.update(id, editUserRequest);
     }
 }

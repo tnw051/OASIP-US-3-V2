@@ -1,15 +1,15 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.37.1128 on 2022-10-01 14:36:16.
+// Generated using typescript-generator version 2.37.1128 on 2022-10-09 20:12:18.
 
-interface CategoryResponse {
+export interface CategoryResponse {
     id: number;
     eventCategoryName: string;
     eventCategoryDescription: string;
     eventDuration: number;
 }
 
-interface CreateEventRequest {
+export interface CreateEventRequest {
     eventCategoryId: number;
     bookingName: string;
     bookingEmail: string;
@@ -17,36 +17,36 @@ interface CreateEventRequest {
     eventNotes?: string;
 }
 
-interface CreateUserRequest {
+export interface CreateUserRequest {
     name: string;
     email: string;
     password: string;
     role: string;
 }
 
-interface EditCategoryRequest {
+export interface EditCategoryRequest {
     eventCategoryName?: string;
     eventCategoryDescription?: string;
     eventDuration?: number;
 }
 
-interface EditEventRequest {
+export interface EditEventRequest {
     eventStartTime?: DateAsString;
     eventNotes?: string;
 }
 
-interface EditUserRequest {
+export interface EditUserRequest {
     name?: string;
     email?: string;
     role?: string;
 }
 
-interface EventCategoryIdAndNameResponse {
+export interface EventCategoryIdAndNameResponse {
     id: number;
     eventCategoryName: string;
 }
 
-interface EventResponse {
+export interface EventResponse {
     id: number;
     eventCategory: EventCategoryIdAndNameResponse;
     bookingName: string;
@@ -56,28 +56,30 @@ interface EventResponse {
     eventNotes: string;
 }
 
-interface LoginRequest {
+export interface LoginRequest {
     email: string;
     password: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
     type: string;
     accessToken: string;
 }
 
-interface MatchRequest {
+export interface MatchRequest {
     email: string;
     password: string;
 }
 
-interface UserResponse {
+export interface UserResponse {
     id: number;
     name: string;
     email: string;
-    role: string;
+    role: Role;
     createdOn: DateAsString;
     updatedOn: DateAsString;
 }
 
-type DateAsString = string;
+export type DateAsString = string;
+
+export type Role = "ADMIN" | "STUDENT" | "LECTURER";

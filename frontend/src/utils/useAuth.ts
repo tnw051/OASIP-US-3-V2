@@ -1,8 +1,9 @@
-import { decodeJwt } from "jose";
+import { decodeJwt, JWTPayload } from "jose";
 import { computed, ref } from "vue";
+import { LoginRequest, Role } from "../gen-types";
 import { accessTokenKey, login, logout } from "../service/api";
 
-const user = ref(null);
+const user = ref<OasipJwtPayload>(null);
 const isAuthenticated = computed(() => user.value !== null);
 const isAuthLoading = ref(true);
 const isAdmin = computed(() => {
@@ -66,7 +67,7 @@ function setUserFromToken(token: string) {
     console.log("No access token found");
     return;
   }
-  const claims = decodeJwt(token);
+  const claims = decodeJwt(token) as JWTPayload & OasipJwtPayload;
   user.value = claims;
   console.log("Loaded user", user.value);
 }
@@ -82,3 +83,9 @@ export function useAuth() {
     isAuthLoading,
   };
 }
+
+export const roles = {
+  ADMIN: "ADMIN" as Role,
+  LECTURER: "LECTURER" as Role,
+  STUDENT: "STUDENT" as Role,
+};
