@@ -3,6 +3,7 @@ import { onBeforeMount, ref } from "vue";
 import Modal from "../components/Modal.vue";
 import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
+import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
@@ -11,19 +12,21 @@ const categories = ref<CategoryResponse[]>([]);
 const {
   errors,
   inputs,
-  validateBookingName,
-  validateBookingEmail,
-  validateEventNotes,
-  validateStartTime,
-  validateCategoryId,
-  setEventDuration,
-  resetInputs,
-  canSubmit,
+  handleBookingEmailChange,
+  handleBookingNameChange,
+  handleEventCategoryIdChange,
+  handleEventNotesChange,
+  handleEventStartTimeChange,
+  resetInputsAndErrors,
 } = useEventValidator();
 
 const { isAuthenticated, user, isAdmin } = useAuth();
 if (isAuthenticated.value && !isAdmin.value) {
-  inputs.value.bookingEmail = user.value.sub;
+  if (!user.value) {
+    console.log("User is not loaded");
+  } else {
+    inputs.bookingEmail = user.value.sub;
+  }
 }
 
 onBeforeMount(async () => {
@@ -37,43 +40,35 @@ const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
 async function handleSubmit() {
-  const event = {
-    ...inputs.value,
-
-    // convert local time to UTC in ISO-8601 format
-    eventStartTime: new Date(inputs.value.eventStartTime).toISOString(),
-  };
+  if (!inputs.bookingEmail || !inputs.bookingName || !inputs.eventCategoryId || !inputs.eventNotes || !inputs.eventStartTime) {
+    console.log("Missing required fields");
+    return;
+  }
 
   try {
     const createdEvent = await createEvent({
-      bookingEmail: event.bookingEmail,
-      bookingName: event.bookingName,
-      eventCategoryId: Number(event.eventCategoryId),
-      eventNotes: event.eventNotes,
-      eventStartTime: event.eventStartTime,
+      bookingName: inputs.bookingName,
+      bookingEmail: inputs.bookingEmail,
+      // convert local time to UTC in ISO-8601 format
+      eventCategoryId: Number(inputs.eventCategoryId),
+      eventStartTime: new Date(inputs.eventStartTime).toISOString(),
     });
 
     if (createdEvent) {
-      resetInputs();
+      resetInputsAndErrors();
       isSuccessModalOpen.value = true;
     } else {
       isErrorModalOpen.value = true;
     }
   } catch (errorResponse) {
-    if (errorResponse.status !== 400) {
+    const error = errorResponse as ErrorResponse;
+    if (error.status !== 400) {
       isErrorModalOpen.value = true;
       return;
     }
 
-    Object.assign(errors.value, errorResponse.errors);
+    Object.assign(errors.value, error.errors);
   }
-}
-
-function handleCategoryIdChange() {
-  const eventCategoryId = inputs.value.eventCategoryId;
-  const category = categories.value.find((category) => category.id === eventCategoryId);
-  setEventDuration(category.eventDuration);
-  validateCategoryId();
 }
 </script>
  
@@ -101,10 +96,10 @@ function handleCategoryIdChange() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your booking name?"
-          @input="validateBookingName"
+          @input="handleBookingNameChange"
         >
         <div
-          v-if="errors.bookingName.length > 0"
+          v-if="errors.bookingName"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
@@ -125,8 +120,8 @@ function handleCategoryIdChange() {
         <span
           v-if="isAuthenticated && !isAdmin"
           class="rounded p-2"
-          :value="user.sub"
-        >{{ user.sub }}</span>
+          :value="user?.sub"
+        >{{ user?.sub }}</span>
         <input
           v-else
           id="email"
@@ -135,10 +130,10 @@ function handleCategoryIdChange() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your email?"
-          @input="validateBookingEmail"
+          @input="handleBookingEmailChange"
         >
         <div
-          v-if="errors.bookingEmail.length > 0"
+          v-if="errors.bookingEmail"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
@@ -161,15 +156,15 @@ function handleCategoryIdChange() {
           :max="inputConstraits.MAX_DATETIME_LOCAL"
           required
           class="rounded bg-gray-100 p-2"
-          @input="validateStartTime"
+          @input="handleEventStartTimeChange"
         >
         <div
-          v-if="errors.eventStartTime.length > 0 || errors.hasOverlappingEvents"
+          v-if="errors.eventStartTime || errors.hasOverlappingEvents"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in errors.eventStartTime"
-            :key="error"
+            :key="error.toString()"
           >{{ error }}</span>
           <span v-if="errors.hasOverlappingEvents">Start time overlaps with other event(s)</span>
         </div>
@@ -185,7 +180,7 @@ function handleCategoryIdChange() {
           v-model="inputs.eventCategoryId"
           required
           class="rounded bg-gray-100 p-2"
-          @change="handleCategoryIdChange"
+          @change="handleEventCategoryIdChange"
         >
           <option
             disabled
@@ -218,10 +213,10 @@ function handleCategoryIdChange() {
           v-model="inputs.eventNotes"
           class="rounded bg-gray-100 p-2"
           placeholder="What's your event about?"
-          @input="validateEventNotes"
+          @input="handleEventNotesChange"
         />
         <div
-          v-if="errors.eventNotes.length > 0"
+          v-if="errors.eventNotes"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span

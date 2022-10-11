@@ -1,13 +1,15 @@
 // useValidate composable
 // used for input validation and showing errors
-import { computed, ref } from "vue";
+import { errors } from "jose";
+import { computed, reactive, ref } from "vue";
 import { EventResponse } from "../gen-types";
 import { getEventsByCategoryIdOnDate } from "../service/api";
 import { findOverlap } from "./index";
+import { makeValidateResult, ValidationResult } from "./validators/common";
 
 const defaultValue = "";
 
-export function useEventValidator() {
+export function useEventValidatorOld() {
   function makeDefaultValues() {
     return {
       bookingName: defaultValue,
@@ -18,7 +20,14 @@ export function useEventValidator() {
     };
   }
 
-  const errors = ref({
+  const errors = ref<{
+    bookingName?: string[];
+    bookingEmail?: string[];
+    eventStartTime?: string[];
+    eventCategoryId?: string[];
+    eventNotes?: string[];
+    hasOverlappingEvents?: boolean;
+  }>({
     bookingName: [],
     bookingEmail: [],
     eventStartTime: [],
@@ -107,7 +116,7 @@ export function useEventValidator() {
   }
 
 
-  const previousDate = ref(null);
+  const previousDate = ref<string | null>(null);
 
   async function validateStartTime() {
     const eventStartTime = inputs.value.eventStartTime;
@@ -201,5 +210,188 @@ export function useEventValidator() {
     resetInputs,
     canSubmit,
     setCategoryId,
+  };
+}
+
+// refactor the useEventValidator to pure functions and later use it in the composition API
+function validateBookingName(name: string): ValidationResult {
+  const errors: string[] = [];
+
+  if (name.length > 100) {
+    errors.push("Booking name must be less than 100 characters");
+  }
+
+  if (name.trim().length === 0) {
+    errors.push("Booking name must not be blank");
+  }
+
+  return makeValidateResult(errors);
+}
+
+function validateBookingEmail(email: string): ValidationResult {
+  const errors: string[] = [];
+
+  if (email.length > 50) {
+    errors.push("Booking email must be less than 50 characters");
+  }
+
+  if (email.trim().length === 0) {
+    errors.push("Booking email must not be blank");
+  }
+
+  // RFC2822 https://regexr.com/2rhq7
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+  if (!emailRegex.test(email)) {
+    errors.push("Booking email is invalid");
+  }
+
+  return makeValidateResult(errors);
+}
+
+function validateEventNotes(notes: string): ValidationResult {
+  const errors: string[] = [];
+
+  if (notes.length > 500) {
+    errors.push("Booking note must be less than 500 characters");
+  }
+
+  return makeValidateResult(errors);
+}
+
+function validateStartTime(startTime: string, duration: number, events: EventResponse[], currentEventId: string | null = null): ValidationResult<{ hasOverlappingEvents: boolean }> {
+  const errors: string[] = [];
+
+  const now = new Date();
+  const startTimeDate = new Date(startTime);
+
+  if (startTimeDate.getTime() <= now.getTime()) {
+    errors.push("Start time must be in the future");
+  }
+
+  const overlapEvents = findOverlap(startTime, duration, events, currentEventId);
+  const hasOverlap = overlapEvents.length > 0;
+
+  return {
+    ...makeValidateResult(errors),
+    hasOverlappingEvents: hasOverlap,
+  };
+}
+
+type InputError = string[] | false;
+
+interface Errors {
+  bookingName: InputError;
+  bookingEmail: InputError;
+  eventNotes: InputError;
+  eventStartTime: InputError;
+  hasOverlappingEvents: boolean;
+}
+
+export function useEventValidator() {
+  const defaultErrors: Errors = {
+    bookingName: false,
+    bookingEmail: false,
+    eventNotes: false,
+    eventStartTime: false,
+    hasOverlappingEvents: false,
+  };
+  const errors = reactive<Errors>(defaultErrors);
+
+  const defaultInputs = {
+    bookingName: "",
+    bookingEmail: "",
+    eventNotes: "",
+    eventStartTime: "",
+    eventCategoryId: 0,
+  };
+  const inputs = reactive(defaultInputs);
+
+  const eventsForSelectedCategoryAndDate = ref<EventResponse[]>([]);
+
+  const prevDateMidnight = ref<Date>();
+
+  const eventId = ref("");
+
+  // function setEventId(id: string) {
+  //   eventId.value = id;
+  // }
+
+  // function setCategoryId(id: number) {
+  //   inputs.eventCategoryId = id;
+  // }
+
+  async function handleBookingNameChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const name = target.value;
+    const result = validateBookingName(name);
+    errors.bookingName = result.errors;
+  }
+
+  async function handleBookingEmailChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const email = target.value;
+    const result = validateBookingEmail(email);
+    errors.bookingEmail = result.errors;
+  }
+
+  async function handleEventNotesChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const notes = target.value;
+    const result = validateEventNotes(notes);
+    errors.eventNotes = result.errors;
+  }
+
+  async function handleEventStartTimeChange(e: Event, duration: number, currentEventId: string | null = null) {
+    const target = e.target as HTMLInputElement;
+    const startTime = target.value;
+    const events = await getEventsByCategoryIdAndDate(new Date(startTime));
+    const result = validateStartTime(startTime, duration, events, currentEventId);
+    errors.eventStartTime = result.errors;
+  }
+
+  async function handleEventCategoryIdChange(duration: number, currentEventId: string | null = null) {
+    const events = await getEventsByCategoryIdAndDate(new Date(inputs.eventStartTime));
+    const startTime = inputs.eventStartTime;
+    const result = validateStartTime(startTime, duration, events, currentEventId);
+    errors.eventStartTime = result.errors;
+  }
+
+  // update eventsForSelectedCategoryAndDate when start time or category id changed
+  async function getEventsByCategoryIdAndDate(date: Date): Promise<EventResponse[]> {
+    const startTime = inputs.eventStartTime;
+    const categoryId = inputs.eventCategoryId;
+    if (!startTime || !categoryId) {
+      return [];
+    }
+
+    const dateMidnight = new Date(date);
+    dateMidnight.setHours(0, 0, 0, 0);
+    if (prevDateMidnight.value?.getTime() === dateMidnight.getTime()) {
+      return eventsForSelectedCategoryAndDate.value;
+    }
+
+    const utcDateMidnightString = dateMidnight.toISOString();
+    const events = await getEventsByCategoryIdOnDate(categoryId, utcDateMidnightString);
+    eventsForSelectedCategoryAndDate.value = events;
+
+    prevDateMidnight.value = dateMidnight;
+
+    return events;
+  }
+
+  function resetInputsAndErrors() {
+    Object.assign(inputs, defaultInputs);
+    Object.assign(errors, defaultErrors);
+  }
+
+  return {
+    errors,
+    inputs,
+    handleBookingNameChange,
+    handleBookingEmailChange,
+    handleEventNotesChange,
+    handleEventStartTimeChange,
+    handleEventCategoryIdChange,
+    resetInputsAndErrors,
   };
 }
