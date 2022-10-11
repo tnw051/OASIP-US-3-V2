@@ -92,7 +92,6 @@
             <artifactId>spring-context-support</artifactId>
             <version>5.2.8.RELEASE</version>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
@@ -115,40 +114,42 @@
                     </excludes>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>cz.habarta.typescript-generator</groupId>-->
-<!--                <artifactId>typescript-generator-maven-plugin</artifactId>-->
-<!--                <version>${typescript-generator.version}</version>-->
-
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>generate</id>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>process-classes</phase>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <jsonLibrary>jackson2</jsonLibrary>-->
-<!--                    <classPatterns>-->
-<!--                        <pattern>**.dtos.*</pattern>-->
-<!--                    </classPatterns>-->
-<!--                    <outputKind>global</outputKind>-->
-<!--                    <outputFile>gen-types.d.ts</outputFile>-->
-<!--                    <optionalAnnotations>-->
-<!--                        <annotation>javax.annotation.Nullable</annotation>-->
-<!--                    </optionalAnnotations>-->
-<!--                    <mapDate>asString</mapDate>-->
-<!--                </configuration>-->
-<!--                <dependencies>-->
-<!--&lt;!&ndash;                    <dependency>&ndash;&gt;-->
-<!--&lt;!&ndash;                        <groupId>cz.habarta.typescript-generator</groupId>&ndash;&gt;-->
-<!--&lt;!&ndash;                        <artifactId>typescript-generator-spring</artifactId>&ndash;&gt;-->
-<!--&lt;!&ndash;                        <version>${typescript-generator.version}</version>&ndash;&gt;-->
-<!--&lt;!&ndash;                    </dependency>&ndash;&gt;-->
-<!--                </dependencies>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>cz.habarta.typescript-generator</groupId>
+                <artifactId>typescript-generator-maven-plugin</artifactId>
+                <version>${typescript-generator.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jsonLibrary>jackson2</jsonLibrary>
+                    <classPatterns>
+                        <pattern>**.dtos.*</pattern>
+                    </classPatterns>
+                    <classes>
+                        <class>int221.oasip.backendus3.entities.Role</class>
+                    </classes>
+                    <outputKind>module</outputKind>
+                    <outputFile>gen-types.d.ts</outputFile>
+                    <optionalAnnotations>
+                        <annotation>javax.annotation.Nullable</annotation>
+                    </optionalAnnotations>
+                    <mapDate>asString</mapDate>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>cz.habarta.typescript-generator</groupId>
+                        <artifactId>typescript-generator-spring</artifactId>
+                        <version>${typescript-generator.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 
