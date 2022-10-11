@@ -81,7 +81,7 @@ const file = ref<File>(null);
 const fileError = ref<string[] | false>(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
-const maxFileSize = .10 * 1024 * 1024;
+const maxFileSize = 10 * 1024 * 1024;
 
 function handleFileChange(e: Event) {
   console.log("handleFileChange");
