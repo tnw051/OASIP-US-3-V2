@@ -20,9 +20,18 @@ import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import javax.mail.*;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,7 +53,7 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) {
+    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) throws MessagingException, IOException {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
@@ -76,6 +85,7 @@ public class EventService {
         }
 
         e.setId(null);
+        sendmail(e);
 
         return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
@@ -220,4 +230,38 @@ public class EventService {
         private String userEmail;
         private boolean isAdmin;
     }
+    private void sendmail(Event event) throws AddressException, MessagingException, IOException {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new javax.mail.Authenticator() {
+            protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication("oasip.us3.noreply@gmail.com", "hyyvvoygfnytkmgt");
+            }
+        });
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E MMM dd, yyyy HH:mm").withZone(ZoneId.of("UTC"));
+        DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("HH:mm ").withZone(ZoneId.of("UTC"));
+        Instant endTime =  event.getEventStartTime().plusSeconds(event.getEventDuration() * 60);
+
+        javax.mail.Message msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress("oasip.us3.noreply@gmail.com", false));
+
+        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(event.getBookingEmail()));
+        msg.setSubject("Your booking is complete.");
+        msg.setContent("Subject: [OASIP] " + event.getEventCategory() + " @ " + formatter.format(event.getEventStartTime()) + " - " +formatter1.format(endTime)+ " (ICT)"+
+                        "<br>Reply-to: noreply@intproj21.sit.kmutt.ac.th" +
+                        "<br>Booking Name: " + event.getBookingName() +
+                        "<br>Event Category: " + event.getEventCategory() +
+                        "<br>When: " + formatter.format(event.getEventStartTime()) + " - " +formatter1.format(endTime)+ " (ICT)"+
+                        "<br>Event Notes: " + event.getEventNotes()
+
+                , "text/html; charset=utf-8");
+        msg.setSentDate(new Date());
+
+        Transport.send(msg);
+    }
+
 }
