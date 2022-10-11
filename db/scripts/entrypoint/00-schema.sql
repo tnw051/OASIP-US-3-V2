@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
   `eventNotes` VARCHAR(500) NULL,
   `eventCategoryId` INT NOT NULL,
   `userId` INT NULL DEFAULT NULL,
+  `bucketUuid` VARCHAR(36) NULL,
   PRIMARY KEY (`eventId`),
   INDEX `fk_event_eventCategory_idx` (`eventCategoryId` ASC) VISIBLE,
   INDEX `fk_event_user1_idx` (`userId` ASC) VISIBLE,
