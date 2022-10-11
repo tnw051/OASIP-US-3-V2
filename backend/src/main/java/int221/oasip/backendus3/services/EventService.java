@@ -21,7 +21,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import javax.mail.*;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
@@ -230,7 +229,8 @@ public class EventService {
         private String userEmail;
         private boolean isAdmin;
     }
-    private void sendmail(Event event) throws AddressException, MessagingException, IOException {
+
+    private void sendmail(Event event) throws MessagingException {
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
@@ -242,26 +242,27 @@ public class EventService {
                 return new PasswordAuthentication("oasip.us3.noreply@gmail.com", "hyyvvoygfnytkmgt");
             }
         });
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("E MMM dd, yyyy HH:mm").withZone(ZoneId.of("UTC"));
-        DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("HH:mm ").withZone(ZoneId.of("UTC"));
-        Instant endTime =  event.getEventStartTime().plusSeconds(event.getEventDuration() * 60);
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("E MMM dd, yyyy HH:mm").withZone(ZoneId.of("Asia/Bangkok"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm ").withZone(ZoneId.of("Asia/Bangkok"));
+        Instant endTime = event.getEventStartTime().plusSeconds(event.getEventDuration() * 60);
 
         javax.mail.Message msg = new MimeMessage(session);
         msg.setFrom(new InternetAddress("oasip.us3.noreply@gmail.com", false));
 
         msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(event.getBookingEmail()));
         msg.setSubject("Your booking is complete.");
-        msg.setContent("Subject: [OASIP] " + event.getEventCategory() + " @ " + formatter.format(event.getEventStartTime()) + " - " +formatter1.format(endTime)+ " (ICT)"+
+        String eventCategory = event.getEventCategory().getEventCategoryName();
+        String eventNotes = event.getEventNotes();
+        msg.setContent("Subject: [OASIP] " + eventCategory + " @ " + dateTimeFormatter.format(event.getEventStartTime()) + " - " + timeFormatter.format(endTime) + " (ICT)" +
                         "<br>Reply-to: noreply@intproj21.sit.kmutt.ac.th" +
                         "<br>Booking Name: " + event.getBookingName() +
-                        "<br>Event Category: " + event.getEventCategory() +
-                        "<br>When: " + formatter.format(event.getEventStartTime()) + " - " +formatter1.format(endTime)+ " (ICT)"+
-                        "<br>Event Notes: " + event.getEventNotes()
+                        "<br>Event Category: " + eventCategory +
+                        "<br>When: " + dateTimeFormatter.format(event.getEventStartTime()) + " - " + timeFormatter.format(endTime) + " (ICT)" +
+                        "<br>Event Notes: " + (eventNotes == null ? "" : eventNotes)
 
                 , "text/html; charset=utf-8");
         msg.setSentDate(new Date());
 
         Transport.send(msg);
     }
-
 }
