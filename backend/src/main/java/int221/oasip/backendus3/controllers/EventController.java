@@ -1,5 +1,6 @@
 package int221.oasip.backendus3.controllers;
 
+import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.CreateEventRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
@@ -8,18 +9,28 @@ import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.services.EventService;
 import lombok.AllArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/events")
@@ -82,7 +93,7 @@ public class EventController {
         } catch (MessagingException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
         } catch (IOException e) {
-          throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
         }
     }
 
@@ -131,5 +142,51 @@ public class EventController {
     private boolean isAdmin(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    @PostMapping("/file")
+    public String uploadFile(CreateEventMultipartRequest request) throws IOException {
+        MultipartFile file = request.getFile();
+
+        System.out.println(file.getOriginalFilename());
+        System.out.println(file.getSize());
+
+        // generate uuid as a directory name to store the file
+        String uuidNewDir = UUID.randomUUID().toString();
+        String parentDir = "C:\\dev\\OASIP-US-3-V2\\backend\\uploads";
+        File uploadDir = new File(parentDir, uuidNewDir);
+        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
+
+        File destination = new File(uploadDir, file.getOriginalFilename());
+
+        // check that absolute path is the same as the canonical path to prevent path traversal
+        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file name");
+        }
+
+        System.out.println("Saving to " + destination.getAbsolutePath());
+        file.transferTo(new File(destination.getAbsolutePath()));
+
+        return "File Uploaded";
+    }
+
+    // endpoint for downloading file
+    @GetMapping("/file/{uuid}")
+    public ResponseEntity<Resource> download(@PathVariable String uuid) throws IOException {
+        String parentDir = "C:\\dev\\OASIP-US-3-V2\\backend\\uploads";
+        File uploadDir = new File(parentDir, uuid);
+        // get the only file in the directory
+        File file = uploadDir.listFiles()[0];
+
+        // return the file
+        Path path = Paths.get(file.getAbsolutePath());
+        Resource resource = new ByteArrayResource(Files.readAllBytes(path));
+
+        String contentType = Files.probeContentType(path);
+        System.out.println(contentType);
+
+        return ResponseEntity.ok()
+                .contentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType))
+                .body(resource);
     }
 }
