@@ -12,6 +12,7 @@ import {
   Role,
   UserResponse,
 } from "../gen-types";
+import { Id, ErrorResponse } from "../types";
 
 const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
 
@@ -60,17 +61,24 @@ export async function getLecturerCategories(): Promise<CategoryResponse[]> {
 }
 
 //CREATE
-export async function createEvent(newEvent: CreateEventRequest): Promise<EventResponse> {
+export async function createEvent(newEvent: CreateEventRequest, file: File): Promise<EventResponse> {
   const token = localStorage.getItem(accessTokenKey);
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(newEvent)) {
+    formData.append(key, value);
+  }
+  formData.append("file", file);
+
+  console.log(formData);
+
   const response = await fetch(makeUrl("/events"), {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       ...(token && {
         Authorization: `Bearer ${token}`,
       }),
     },
-    body: JSON.stringify(newEvent),
+    body: formData,
   });
 
   const data = await response.json();
@@ -398,4 +406,24 @@ export async function logout() {
     console.log("Cannot logout");
     return false;
   }
+}
+
+export async function getFilenameByBucketUuid(uuid: string) {
+  const response = await fetch(makeUrl(`/events/files/${uuid}?noContent=true`), {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+    },
+  });
+
+  if (response.status === 200) {
+    // get filename from content-disposition header
+    const filename = response.headers.get("content-disposition").split("filename=")[1];
+    return filename;
+  } else {
+    console.log("Cannot get file");
+  }
+}
+
+export function getBucketURL(uuid: string) {
+  return makeUrl(`/events/files/${uuid}`);
 }
