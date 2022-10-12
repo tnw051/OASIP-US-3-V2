@@ -62,7 +62,6 @@ onAuthLoaded(async () => {
   }
   const events = await getEvents();
   setEvents(events);
-  
   if (isLecturer.value) {
     categories.value = await getLecturerCategories();
   } else {

@@ -42,6 +42,9 @@ public class Event {
     @Column(name = "eventNotes", length = 500)
     private String eventNotes;
 
+    @Column(name = "bucketUuid", length = 36)
+    private String bucketUuid;
+
     public Event(EventCategory eventCategory, String bookingName, String bookingEmail, Instant eventStartTime, String eventNotes) {
         this.eventCategory = eventCategory;
         this.bookingName = bookingName;

@@ -4,6 +4,7 @@ import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.exceptions.ValidationErrors;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.WebRequest;
@@ -24,9 +25,9 @@ public class ExtendedErrorAttributes extends DefaultErrorAttributes {
         String MESSAGE_ATTRIBUTE = "message";
         String ERRORS_ATTRIBUTE = "errors";
 
-        if (error instanceof MethodArgumentNotValidException) {
+        if (error instanceof BindException) {
             errorAttributes.put(MESSAGE_ATTRIBUTE, VALIDATION_ERROR_MESSAGE);
-            errorAttributes.put(ERRORS_ATTRIBUTE, makeValidationErrorMap((MethodArgumentNotValidException) error));
+            errorAttributes.put(ERRORS_ATTRIBUTE, makeValidationErrorMap((BindException) error));
         }
 
         if (error instanceof FieldNotValidException) {
@@ -47,7 +48,7 @@ public class ExtendedErrorAttributes extends DefaultErrorAttributes {
         return errorAttributes;
     }
 
-    private Map<String, List<String>> makeValidationErrorMap(MethodArgumentNotValidException exception) {
+    private Map<String, List<String>> makeValidationErrorMap(BindException exception) {
         Map<String, List<String>> errorMaps = new HashMap<>();
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
             errorMaps.computeIfAbsent(fieldError.getField(), k -> new ArrayList<>()).add(fieldError.getDefaultMessage());

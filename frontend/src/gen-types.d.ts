@@ -54,6 +54,7 @@ export interface EventResponse {
     eventStartTime: DateAsString;
     eventDuration: number;
     eventNotes: string;
+    bucketUuid: string;
 }
 
 export interface LoginRequest {
