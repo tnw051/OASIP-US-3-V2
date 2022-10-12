@@ -1,217 +1,10 @@
 // useValidate composable
 // used for input validation and showing errors
-import { errors } from "jose";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { EventResponse } from "../gen-types";
 import { getEventsByCategoryIdOnDate } from "../service/api";
 import { findOverlap } from "./index";
 import { makeValidateResult, ValidationResult } from "./validators/common";
-
-const defaultValue = "";
-
-export function useEventValidatorOld() {
-  function makeDefaultValues() {
-    return {
-      bookingName: defaultValue,
-      bookingEmail: defaultValue,
-      eventStartTime: defaultValue,
-      eventCategoryId: 0,
-      eventNotes: defaultValue,
-    };
-  }
-
-  const errors = ref<{
-    bookingName?: string[];
-    bookingEmail?: string[];
-    eventStartTime?: string[];
-    eventCategoryId?: string[];
-    eventNotes?: string[];
-    hasOverlappingEvents?: boolean;
-  }>({
-    bookingName: [],
-    bookingEmail: [],
-    eventStartTime: [],
-    eventNotes: [],
-    hasOverlappingEvents: false,
-  });
-
-  const inputs = ref<{
-    bookingName?: string;
-    bookingEmail?: string;
-    eventStartTime?: string;
-    eventCategoryId?: number;
-    eventNotes?: string;
-  }
-  // | {
-  //   eventStartTime: string,
-  //   eventNotes: string,
-  //   eventCategoryId?: number,
-  // }
-  >(makeDefaultValues());
-
-  const eventDuration = ref<number | null>(null);
-  const eventsForSelectedCategoryAndDate = ref<EventResponse[]>([]);
-  const eventId = ref<number | null>(null);
-
-  function setEventDuration(duration: number) {
-    eventDuration.value = duration;
-  }
-
-  function setEventId(id: number) {
-    eventId.value = id;
-  }
-
-  function setCategoryId(id: number) {
-    inputs.value.eventCategoryId = id;
-  }
-
-  function resetInputs() {
-    Object.keys(inputs.value).forEach(key => {
-      inputs.value[key] = defaultValue;
-    });
-  }
-
-
-  function validateBookingName(e) {
-    const bookingName = e.target.value;
-    errors.value.bookingName = [];
-
-    if (bookingName.length > 100) {
-      errors.value.bookingName.push("Booking name must be less than 100 characters");
-    }
-
-    if (bookingName.trim().length === 0) {
-      errors.value.bookingName.push("Booking name must not be blank");
-    }
-  }
-
-
-  function validateBookingEmail(e) {
-    const bookingEmail = e.target.value;
-    errors.value.bookingEmail = [];
-
-    if (bookingEmail.length > 50) {
-      errors.value.bookingEmail.push("Booking email must be less than 50 characters");
-    }
-
-    if (bookingEmail.trim().length === 0) {
-      errors.value.bookingEmail.push("Booking email must not be blank");
-    }
-
-    // RFC2822 https://regexr.com/2rhq7
-    const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-    if (!emailRegex.test(bookingEmail)) {
-      errors.value.bookingEmail.push("Booking email is invalid");
-    }
-  }
-
-
-  function validateEventNotes(e) {
-    const eventNotes = e.target.value;
-    errors.value.eventNotes = [];
-
-    if (eventNotes.length > 500) {
-      errors.value.eventNotes.push("Booking note must be less than 500 characters");
-    }
-  }
-
-
-  const previousDate = ref<string | null>(null);
-
-  async function validateStartTime() {
-    const eventStartTime = inputs.value.eventStartTime;
-    const eventCategoryId = inputs.value.eventCategoryId;
-
-    if (!eventStartTime) {
-      return;
-    }
-
-    const now = new Date();
-    const startTime = new Date(eventStartTime);
-
-    errors.value.eventStartTime = [];
-    errors.value.hasOverlappingEvents = false;
-
-    if (startTime.getTime() <= now.getTime()) {
-      errors.value.eventStartTime.push("Start time must be in the future");
-    }
-
-    const date = eventStartTime.split("T")[0];
-    if (date !== previousDate.value) {
-      console.log("date changed", date);
-
-      if (eventCategoryId) {
-        const dateMidnight = new Date(eventStartTime);
-        dateMidnight.setHours(0, 0, 0, 0);
-
-        eventsForSelectedCategoryAndDate.value = await getEventsByCategoryIdOnDate(eventCategoryId, dateMidnight.toISOString());
-        console.log("fetched events (start time changed)", eventsForSelectedCategoryAndDate.value);
-      }
-    }
-
-    previousDate.value = date;
-
-    if (eventCategoryId) {
-      const overlapEvents = findOverlap(eventStartTime, eventDuration.value, eventsForSelectedCategoryAndDate.value, eventId.value);
-      const hasOverlap = overlapEvents.length > 0;
-
-      if (hasOverlap) {
-        errors.value.hasOverlappingEvents = true;
-      }
-    }
-  }
-
-
-  async function validateCategoryId() {
-    const eventStartTime = inputs.value.eventStartTime;
-    const eventCategoryId = inputs.value.eventCategoryId;
-
-    if (!eventStartTime || !eventCategoryId) {
-      return;
-    }
-
-    const dateMidnight = new Date(eventStartTime);
-    dateMidnight.setHours(0, 0, 0, 0);
-
-    eventsForSelectedCategoryAndDate.value = await getEventsByCategoryIdOnDate(eventCategoryId, dateMidnight.toISOString());
-    console.log("fetched events (category id changed)", eventsForSelectedCategoryAndDate.value);
-
-    const overlapEvents = findOverlap(eventStartTime, eventDuration.value, eventsForSelectedCategoryAndDate.value);
-    const hasOverlap = overlapEvents.length > 0;
-
-    if (hasOverlap) {
-      errors.value.hasOverlappingEvents = true;
-    } else {
-      errors.value.hasOverlappingEvents = false;
-    }
-  }
-
-  const canSubmit = computed(() => {
-    const noErrors = Object.values(errors.value).every((error) => error === false || (Array.isArray(error) && error.length === 0));
-    const inputsWithoutNotes = { ...inputs.value };
-    delete inputsWithoutNotes.eventNotes;
-
-    const noEmptyFields = Object.values(inputsWithoutNotes).every((value) => value !== "");
-
-    return noErrors && noEmptyFields;
-  });
-
-  return {
-    errors,
-    inputs,
-    setEventDuration,
-    setEventId,
-    eventsForSelectedCategoryAndDate,
-    validateBookingName,
-    validateBookingEmail,
-    validateEventNotes,
-    validateStartTime,
-    validateCategoryId,
-    resetInputs,
-    canSubmit,
-    setCategoryId,
-  };
-}
 
 // refactor the useEventValidator to pure functions and later use it in the composition API
 function validateBookingName(name: string): ValidationResult {
@@ -287,7 +80,12 @@ interface Errors {
   hasOverlappingEvents: boolean;
 }
 
-export function useEventValidator() {
+interface Options {
+  getDurationByCategoryId: (categoryId: number) => number | null;
+}
+export function useEventValidator(options: Options) {
+  const { getDurationByCategoryId: onCategoryChange } = options;
+
   const defaultErrors: Errors = {
     bookingName: false,
     bookingEmail: false,
@@ -306,11 +104,11 @@ export function useEventValidator() {
   };
   const inputs = reactive(defaultInputs);
 
-  const eventsForSelectedCategoryAndDate = ref<EventResponse[]>([]);
+  const duration = ref<number>();
 
-  const prevDateMidnight = ref<Date>();
+  // const eventsInCategoryOnDate = ref<EventResponse[]>([]);
 
-  const eventId = ref("");
+  // const eventId = ref("");
 
   // function setEventId(id: string) {
   //   eventId.value = id;
@@ -320,64 +118,70 @@ export function useEventValidator() {
   //   inputs.eventCategoryId = id;
   // }
 
-  async function handleBookingNameChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const name = target.value;
+
+  // use watch instead of event handlers
+  watch(() => inputs.bookingName, (name) => {
     const result = validateBookingName(name);
-    errors.bookingName = result.errors;
-  }
+    errors.bookingName = result.valid ? false : result.errors;
+  });
 
-  async function handleBookingEmailChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const email = target.value;
+  watch(() => inputs.bookingEmail, (email) => {
     const result = validateBookingEmail(email);
-    errors.bookingEmail = result.errors;
-  }
+    errors.bookingEmail = result.valid ? false : result.errors;
+  });
 
-  async function handleEventNotesChange(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const notes = target.value;
+  watch(() => inputs.eventNotes, (notes) => {
     const result = validateEventNotes(notes);
-    errors.eventNotes = result.errors;
-  }
+    errors.eventNotes = result.valid ? false : result.errors;
+  });
 
-  async function handleEventStartTimeChange(e: Event, duration: number, currentEventId: string | null = null) {
-    const target = e.target as HTMLInputElement;
-    const startTime = target.value;
-    const events = await getEventsByCategoryIdAndDate(new Date(startTime));
-    const result = validateStartTime(startTime, duration, events, currentEventId);
-    errors.eventStartTime = result.errors;
-  }
-
-  async function handleEventCategoryIdChange(duration: number, currentEventId: string | null = null) {
-    const events = await getEventsByCategoryIdAndDate(new Date(inputs.eventStartTime));
-    const startTime = inputs.eventStartTime;
-    const result = validateStartTime(startTime, duration, events, currentEventId);
-    errors.eventStartTime = result.errors;
-  }
-
-  // update eventsForSelectedCategoryAndDate when start time or category id changed
-  async function getEventsByCategoryIdAndDate(date: Date): Promise<EventResponse[]> {
-    const startTime = inputs.eventStartTime;
-    const categoryId = inputs.eventCategoryId;
-    if (!startTime || !categoryId) {
-      return [];
+  watch(() => inputs.eventStartTime, async (startTime, prevStartTime) => {
+    if (!duration.value) {
+      return;
     }
 
-    const dateMidnight = new Date(date);
+    const prevDateMidnight = new Date(prevStartTime);
+    prevDateMidnight.setHours(0, 0, 0, 0);
+    const dateMidnight = new Date(startTime);
     dateMidnight.setHours(0, 0, 0, 0);
-    if (prevDateMidnight.value?.getTime() === dateMidnight.getTime()) {
-      return eventsForSelectedCategoryAndDate.value;
+    if (prevDateMidnight.getTime() === dateMidnight.getTime()) {
+      return;
     }
 
-    const utcDateMidnightString = dateMidnight.toISOString();
-    const events = await getEventsByCategoryIdOnDate(categoryId, utcDateMidnightString);
-    eventsForSelectedCategoryAndDate.value = events;
+    const events = await getEventsByCategoryIdOnDate(inputs.eventCategoryId, dateMidnight.toISOString());
+    const result = validateStartTime(startTime, duration.value, events);
+    errors.eventStartTime = result.valid ? false : result.errors;
+    errors.hasOverlappingEvents = result.hasOverlappingEvents;
+  });
 
-    prevDateMidnight.value = dateMidnight;
+  watch(() => inputs.eventCategoryId, async (categoryId, prevCategoryId) => {
+    if (categoryId === prevCategoryId) {
+      return;
+    }
 
-    return events;
-  }
+    const _duration = onCategoryChange(categoryId);
+    if (_duration === null) {
+      return;
+    }
+
+    duration.value = _duration;
+
+    const dateMidnight = new Date(inputs.eventStartTime);
+    if (isNaN(dateMidnight.getTime())) {
+      return;
+    }
+    
+    dateMidnight.setHours(0, 0, 0, 0);
+
+    const events = await getEventsByCategoryIdOnDate(categoryId, dateMidnight.toISOString());
+    const result = validateStartTime(inputs.eventStartTime, _duration, events);
+    errors.eventStartTime = result.valid ? false : result.errors;
+    errors.hasOverlappingEvents = result.hasOverlappingEvents;
+  });
+
+  const hasErrors = computed(() => {
+    return Object.values(errors).some((error) => error !== false);
+  });
 
   function resetInputsAndErrors() {
     Object.assign(inputs, defaultInputs);
@@ -387,11 +191,7 @@ export function useEventValidator() {
   return {
     errors,
     inputs,
-    handleBookingNameChange,
-    handleBookingEmailChange,
-    handleEventNotesChange,
-    handleEventStartTimeChange,
-    handleEventCategoryIdChange,
     resetInputsAndErrors,
+    hasErrors,
   };
 }

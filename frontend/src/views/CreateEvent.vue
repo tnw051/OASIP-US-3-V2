@@ -12,13 +12,14 @@ const categories = ref<CategoryResponse[]>([]);
 const {
   errors,
   inputs,
-  handleBookingEmailChange,
-  handleBookingNameChange,
-  handleEventCategoryIdChange,
-  handleEventNotesChange,
-  handleEventStartTimeChange,
   resetInputsAndErrors,
-} = useEventValidator();
+  hasErrors,  
+} = useEventValidator({
+  getDurationByCategoryId(categoryId) {
+    const category = categories.value.find((c) => c.id === categoryId);
+    return category ? category.eventDuration : null;
+  },
+});
 
 const { isAuthenticated, user, isAdmin } = useAuth();
 function preFillInputs() {
@@ -71,10 +72,9 @@ async function handleSubmit() {
       return;
     }
 
-    Object.assign(errors.value, error.errors);
+    Object.assign(errors, error.errors);
   }
 }
-
 
 // file attachment
 const file = ref<File>();
@@ -161,7 +161,6 @@ function handleRemoveFile() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your booking name?"
-          @input="handleBookingNameChange"
         >
         <div
           v-if="errors.bookingName"
@@ -180,8 +179,6 @@ function handleRemoveFile() {
           class="text-sm font-medium text-gray-700"
           :class="{ 'required': !isAuthenticated || isAdmin }"
         >Booking Email</label>
-        <!-- <span v-if="isAuthenticated" id="email" type="email" :value="user.sub" class="p-2 rounded"
-          @input="validateBookingEmail" placeholder="What's your email?"> -->
         <span
           v-if="isAuthenticated && !isAdmin"
           class="rounded p-2"
@@ -195,7 +192,6 @@ function handleRemoveFile() {
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your email?"
-          @input="handleBookingEmailChange"
         >
         <div
           v-if="errors.bookingEmail"
@@ -221,7 +217,6 @@ function handleRemoveFile() {
           :max="inputConstraits.MAX_DATETIME_LOCAL"
           required
           class="rounded bg-gray-100 p-2"
-          @input="handleEventStartTimeChange"
         >
         <div
           v-if="errors.eventStartTime || errors.hasOverlappingEvents"
@@ -245,7 +240,6 @@ function handleRemoveFile() {
           v-model="inputs.eventCategoryId"
           required
           class="rounded bg-gray-100 p-2"
-          @change="handleEventCategoryIdChange"
         >
           <option
             disabled
@@ -278,7 +272,6 @@ function handleRemoveFile() {
           v-model="inputs.eventNotes"
           class="rounded bg-gray-100 p-2"
           placeholder="What's your event about?"
-          @input="handleEventNotesChange"
         />
         <div
           v-if="errors.eventNotes"
@@ -331,7 +324,7 @@ function handleRemoveFile() {
         <button
           type="submit"
           class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="!canSubmit"
+          :disabled="hasErrors"
         >
           Create
           Event

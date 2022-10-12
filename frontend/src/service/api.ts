@@ -61,7 +61,7 @@ export async function getLecturerCategories(): Promise<CategoryResponse[]> {
 }
 
 //CREATE
-export async function createEvent(newEvent: CreateEventRequest, file: File): Promise<EventResponse> {
+export async function createEvent(newEvent: CreateEventRequest, file: File | null): Promise<EventResponse> {
   const token = localStorage.getItem(accessTokenKey);
   const formData = new FormData();
   for (const [key, value] of Object.entries(newEvent)) {
