@@ -18,6 +18,9 @@ const emits = defineEmits([
 // fetch image using url from props.currentEvent.bucketUuid
 async function getFilename() {
   const bucketUuid = props.currentEvent.bucketUuid;
+  if (!bucketUuid) {
+    return;
+  }
   const file = await getFilenameByBucketUuid(bucketUuid);
   return file;
 }
