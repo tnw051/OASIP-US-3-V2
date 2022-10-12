@@ -14,9 +14,10 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -89,8 +90,10 @@ public class EventService {
 
         e.setId(null);
 
-        String bucketUuid = uploadFile(newEvent.getFile());
-        e.setBucketUuid(bucketUuid);
+        if (newEvent.getFile() != null) {
+            String bucketUuid = uploadFile(newEvent.getFile());
+            e.setBucketUuid(bucketUuid);
+        }
 
         sendmail(e);
 

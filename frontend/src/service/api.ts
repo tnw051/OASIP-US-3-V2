@@ -67,7 +67,9 @@ export async function createEvent(newEvent: CreateEventRequest, file: File): Pro
   for (const [key, value] of Object.entries(newEvent)) {
     formData.append(key, value);
   }
-  formData.append("file", file);
+  if (file) {
+    formData.append("file", file);
+  }
 
   console.log(formData);
 
