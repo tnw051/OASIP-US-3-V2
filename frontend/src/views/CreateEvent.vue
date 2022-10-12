@@ -21,8 +21,10 @@ const {
 } = useEventValidator();
 
 const { isAuthenticated, user, isAdmin } = useAuth();
-if (isAuthenticated.value && !isAdmin.value) {
-  inputs.value.bookingEmail = user.value.sub;
+function preFillInputs() {
+  if (isAuthenticated.value && !isAdmin.value) {
+    inputs.value.bookingEmail = user.value.sub;
+  }
 }
 
 onBeforeMount(async () => {
@@ -54,6 +56,7 @@ async function handleSubmit() {
 
     if (createdEvent) {
       resetInputs();
+      preFillInputs();
       isSuccessModalOpen.value = true;
     } else {
       isErrorModalOpen.value = true;
