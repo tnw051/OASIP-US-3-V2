@@ -91,7 +91,7 @@ public class EventService {
 
         e.setId(null);
 
-        if (newEvent.getFile() != null) {
+        if (newEvent.getFile() != null && !newEvent.getFile().isEmpty()) {
             String bucketUuid = uploadFile(newEvent.getFile());
             e.setBucketUuid(bucketUuid);
         }
