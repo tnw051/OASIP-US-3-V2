@@ -110,7 +110,7 @@ function handleFileChange(e: Event) {
       const newFileList = new DataTransfer();
       const prevFile = file.value;
       newFileList.items.add(prevFile);
-      if(fileInputRef.value.files) {
+      if(fileInputRef.value?.files) {
         fileInputRef.value.files = newFileList.files;
       }
       fileError.value.push(`The previous file '${prevFile.name}' is still selected.`);
