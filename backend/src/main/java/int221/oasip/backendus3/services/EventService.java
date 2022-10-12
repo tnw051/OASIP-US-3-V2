@@ -47,6 +47,9 @@ public class EventService {
     @Value("${upload.path}")
     private String uploadPath;
 
+    @Value("${mail.disable}")
+    private boolean mailDisable;
+
     public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
 
@@ -93,7 +96,9 @@ public class EventService {
             e.setBucketUuid(bucketUuid);
         }
 
-        sendmail(e);
+        if (!mailDisable) {
+            sendmail(e);
+        }
 
         return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
