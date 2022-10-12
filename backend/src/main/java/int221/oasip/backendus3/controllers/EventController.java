@@ -73,16 +73,16 @@ public class EventController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("!hasRole('LECTURER')")
     public EventResponse create(@Valid CreateEventMultipartRequest newEvent, Authentication authentication) {
-        if (authentication != null) {
-            String email = authentication.getName();
-            if (!isAdmin(authentication) && !email.equals(newEvent.getBookingEmail())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
-            }
+        boolean isGuest = authentication == null;
+        boolean isAdmin = authentication != null && isAdmin(authentication);
+
+        if (!isGuest && !isAdmin && !authentication.getName().equals(newEvent.getBookingEmail())) {
+            // if the user is not a guest, admin or the owner of the event, then they are not allowed to create the event for someone else
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
         }
 
         try {
-            boolean isGuest = authentication == null;
-            return service.create(newEvent, isGuest);
+            return service.create(newEvent, isGuest, isAdmin);
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {

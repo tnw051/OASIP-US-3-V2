@@ -57,14 +57,12 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventMultipartRequest newEvent, boolean isGuest) throws MessagingException, IOException {
+    public EventResponse create(CreateEventMultipartRequest newEvent, boolean isGuest, boolean isAdmin) throws MessagingException, IOException {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
 
-        if (isGuest) {
-            e.setUser(null);
-        } else {
+        if (!isGuest && !isAdmin) {
             User user = userRepository.findByEmail(newEvent.getBookingEmail())
                     .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
             e.setUser(user);
