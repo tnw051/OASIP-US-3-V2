@@ -28,6 +28,7 @@ function preFillInputs() {
 }
 
 onBeforeMount(async () => {
+  preFillInputs();
   categories.value = await getCategories();
 });
 
