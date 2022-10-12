@@ -14,7 +14,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,6 +46,7 @@ public class ResourceServerConfig {
                 .antMatchers("/api/auth/match").hasRole("ADMIN")
                 .antMatchers(HttpMethod.POST, "/api/events").permitAll()
                 .antMatchers("/api/events/test-lecturer").hasRole("LECTURER")
+                .antMatchers(HttpMethod.GET, "/api/events/files/**").permitAll()
                 .antMatchers("/api/events/**").authenticated()
                 .anyRequest().permitAll()
                 .and()

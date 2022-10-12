@@ -1,6 +1,6 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CreateEventRequest;
+import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
@@ -14,25 +14,41 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EventService {
-    private EventRepository repository;
-    private ModelMapper modelMapper;
-    private ModelMapperUtils modelMapperUtils;
-    private EventCategoryRepository categoryRepository;
-    private UserRepository userRepository;
+    private final EventRepository repository;
+    private final ModelMapper modelMapper;
+    private final ModelMapperUtils modelMapperUtils;
+    private final EventCategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+
+    @Value("${upload.path}")
+    private String uploadPath;
+
+    @Value("${mail.disable}")
+    private boolean mailDisable;
 
     public EventResponse getEvent(Integer id) {
         Event event = repository.findById(id).orElse(null);
@@ -44,14 +60,12 @@ public class EventService {
         return modelMapper.map(event, EventResponse.class);
     }
 
-    public EventResponse create(CreateEventRequest newEvent, boolean isGuest) {
+    public EventResponse create(CreateEventMultipartRequest newEvent, boolean isGuest, boolean isAdmin) throws MessagingException, IOException {
         Event e = new Event();
         EventCategory category = categoryRepository.findById(newEvent.getEventCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Event category with id " + newEvent.getEventCategoryId() + " not found"));
 
-        if (isGuest) {
-            e.setUser(null);
-        } else {
+        if (!isGuest && !isAdmin) {
             User user = userRepository.findByEmail(newEvent.getBookingEmail())
                     .orElseThrow(() -> new EntityNotFoundException("User with email " + newEvent.getBookingEmail() + " not found"));
             e.setUser(user);
@@ -77,8 +91,49 @@ public class EventService {
 
         e.setId(null);
 
+        if (newEvent.getFile() != null && !newEvent.getFile().isEmpty()) {
+            String bucketUuid = uploadFile(newEvent.getFile());
+            e.setBucketUuid(bucketUuid);
+        }
+
+        if (!mailDisable) {
+            sendmail(e);
+        }
+
         return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
+
+    // refactor the above uploadFile method as a service method
+    public String uploadFile(MultipartFile file) throws IOException {
+        // generate uuid as a directory name to store the file
+        String uuidNewDir = UUID.randomUUID().toString();
+        File uploadDir = new File(uploadPath, uuidNewDir);
+        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
+
+        File destination = new File(uploadDir, file.getOriginalFilename());
+
+        // check that absolute path is the same as the canonical path to prevent path traversal
+        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
+            // not implmenented
+        }
+
+        System.out.println("Saving to " + destination.getAbsolutePath());
+        file.transferTo(new File(destination.getAbsolutePath()));
+
+        return uuidNewDir;
+    }
+
+    public Optional<File> getFileByBucketUuid(String uuid) {
+        File uploadDir = new File(uploadPath, uuid);
+        // get the only file in the directory
+        File[] files = uploadDir.listFiles();
+        if (files == null || files.length == 0) {
+            return Optional.empty();
+        }
+
+        return Optional.of(files[0]);
+    }
+
 
     public void delete(Integer id) {
         repository.deleteById(id);
@@ -219,5 +274,41 @@ public class EventService {
         private String type;
         private String userEmail;
         private boolean isAdmin;
+    }
+
+    private void sendmail(Event event) throws MessagingException {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+        Session session = Session.getInstance(props, new javax.mail.Authenticator() {
+            protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication("oasip.us3.noreply@gmail.com", "hyyvvoygfnytkmgt");
+            }
+        });
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("E MMM dd, yyyy HH:mm").withZone(ZoneId.of("Asia/Bangkok"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm ").withZone(ZoneId.of("Asia/Bangkok"));
+        Instant endTime = event.getEventStartTime().plusSeconds(event.getEventDuration() * 60);
+
+        javax.mail.Message msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress("oasip.us3.noreply@gmail.com", false));
+
+        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(event.getBookingEmail()));
+        msg.setSubject("Your booking is complete.");
+        String eventCategory = event.getEventCategory().getEventCategoryName();
+        String eventNotes = event.getEventNotes();
+        msg.setContent("Subject: [OASIP] " + eventCategory + " @ " + dateTimeFormatter.format(event.getEventStartTime()) + " - " + timeFormatter.format(endTime) + " (ICT)" +
+                        "<br>Reply-to: noreply@intproj21.sit.kmutt.ac.th" +
+                        "<br>Booking Name: " + event.getBookingName() +
+                        "<br>Event Category: " + eventCategory +
+                        "<br>When: " + dateTimeFormatter.format(event.getEventStartTime()) + " - " + timeFormatter.format(endTime) + " (ICT)" +
+                        "<br>Event Notes: " + (eventNotes == null ? "" : eventNotes)
+
+                , "text/html; charset=utf-8");
+        msg.setSentDate(new Date());
+
+        Transport.send(msg);
     }
 }

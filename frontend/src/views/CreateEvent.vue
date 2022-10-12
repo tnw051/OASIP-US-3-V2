@@ -21,15 +21,18 @@ const {
 } = useEventValidator();
 
 const { isAuthenticated, user, isAdmin } = useAuth();
-if (isAuthenticated.value && !isAdmin.value) {
-  if (!user.value) {
-    console.log("User is not loaded");
-  } else {
-    inputs.bookingEmail = user.value.sub;
+function preFillInputs() {
+  if (isAuthenticated.value && !isAdmin.value) {
+    if (!user.value) {
+      console.log("User is not loaded");
+    } else {
+      inputs.bookingEmail = user.value.sub;
+    }
   }
 }
 
 onBeforeMount(async () => {
+  preFillInputs();
   categories.value = await getCategories();
 });
 
@@ -52,10 +55,11 @@ async function handleSubmit() {
       // convert local time to UTC in ISO-8601 format
       eventCategoryId: Number(inputs.eventCategoryId),
       eventStartTime: new Date(inputs.eventStartTime).toISOString(),
-    });
+    }, file.value ? file.value : null);
 
     if (createdEvent) {
       resetInputsAndErrors();
+      preFillInputs();
       isSuccessModalOpen.value = true;
     } else {
       isErrorModalOpen.value = true;
@@ -68,6 +72,67 @@ async function handleSubmit() {
     }
 
     Object.assign(errors.value, error.errors);
+  }
+}
+
+
+// file attachment
+const file = ref<File>();
+const fileError = ref<string[] | false>(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+const maxFileSize = 10 * 1024 * 1024;
+
+function handleFileChange(e: Event) {
+  console.log("handleFileChange");
+  
+  const target = e.target as HTMLInputElement;
+  const files = target.files;
+  const selectedFile = files && files[0];
+
+  // user cancelled file selection
+  if (!selectedFile) {
+    // make sure to clear the previous selected file if any
+    handleRemoveFile();
+    if (fileError.value) {
+      fileError.value = false;
+    }
+    return;
+  }
+
+  if (selectedFile.size > maxFileSize) {
+    // if there is no file selected before, clear the file input.
+    fileError.value = [`${selectedFile.name} is too large.`, `Maximum file size is ${maxFileSize / 1024 / 1024} MB.`];
+    if (!file.value) {
+      handleRemoveFile();
+    } else {
+      // otherwise, keep the previous file selected
+      const newFileList = new DataTransfer();
+      const prevFile = file.value;
+      newFileList.items.add(prevFile);
+      if(fileInputRef.value.files) {
+        fileInputRef.value.files = newFileList.files;
+      }
+      fileError.value.push(`The previous file '${prevFile.name}' is still selected.`);
+    }
+
+    return;
+  }
+
+  file.value = selectedFile;
+  fileError.value = false;
+}
+
+function handleBlurFileInput() {
+  if (fileError.value) {
+    fileError.value = false;
+  }
+}
+
+function handleRemoveFile() {
+  file.value = undefined;
+  if (fileInputRef.value) {
+    fileInputRef.value.value = "";
   }
 }
 </script>
@@ -226,14 +291,52 @@ async function handleSubmit() {
         </div>
       </div>
 
-      <button
-        type="submit"
-        class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit"
-      >
-        Create
-        Event
-      </button>
+      <div class="flex flex-col gap-2">
+        <label
+          for="file"
+          class="text-sm font-medium text-gray-700"
+        >File <span
+          class="font-normal text-gray-400"
+        >(optional)</span></label>
+        <div class="flex items-center justify-between rounded bg-gray-100 p-2">
+          <input
+            id="file"
+            ref="fileInputRef"
+            type="file"
+            @change="handleFileChange"
+          >
+          <!-- remove file button -->
+          <button
+            v-if="file"
+            type="button"
+            class="text-red-500"
+            @click="handleRemoveFile"
+            @blur="handleBlurFileInput"
+          >
+            <span class="material-symbols-outlined m-auto block">
+              delete
+            </span>
+          </button>
+        </div>
+        <div
+          v-if="fileError"
+          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
+        >
+          <span
+            v-for="error in fileError"
+            :key="error"
+          >{{ error }}</span>
+        </div>
+
+        <button
+          type="submit"
+          class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="!canSubmit"
+        >
+          Create
+          Event
+        </button>
+      </div>
     </form>
   </div>
 

@@ -2,6 +2,7 @@ package int221.oasip.backendus3.dtos;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.annotation.Nullable;
 import javax.validation.constraints.*;
@@ -24,6 +25,7 @@ public class CreateEventRequest {
 
     @NotNull(message = "Start time must not be null")
     @Future(message = "Start time must be in the future")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private OffsetDateTime eventStartTime;
 
     @Size(max = 500, message = "Event notes must be less than {max} characters")
