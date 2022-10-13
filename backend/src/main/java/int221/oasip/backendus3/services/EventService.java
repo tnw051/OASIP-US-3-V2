@@ -191,7 +191,6 @@ public class EventService {
         Integer categoryId = options.getCategoryId();
         Instant now = Instant.now();
 
-        List<Integer> categoryIds = null;
         Integer userId = null;
         boolean isLecturer = false;
 
@@ -204,20 +203,11 @@ public class EventService {
                 if (categoryId != null && !ownCategoryIds.contains(categoryId)) {
                     throw new ForbiddenException("Lecturer with email " + options.getUserEmail() + " does not own category with id " + categoryId);
                 }
-                if (categoryId != null) {
-                    categoryIds = List.of(categoryId);
-                } else if (ownCategoryIds.size() > 0) {
-                    categoryIds = ownCategoryIds;
-                }
                 isLecturer = true;
-
                 System.out.println(user.getName() + " is a lecturer");
-                System.out.println("Category IDs: " + categoryIds);
             } else {
-                if (categoryId != null) {
-                    categoryIds = List.of(categoryId);
-                }
                 userId = user.getId();
+                System.out.println(user.getName() + " is a student");
             }
         }
 
@@ -226,23 +216,25 @@ public class EventService {
             if (startAt == null) {
                 throw new IllegalArgumentException("startAt cannot be null for type " + EventTimeType.DAY);
             }
-            events = repository.findByDateRangeOfOneDay(startAt, categoryIds, userId);
+            events = repository.findByDateRangeOfOneDay(startAt, categoryId, userId);
         } else if (EventTimeType.UPCOMING.equals(type)) {
-            events = repository.findUpcomingAndOngoingEvents(now, categoryIds, userId);
+            events = repository.findUpcomingAndOngoingEvents(now, categoryId, userId);
         } else if (EventTimeType.PAST.equals(type)) {
-            events = repository.findPastEvents(now, categoryIds, userId);
+            events = repository.findPastEvents(now, categoryId, userId);
         } else if (type != null) {
             throw new IllegalArgumentException("type " + type + " is not supported");
-        } else if (categoryIds != null) {
+        } else if (categoryId != null) {
             if (isLecturer) {
-                events = repository.findByEventCategory_IdIn(categoryIds);
+                events = repository.findByEventCategory_Id(categoryId);
             } else {
-                events = repository.findByEventCategory_IdAndUser_Id(categoryIds.get(0), userId);
+                events = repository.findByEventCategory_IdAndUser_Id(categoryId, userId);
             }
         } else if (userId != null) {
             events = repository.findByUser_Id(userId);
         } else if (options.isAdmin()) {
             events = repository.findAll();
+        } else if (isLecturer) {
+            events = repository.findAllByLecturerEmail(options.getUserEmail());
         } else {
             return List.of();
         }
