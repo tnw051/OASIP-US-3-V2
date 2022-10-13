@@ -67,6 +67,10 @@ public class EventController {
 
     @GetMapping("/{id}")
     public EventResponse getEventById(@PathVariable Integer id, Authentication authentication) {
+        return getEventByIdOrThrowIfNotFoundOrUnauthorized(id, authentication);
+    }
+
+    private EventResponse getEventByIdOrThrowIfNotFoundOrUnauthorized(Integer id, Authentication authentication) {
         EventResponse event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
@@ -76,7 +80,6 @@ public class EventController {
         if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
-
         return event;
     }
 
@@ -99,9 +102,7 @@ public class EventController {
         } catch (EntityNotFoundException e) {
             // category not found or user not found
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (MessagingException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
-        } catch (IOException e) {
+        } catch (MessagingException | IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
         }
     }
@@ -109,15 +110,7 @@ public class EventController {
     @DeleteMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
     public void delete(@PathVariable Integer id, Authentication authentication) {
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        String email = authentication.getName();
-        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
+        getEventByIdOrThrowIfNotFoundOrUnauthorized(id, authentication);
 
         service.delete(id);
     }
@@ -129,15 +122,7 @@ public class EventController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime or eventNotes must be provided");
         }
 
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        String email = authentication.getName();
-        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
+        getEventByIdOrThrowIfNotFoundOrUnauthorized(id, authentication);
 
         try {
             return service.update(id, editEvent);
