@@ -20,11 +20,6 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public ErrorAttributes errorAttributes() {
-        return new ExtendedErrorAttributes();
-    }
-
-    @Bean
     public Argon2PasswordEncoder argon2PasswordEncoder() {
         return new Argon2PasswordEncoder();
     }
