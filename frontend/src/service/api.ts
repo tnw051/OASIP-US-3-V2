@@ -6,6 +6,7 @@ import {
   EditEventRequest,
   EditUserRequest,
   EventResponse,
+  EventTimeSlotResponse,
   LoginRequest,
   LoginResponse,
   MatchRequest,
@@ -428,4 +429,31 @@ export async function getFilenameByBucketUuid(uuid: string) {
 
 export function getBucketURL(uuid: string) {
   return makeUrl(`/events/files/${uuid}`);
+}
+
+export async function getAllocatedTimeSlotsInCategoryOnDate(
+  categoryId: Id,
+  startAt: Date,
+  excludeId?: Id,
+): Promise<EventTimeSlotResponse[]> {
+  let url = makeUrl(`/events/allocatedTimeSlots?categoryId=${categoryId}&startAt=${startAt.toISOString()}`);
+  if (excludeId) {
+    url += `&excludeId=${excludeId}`;
+  }
+
+  const response = await fetch(
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+      },
+    },
+  );
+
+  if (response.status === 200) {
+    const data = await response.json();
+    return data;
+  } else {
+    console.log("Cannot get allocated time slots");
+  }
 }

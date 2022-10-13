@@ -1,8 +1,8 @@
 // useValidate composable
 // used for input validation and showing errors
 import { computed, reactive, ref, watch } from "vue";
-import { EventResponse } from "../gen-types";
-import { getEventsByCategoryIdOnDate } from "../service/api";
+import { EventTimeSlotResponse } from "../gen-types";
+import { getAllocatedTimeSlotsInCategoryOnDate } from "../service/api";
 import { findOverlap } from "./index";
 import { makeValidateResult, ValidationResult } from "./validators/common";
 
@@ -51,7 +51,7 @@ function validateEventNotes(notes: string): ValidationResult {
   return makeValidateResult(errors);
 }
 
-function validateStartTime(startTime: string, duration: number, events: EventResponse[], currentEventId: string | null = null): ValidationResult<{ hasOverlappingEvents: boolean }> {
+function validateStartTime(startTime: Date, duration: number, events: EventTimeSlotResponse[]): ValidationResult<{ hasOverlappingEvents: boolean }> {
   const errors: string[] = [];
 
   const now = new Date();
@@ -61,7 +61,7 @@ function validateStartTime(startTime: string, duration: number, events: EventRes
     errors.push("Start time must be in the future");
   }
 
-  const overlapEvents = findOverlap(startTime, duration, events, currentEventId);
+  const overlapEvents = findOverlap(startTime, duration, events);
   const hasOverlap = overlapEvents.length > 0;
 
   return {
@@ -148,8 +148,8 @@ export function useEventValidator(options: Options) {
       return;
     }
 
-    const events = await getEventsByCategoryIdOnDate(inputs.eventCategoryId, dateMidnight.toISOString());
-    const result = validateStartTime(startTime, duration.value, events);
+    const events = await getAllocatedTimeSlotsInCategoryOnDate(inputs.eventCategoryId, dateMidnight);
+    const result = validateStartTime(new Date(startTime), duration.value, events);
     errors.eventStartTime = result.valid ? false : result.errors;
     errors.hasOverlappingEvents = result.hasOverlappingEvents;
   });
@@ -170,11 +170,11 @@ export function useEventValidator(options: Options) {
     if (isNaN(dateMidnight.getTime())) {
       return;
     }
-    
+
     dateMidnight.setHours(0, 0, 0, 0);
 
-    const events = await getEventsByCategoryIdOnDate(categoryId, dateMidnight.toISOString());
-    const result = validateStartTime(inputs.eventStartTime, _duration, events);
+    const events = await getAllocatedTimeSlotsInCategoryOnDate(categoryId, dateMidnight);
+    const result = validateStartTime(new Date(inputs.eventStartTime), _duration, events);
     errors.eventStartTime = result.valid ? false : result.errors;
     errors.hasOverlappingEvents = result.hasOverlappingEvents;
   });

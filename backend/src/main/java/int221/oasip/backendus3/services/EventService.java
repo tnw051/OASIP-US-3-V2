@@ -3,6 +3,7 @@ package int221.oasip.backendus3.services;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
+import int221.oasip.backendus3.dtos.EventTimeSlotResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
 import int221.oasip.backendus3.entities.Role;
@@ -266,6 +267,21 @@ public class EventService {
         private String type;
         private String userEmail;
         private boolean isAdmin;
+    }
+
+//    @Builder(builderClassName = "Builder")
+//    @Getter
+//    public static class GetAllocatedTimeSlotsInCategoryOnDateOptions {
+//        private Integer categoryId;
+//        private Instant startAt;
+//    }
+    // only show the start time and end time for each event
+
+    public List<EventTimeSlotResponse> getAllocatedTimeSlotsInCategoryOnDate(Integer categoryId, Instant startAt, Integer excludeEventId) {
+        List<Event> events = repository.findByDateRangeOfOneDayExcludeEvent(startAt, categoryId, excludeEventId);
+        return events.stream()
+                .map(event -> new EventTimeSlotResponse(event.getEventStartTime(), event.getEventDuration(), categoryId))
+                .collect(Collectors.toList());
     }
 
     private void sendmail(Event event) throws MessagingException {

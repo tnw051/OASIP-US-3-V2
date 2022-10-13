@@ -35,8 +35,9 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
 
     @Query("SELECT E FROM Event E WHERE (:categoryId IS NULL OR E.eventCategory.id = :categoryId) AND " +
             "(:userId IS NULL OR E.user.id = :userId) AND " +
+            "(:excludeEventId IS NULL OR E.id <> :excludeEventId) AND " +
             "E.eventStartTime >= :fromInclusive AND E.eventStartTime < :toExclusive")
-    List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable Integer categoryId, Integer userId);
+    List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable Integer categoryId, Integer userId, @Nullable Integer excludeEventId);
 
     /**
      * Get all events that started in the selected day, starting from {@code startAt} (inclusive) to {@code startAt + 1 day} (exclusive)
@@ -50,7 +51,12 @@ public interface EventRepository extends JpaRepository<Event, Integer> {
      */
     default List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable Integer categoryId, @Nullable Integer userId) {
         Instant endAt = startAt.plus(1, ChronoUnit.DAYS);
-        return findByDateRange(startAt, endAt, categoryId, userId);
+        return findByDateRange(startAt, endAt, categoryId, userId, null);
+    }
+
+    default List<Event> findByDateRangeOfOneDayExcludeEvent(Instant startAt, @Nullable Integer categoryId, @Nullable Integer excludeEventId) {
+        Instant endAt = startAt.plus(1, ChronoUnit.DAYS);
+        return findByDateRange(startAt, endAt, categoryId, null, excludeEventId);
     }
 
     /**
