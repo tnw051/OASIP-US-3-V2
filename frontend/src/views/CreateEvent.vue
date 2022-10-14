@@ -13,7 +13,7 @@ const {
   errors,
   inputs,
   resetInputsAndErrors,
-  hasErrors,  
+  hasErrors,
 } = useEventValidator({
   getDurationByCategoryId(categoryId) {
     const category = categories.value.find((c) => c.id === categoryId);
@@ -44,11 +44,6 @@ const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
 async function handleSubmit() {
-  if (!inputs.bookingEmail || !inputs.bookingName || !inputs.eventCategoryId || !inputs.eventNotes || !inputs.eventStartTime) {
-    console.log("Missing required fields");
-    return;
-  }
-
   try {
     const createdEvent = await createEvent({
       bookingName: inputs.bookingName,
@@ -85,7 +80,7 @@ const maxFileSize = 10 * 1024 * 1024;
 
 function handleFileChange(e: Event) {
   console.log("handleFileChange");
-  
+
   const target = e.target as HTMLInputElement;
   const files = target.files;
   const selectedFile = files && files[0];
@@ -110,7 +105,7 @@ function handleFileChange(e: Event) {
       const newFileList = new DataTransfer();
       const prevFile = file.value;
       newFileList.items.add(prevFile);
-      if(fileInputRef.value?.files) {
+      if (fileInputRef.value?.files) {
         fileInputRef.value.files = newFileList.files;
       }
       fileError.value.push(`The previous file '${prevFile.name}' is still selected.`);
@@ -219,14 +214,13 @@ function handleRemoveFile() {
           class="rounded bg-gray-100 p-2"
         >
         <div
-          v-if="errors.eventStartTime || errors.hasOverlappingEvents"
+          v-if="errors.eventStartTime"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in errors.eventStartTime"
             :key="error.toString()"
           >{{ error }}</span>
-          <span v-if="errors.hasOverlappingEvents">Start time overlaps with other event(s)</span>
         </div>
       </div>
 

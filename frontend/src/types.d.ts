@@ -22,3 +22,10 @@ export interface OasipJwtPayload {
 export interface BaseSlotProps<T> {
     item: T;
 }
+
+export interface EventTimeSlot {
+    eventStartTime: Date;
+    eventEndTime: Date;
+    eventDuration: number;
+    eventCategoryId: number;
+}

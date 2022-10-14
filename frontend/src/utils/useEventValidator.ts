@@ -3,6 +3,7 @@
 import { computed, reactive, ref, watch } from "vue";
 import { EventTimeSlotResponse } from "../gen-types";
 import { getAllocatedTimeSlotsInCategoryOnDate } from "../service/api";
+import { EventTimeSlot } from "../types";
 import { findOverlap } from "./index";
 import { makeValidateResult, ValidationResult } from "./validators/common";
 
@@ -51,7 +52,9 @@ function validateEventNotes(notes: string): ValidationResult {
   return makeValidateResult(errors);
 }
 
-function validateStartTime(startTime: Date, duration: number, events: EventTimeSlotResponse[]): ValidationResult<{ hasOverlappingEvents: boolean }> {
+function validateStartTime(startTime: Date, duration: number, events: EventTimeSlotResponse[], excludeTimeSlot?: EventTimeSlot): ValidationResult<{ hasOverlappingEvents: boolean }> {
+  console.log("getting allocated time slots");
+
   const errors: string[] = [];
 
   const now = new Date();
@@ -61,8 +64,12 @@ function validateStartTime(startTime: Date, duration: number, events: EventTimeS
     errors.push("Start time must be in the future");
   }
 
-  const overlapEvents = findOverlap(startTime, duration, events);
+  const overlapEvents = findOverlap(startTime, duration, events, excludeTimeSlot);
   const hasOverlap = overlapEvents.length > 0;
+
+  if (hasOverlap) {
+    errors.push("Start time overlaps with other event(s)");
+  }
 
   return {
     ...makeValidateResult(errors),
@@ -70,28 +77,47 @@ function validateStartTime(startTime: Date, duration: number, events: EventTimeS
   };
 }
 
-type InputError = string[] | false;
+// initial: false means the field is optional, undefined means the field is required
+// normal: false means no error, undefined means not validated yet
+type InputError = string[] | false | undefined; 
 
 interface Errors {
   bookingName: InputError;
   bookingEmail: InputError;
   eventNotes: InputError;
   eventStartTime: InputError;
-  hasOverlappingEvents: boolean;
+  hasOverlappingEvents: boolean | undefined;
 }
 
 interface Options {
-  getDurationByCategoryId: (categoryId: number) => number | null;
+  getDurationByCategoryId?: (categoryId: number) => number | null;
+  currentTimeSlot?: EventTimeSlot;
+  exclude?: Partial<{
+    bookingName: boolean;
+    bookingEmail: boolean;
+  }>;
 }
+
 export function useEventValidator(options: Options) {
-  const { getDurationByCategoryId: onCategoryChange } = options;
+  const { getDurationByCategoryId, currentTimeSlot, exclude } = options;
+
+  let optionalFields = {};
+  if (exclude) {
+    optionalFields = Object.keys(exclude).reduce((acc, key) => {
+      if (exclude[key]) {
+        acc[key] = false;
+      }
+      return acc;
+    }, {});
+  }
 
   const defaultErrors: Errors = {
-    bookingName: false,
-    bookingEmail: false,
+    bookingName: undefined,
+    bookingEmail: undefined,
     eventNotes: false,
-    eventStartTime: false,
+    eventStartTime: undefined,
     hasOverlappingEvents: false,
+    ...optionalFields,
   };
   const errors = reactive<Errors>(defaultErrors);
 
@@ -106,20 +132,6 @@ export function useEventValidator(options: Options) {
 
   const duration = ref<number>();
 
-  // const eventsInCategoryOnDate = ref<EventResponse[]>([]);
-
-  // const eventId = ref("");
-
-  // function setEventId(id: string) {
-  //   eventId.value = id;
-  // }
-
-  // function setCategoryId(id: number) {
-  //   inputs.eventCategoryId = id;
-  // }
-
-
-  // use watch instead of event handlers
   watch(() => inputs.bookingName, (name) => {
     const result = validateBookingName(name);
     errors.bookingName = result.valid ? false : result.errors;
@@ -149,18 +161,27 @@ export function useEventValidator(options: Options) {
     }
 
     const events = await getAllocatedTimeSlotsInCategoryOnDate(inputs.eventCategoryId, dateMidnight);
-    const result = validateStartTime(new Date(startTime), duration.value, events);
+    const result = validateStartTime(new Date(startTime), duration.value, events, currentTimeSlot);
     errors.eventStartTime = result.valid ? false : result.errors;
     errors.hasOverlappingEvents = result.hasOverlappingEvents;
   });
 
   watch(() => inputs.eventCategoryId, async (categoryId, prevCategoryId) => {
-    if (categoryId === prevCategoryId) {
+    if (categoryId === prevCategoryId ||
+      currentTimeSlot === undefined && getDurationByCategoryId === undefined) {
       return;
     }
 
-    const _duration = onCategoryChange(categoryId);
+    let _duration: number | null = null;
+    if (currentTimeSlot?.eventDuration) {
+      _duration = currentTimeSlot.eventDuration;
+    }
+
+    if (getDurationByCategoryId) {
+      _duration = getDurationByCategoryId(categoryId);
+    }
     if (_duration === null) {
+      console.log(`duration is null for category ${categoryId}`);
       return;
     }
 
@@ -174,13 +195,15 @@ export function useEventValidator(options: Options) {
     dateMidnight.setHours(0, 0, 0, 0);
 
     const events = await getAllocatedTimeSlotsInCategoryOnDate(categoryId, dateMidnight);
-    const result = validateStartTime(new Date(inputs.eventStartTime), _duration, events);
+    const result = validateStartTime(new Date(inputs.eventStartTime), _duration, events, currentTimeSlot);
     errors.eventStartTime = result.valid ? false : result.errors;
     errors.hasOverlappingEvents = result.hasOverlappingEvents;
   });
 
   const hasErrors = computed(() => {
-    return Object.values(errors).some((error) => error !== false);
+    return Object.entries(errors).some(([key, value]) => {
+      return options.exclude?.[key] !== false && value !== false;
+    });
   });
 
   function resetInputsAndErrors() {

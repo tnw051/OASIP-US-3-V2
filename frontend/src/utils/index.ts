@@ -1,5 +1,5 @@
 import { EventTimeSlotResponse } from "../gen-types";
-import { Id } from "../types";
+import { EventTimeSlot } from "../types";
 
 export const sortDirections = {
   ASC: "asc",
@@ -91,7 +91,7 @@ export function formatDate(date) {
 
 // use the above example to find overlapping events below
 
-export function findOverlap(eventStartTime: Date, duration: number, existingEvents: EventTimeSlotResponse[]) {
+export function findOverlap(eventStartTime: Date, duration: number, existingEvents: EventTimeSlotResponse[], excludeTimeSlot?: EventTimeSlot) {
   console.log("findOverlap", eventStartTime, duration, existingEvents);
   const startTime = new Date(eventStartTime);
   const endTime = new Date(startTime);
@@ -103,6 +103,17 @@ export function findOverlap(eventStartTime: Date, duration: number, existingEven
   const overlapEvents = existingEvents.filter(event => {
     const otherStartTime = new Date(event.eventStartTime);
     const otherEndTime = new Date(event.eventStartTime);
+    otherEndTime.setMinutes(otherStartTime.getMinutes() + event.eventDuration);
+
+    // check for exclusion
+    if (excludeTimeSlot && 
+      excludeTimeSlot.eventStartTime.getTime() === otherStartTime.getTime() &&
+      excludeTimeSlot.eventEndTime.getTime() === otherEndTime.getTime() &&
+      excludeTimeSlot.eventCategoryId === event.eventCategoryId) {
+      console.log("excluded time slot", excludeTimeSlot);
+        
+      return false;
+    }
 
     // all overlap events. there are two scenarios:
     // 1. events that started before the startTime and ended after the startTime

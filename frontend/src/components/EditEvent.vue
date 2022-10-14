@@ -16,39 +16,45 @@ const emits = defineEmits([
 ]);
 
 const minDateTImeLocal = formatDateTimeLocal(new Date());
+// eslint-disable-next-line vue/no-setup-props-destructure
+const { eventStartTime, eventDuration, eventNotes, eventCategory } = props.currentEvent;
+const _startTime = new Date(eventStartTime);
+const _endTime = new Date(_startTime);
+_endTime.setMinutes(_endTime.getMinutes() + eventDuration);
 
 const {
   errors,
   inputs,
-  validateEventNotes,
-  validateStartTime,
-  setEventDuration,
-  canSubmit,
-  setEventId,
-  setCategoryId,
-} = useEventValidator();
+  hasErrors,
+} = useEventValidator({
+  currentTimeSlot: {
+    eventStartTime: _startTime,
+    eventEndTime: _endTime,
+    eventDuration,
+    eventCategoryId: Number(eventCategory.id),
+  },
+  exclude: {
+    bookingEmail: true,
+    bookingName: true,
+  },
+});
 
-
-// only use three fields for now (including eventCategoryId)
-inputs.value = {
-  eventStartTime: formatDateTimeLocal(new Date(props.currentEvent.eventStartTime)),
-  eventNotes: props.currentEvent.eventNotes,
-};
-
-setEventId(props.currentEvent.id);
-setEventDuration(props.currentEvent.eventDuration);
-setCategoryId(props.currentEvent.eventCategory.id);
+inputs.eventStartTime = formatDateTimeLocal(new Date(eventStartTime));
+inputs.eventCategoryId = Number(eventCategory.id);
+if (eventNotes) {
+  inputs.eventNotes = eventNotes;
+}
 
 function handleSaveClick() {
   const updates: EditEventRequest = {};
 
-  const newDate = new Date(inputs.value.eventStartTime || "");
-  if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
+  const newDate = new Date(inputs.eventStartTime);
+  if (newDate.getTime() !== new Date(eventStartTime).getTime()) {
     updates.eventStartTime = newDate.toISOString();
   }
 
-  const newNotes = inputs.value.eventNotes;
-  if (newNotes !== props.currentEvent.eventNotes) {
+  const newNotes = inputs.eventNotes;
+  if (newNotes !== eventNotes) {
     updates.eventNotes = newNotes;
   }
 
@@ -93,19 +99,15 @@ function handleSaveClick() {
         :max="inputConstraits.MAX_DATETIME_LOCAL"
         required
         class="rounded bg-gray-100 p-2"
-        @input="validateStartTime"
       >
       <div
-        v-if="errors.eventStartTime.length > 0 || errors.hasOverlappingEvents"
+        v-if="errors.eventStartTime"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.eventStartTime"
           :key="error"
-        >
-          {{ error }}
-          <span v-if="errors.hasOverlappingEvents">Start time overlaps with other event(s)</span>
-        </span>
+        >{{ error }}</span>
       </div>
     </div>
 
@@ -121,10 +123,9 @@ function handleSaveClick() {
         v-model="inputs.eventNotes"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your event about?"
-        @input="validateEventNotes"
       />
       <div
-        v-if="errors.eventNotes.length > 0"
+        v-if="errors.eventNotes"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
@@ -147,7 +148,7 @@ function handleSaveClick() {
       <button
         type="submit"
         class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit"
+        :disabled="hasErrors"
         @click="handleSaveClick"
       >
         Save
