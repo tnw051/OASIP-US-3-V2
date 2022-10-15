@@ -21,7 +21,7 @@ onBeforeMount(async () => {
       isLoggedIn.value = false;
     },
   }) || [];
-  roles.value = await getRoles();
+  roles.value = await getRoles() || [];
 });
 
 const headers = computed(() => {

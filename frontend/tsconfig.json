@@ -6,6 +6,7 @@
     "moduleResolution": "Node16",
     "allowJs": true,
     "jsx": "preserve",
+    "target": "ES2015",
     "types": [
       "vite/client",
     ],

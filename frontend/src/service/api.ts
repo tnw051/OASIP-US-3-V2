@@ -1,4 +1,5 @@
 import {
+  ApiError,
   CategoryResponse,
   CreateEventRequest,
   CreateUserRequest,
@@ -7,63 +8,30 @@ import {
   EditUserRequest,
   EventResponse,
   EventTimeSlotResponse,
-  LoginRequest,
   LoginResponse,
   MatchRequest,
   Role,
   UserResponse,
 } from "../gen-types";
-import { ErrorResponse, Id } from "../types";
+import router from "../router";
+import { Id } from "../types";
+import { accessTokenKey, makeUrl } from "./common";
 
-const baseUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : "/api";
+type NullablePromise<T> = Promise<T | null>
 
-function makeUrl(path: string) {
-  return `${baseUrl}${path}`;
+export async function getEvents(): NullablePromise<EventResponse[]> {
+  return dankFetcher(makeUrl("/events"));
 }
 
-//GET
-export async function getEvents(): Promise<EventResponse[]> {
-  const response = await fetch(makeUrl("/events"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const events = response.json();
-    console.log(events);
-    return events;
-  } else {
-    console.log("Cannot fetch events");
-  }
+export async function getCategories(): NullablePromise<CategoryResponse[]> {
+  return dankFetcher(makeUrl("/categories"));
 }
 
-export async function getCategories(): Promise<CategoryResponse[]> {
-  const response = await fetch(makeUrl("/categories"));
-  if (response.status === 200) {
-    const categories = response.json();
-    return categories;
-  } else {
-    console.log("Cannot fetch events");
-  }
+export async function getLecturerCategories(): NullablePromise<CategoryResponse[]> {
+  return dankFetcher(makeUrl("/categories/lecturer"));
 }
 
-export async function getLecturerCategories(): Promise<CategoryResponse[]> {
-  const response = await fetch(makeUrl("/categories/lecturer"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const categories = response.json();
-    return categories;
-  } else {
-    console.log("Cannot fetch events");
-  }
-}
-
-//CREATE
-export async function createEvent(newEvent: CreateEventRequest, file: File | null): Promise<EventResponse> {
-  const token = localStorage.getItem(accessTokenKey);
+export async function createEvent(newEvent: CreateEventRequest, file: File): NullablePromise<EventResponse> {
   const formData = new FormData();
   for (const [key, value] of Object.entries(newEvent)) {
     formData.append(key, value);
@@ -72,91 +40,40 @@ export async function createEvent(newEvent: CreateEventRequest, file: File | nul
     formData.append("file", file);
   }
 
-  console.log(formData);
-
-  const response = await fetch(makeUrl("/events"), {
+  return dankFetcher(makeUrl("/events"), {
     method: "POST",
-    headers: {
-      ...(token && {
-        Authorization: `Bearer ${token}`,
-      }),
-    },
     body: formData,
   });
-
-  const data = await response.json();
-  if (response.status === 201) {
-    return data;
-  } else if (response.status === 400) {
-    throw data;
-  } else {
-    console.log("Cannot create event");
-  }
 }
 
-//DELETE
-export async function deleteEvent(id: Id) {
-  const response = await fetch(makeUrl(`/events/${id}`), {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
+export async function deleteEvent(id: Id): Promise<boolean> {
+  try {
+    await dankFetcher(makeUrl(`/events/${id}`), {
+      method: "DELETE",
+    });
 
-  if (response.status === 200) {
     return true;
-  } else {
-    console.log("Cannot delete event");
+  } catch (error) {
     return false;
   }
 }
 
-//UPDATE
-export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<EventResponse> {
-  const response = await fetch(makeUrl(`/events/${id}`), {
+export async function updateEvent(id: Id, editEvent: EditEventRequest): NullablePromise<EventResponse> {
+  return dankFetcher(makeUrl(`/events/${id}`), {
     method: "PATCH",
     headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(editEvent),
   });
-  if (response.status === 200) {
-    const updatedEvent = await response.json();
-    return updatedEvent;
-  } else {
-    console.log("Cannot edit event");
-  }
 }
 
-export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): Promise<EventResponse[]> {
-  const response = await fetch(
-    makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`), {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-      },
-    },
-  );
-  if (response.status === 200) {
-    const events = response.json();
-    return events;
-  } else {
-    console.log("Cannot fetch events");
-  }
+export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): NullablePromise<EventResponse[]> {
+  return dankFetcher(makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`));
 }
 
-export async function getEventsByCategoryId(categoryId: Id): Promise<EventResponse[]> {
-  const response = await fetch(makeUrl(`/events?categoryId=${categoryId}`), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const events = response.json();
-    return events;
-  } else {
-    console.log("Cannot fetch events");
-  }
+export async function getEventsByCategoryId(categoryId: Id): NullablePromise<EventResponse[]> {
+  return dankFetcher(makeUrl(`/events?categoryId=${categoryId}`));
 }
 
 interface GetEventsFilter {
@@ -165,11 +82,11 @@ interface GetEventsFilter {
   startAt?: string;
 }
 
-export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventResponse[]> {
+export async function getEventsByFilter(filter: GetEventsFilter): NullablePromise<EventResponse[]> {
   const { categoryId, type, startAt } = filter;
 
   let uri = "/events?";
-  const filters = [];
+  const filters: string[] = [];
 
   if (categoryId) {
     filters.push(`categoryId=${categoryId}`);
@@ -187,244 +104,103 @@ export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventR
     uri += filters.join("&");
   }
 
-  const response = await fetch(makeUrl(uri), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const events = response.json();
-    return events;
-  } else {
-    console.log("Cannot fetch events");
-  }
+  return dankFetcher(makeUrl(uri));
 }
 
-export async function updateCategory(id: Id, editCategory: EditCategoryRequest): Promise<CategoryResponse> {
-  const response = await fetch(makeUrl(`/categories/${id}`), {
+export async function updateCategory(id: Id, editCategory: EditCategoryRequest): NullablePromise<CategoryResponse> {
+  return dankFetcher(makeUrl(`/categories/${id}`), {
     method: "PATCH",
     headers: {
-      "content-type": "application/json",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(editCategory),
   });
-  if (response.status === 200) {
-    const updatedCategory = await response.json();
-    return updatedCategory;
-  } else {
-    console.log("Cannot edit category");
-  }
 }
 
-export const accessTokenKey = "accessToken";
 interface GetUsersOptions {
   onUnauthorized?: () => void;
 }
 export async function getUsers(options: GetUsersOptions = {
-}): Promise<UserResponse[]> {
+}): NullablePromise<UserResponse[]> {
   const { onUnauthorized } = options;
-  const response = await fetch(makeUrl("/users"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const users = response.json();
-    return users;
-  } else if (response.status === 401) {
-    const { error } = await refreshAccessToken();
-    if (error) {
-      onUnauthorized();
-      return;
+
+  try {
+    return await dankFetcher(makeUrl("/users"));
+  } catch (error) {
+    if (error instanceof ApiErrorError && error.content.status === 401) {
+      onUnauthorized?.();
     }
-
-    return getUsers(options);
-  } else {
-    console.log("Cannot fetch users");
   }
+
+  return null;
 }
 
-interface RefreshTokenResponse {
-  accessToken: string;
-  error: Error | null;
-}
-async function refreshAccessToken(): Promise<RefreshTokenResponse> {
-  const response = await fetch(makeUrl("/auth/refresh"), {
-    method: "POST",
-  });
 
-  if (response.status === 200) {
-    const data = await response.json();
-    localStorage.setItem(accessTokenKey, data.accessToken);
-    console.log("Refreshed access token");
-    return {
-      accessToken: data.accessToken,
-      error: null,
-    };
-  } else {
-    // TODO: clear auth data in useAuth when refresh token is expired
-    return {
-      accessToken: null,
-      error: new Error("Cannot refresh access token"),
-    };
-  }
+export async function getRoles(): NullablePromise<Role[]> {
+  return dankFetcher(makeUrl("/users/roles"));
 }
 
-export async function getRoles(): Promise<Role[]> {
-  const response = await fetch(makeUrl("/users/roles"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-  if (response.status === 200) {
-    const roles = response.json();
-    return roles;
-  } else {
-    console.log("Cannot fetch user roles");
-  }
-}
-
-export async function createUser(newUser: CreateUserRequest): Promise<UserResponse> {
+export async function createUser(newUser: CreateUserRequest): NullablePromise<UserResponse> {
   const trimmedUser = {
     ...newUser,
     name: newUser.name.trim(),
     email: newUser.email.trim(),
   };
 
-  const response = await fetch(makeUrl("/users"), {
+  return dankFetcher(makeUrl("/users"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
     body: JSON.stringify(trimmedUser),
   });
-
-  const data = await response.json();
-  if (response.status === 201) {
-    return data;
-  } else if (response.status === 400) {
-    throw data;
-  } else {
-    console.log("Cannot create user");
-  }
 }
 
 export async function deleteUser(id: Id) {
-  const response = await fetch(makeUrl(`/users/${id}`), {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
-  });
-
-  if (response.status === 204) {
+  try {
+    await dankFetcher(makeUrl(`/users/${id}`), {
+      method: "DELETE",
+    });
     return true;
-  } else {
-    console.log("Cannot delete user");
+  } catch (error) {
     return false;
   }
 }
 
-export async function updateUser(id: Id, changes: EditUserRequest): Promise<UserResponse> {
-  const response = await fetch(makeUrl(`/users/${id}`), {
+export async function updateUser(id: Id, changes: EditUserRequest): NullablePromise<UserResponse> {
+  return dankFetcher(makeUrl(`/users/${id}`), {
     method: "PATCH",
     headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(changes),
   });
-  if (response.status === 200) {
-    const updatedUser = await response.json();
-    return updatedUser;
-  } else {
-    console.log("Cannot edit user");
-  }
 }
 
 export async function match(matchRequest: MatchRequest) {
-  const response = await fetch(makeUrl("/auth/match"), {
+  return dankFetcher(makeUrl("/auth/match"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(matchRequest),
   });
-
-  if (response.status === 200) {
-    return true;
-  } else if (response.status === 401) {
-    return false;
-  } else if (response.status === 404) {
-    const data = await response.json();
-    throw new Error(data.message);
-  } else {
-    console.log("Cannot match password");
-  }
 }
 
-interface LoginOptions {
-  onSuccess?: (r: LoginResponse) => void;
-  onUnauthorized?: (r: ErrorResponse) => void;
-  onNotFound?: (r: ErrorResponse) => void;
-}
-
-export async function login(loginRequest: LoginRequest, options: LoginOptions = {
-}): Promise<void> {
-  const { onSuccess, onUnauthorized, onNotFound } = options;
-  const response = await fetch(makeUrl("/auth/login"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(loginRequest),
-  });
-
-  const data = await response.json();
-  if (response.status === 200) {
-    localStorage.setItem(accessTokenKey, data.accessToken);
-    onSuccess(data as LoginResponse);
-  } else if (response.status === 401) {
-    onUnauthorized(data as ErrorResponse);
-  } else if (response.status === 404) {
-    onNotFound(data as ErrorResponse);
-  } else {
-    console.log("Cannot login");
-  }
-}
-
-export async function logout() {
-  const response = await fetch(makeUrl("/auth/logout"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (response.status === 200) {
-    localStorage.removeItem(accessTokenKey);
-    return true;
-  } else {
-    console.log("Cannot logout");
-    return false;
-  }
-}
-
-export async function getFilenameByBucketUuid(uuid: string) {
+export async function getFilenameByBucketUuid(uuid: string): NullablePromise<string> {
   const response = await fetch(makeUrl(`/events/files/${uuid}?noContent=true`), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
+    headers: makeAuthHeaders(),
   });
 
   if (response.status === 200) {
     // get filename from content-disposition header
-    const filename = response.headers.get("content-disposition").split("filename=")[1];
-    return filename;
-  } else {
-    console.log("Cannot get file");
+    const filename = response.headers.get("content-disposition")?.split("filename=")[1];
+    if (filename) {
+      return filename;
+    }
   }
+
+  return null;
 }
 
 export function getBucketURL(uuid: string) {
@@ -435,25 +211,104 @@ export async function getAllocatedTimeSlotsInCategoryOnDate(
   categoryId: Id,
   startAt: Date,
   excludeId?: Id,
-): Promise<EventTimeSlotResponse[]> {
+): NullablePromise<EventTimeSlotResponse[]> {
   let url = makeUrl(`/events/allocatedTimeSlots?categoryId=${categoryId}&startAt=${startAt.toISOString()}`);
   if (excludeId) {
     url += `&excludeId=${excludeId}`;
   }
 
-  const response = await fetch(
-    url,
-    {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-      },
-    },
-  );
+  return dankFetcher(url);
+}
 
-  if (response.status === 200) {
-    const data = await response.json();
-    return data;
-  } else {
-    console.log("Cannot get allocated time slots");
+export class ApiErrorError extends Error {
+  public content: ApiError;
+
+  constructor(error: ApiError) {
+    super(error.message);
+    this.name = "ApiError";
+    this.content = error;
   }
+}
+
+export class ApiUnexpectedError extends Error {
+  constructor(public path: string, public status: number) {
+    super(`Unexpected error from '${path}': ${status}`);
+    this.name = "ApiUnexpectedError";
+  }
+}
+
+async function dankFetcher<T = unknown>(url: string, options: RequestInit = {}): NullablePromise<T> {
+  const finalOptions = {
+    ...options,
+  };
+
+  finalOptions.headers = {
+    ...finalOptions.headers,
+    ...makeAuthHeaders(),
+  };
+
+  const response = await fetch(url, finalOptions);
+  if (response.status === 401) {
+    await router.isReady();
+    router.push("/login");
+
+    const { error } = await refreshAccessToken();
+    if (error) {
+      throw new ApiErrorError(error);
+    }
+
+    return dankFetcher(url, options);
+  }
+
+  if (!response.ok) {
+    try {
+      const error = await response.json();
+      if (error.message) {
+        console.log(error.message);
+
+        throw new ApiErrorError(error);
+      }
+    } catch (error) {
+      throw new ApiUnexpectedError(url, response.status);
+    }
+  }
+
+  try {
+    return await response.json() as Promise<T>;
+  } catch (error) {
+    console.log("Could not parse response as JSON");
+    return null;
+  }
+}
+
+function makeAuthHeaders() {
+  const accessToken = localStorage.getItem(accessTokenKey);
+  return {
+    ...(accessToken && {
+      Authorization: `Bearer ${accessToken}`, // add token to headers if it exists
+    }),
+  };
+}
+
+type RefreshTokenResult = {
+  accessToken: string;
+  error: null;
+} | {
+  accessToken: null;
+  error: ApiError;
+};
+
+async function refreshAccessToken(): Promise<RefreshTokenResult> {
+  const response = await fetch(makeUrl("/auth/refresh"), {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    return { accessToken: null, error: await response.json() };
+  }
+
+  const data = await response.json() as LoginResponse;
+  localStorage.setItem(accessTokenKey, data.accessToken);
+
+  return { accessToken: data.accessToken, error: null };
 }

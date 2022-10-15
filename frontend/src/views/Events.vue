@@ -63,9 +63,9 @@ onAuthLoaded(async () => {
   const events = await getEvents();
   setEvents(events);
   if (isLecturer.value) {
-    categories.value = await getLecturerCategories();
+    categories.value = await getLecturerCategories() || [];
   } else {
-    categories.value = await getCategories();
+    categories.value = await getCategories() || [];
   }
   setIsLoading(false);
 });
