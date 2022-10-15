@@ -16,45 +16,25 @@ const emits = defineEmits([
 ]);
 
 const minDateTImeLocal = formatDateTimeLocal(new Date());
-// eslint-disable-next-line vue/no-setup-props-destructure
-const { eventStartTime, eventDuration, eventNotes, eventCategory } = props.currentEvent;
-const _startTime = new Date(eventStartTime);
-const _endTime = new Date(_startTime);
-_endTime.setMinutes(_endTime.getMinutes() + eventDuration);
 
 const {
   errors,
   inputs,
-  hasErrors,
+  canSubmit,
 } = useEventValidator({
-  currentTimeSlot: {
-    eventStartTime: _startTime,
-    eventEndTime: _endTime,
-    eventDuration,
-    eventCategoryId: Number(eventCategory.id),
-  },
-  exclude: {
-    bookingEmail: true,
-    bookingName: true,
-  },
+  currentEvent: props.currentEvent,
 });
-
-inputs.eventStartTime = formatDateTimeLocal(new Date(eventStartTime));
-inputs.eventCategoryId = Number(eventCategory.id);
-if (eventNotes) {
-  inputs.eventNotes = eventNotes;
-}
 
 function handleSaveClick() {
   const updates: EditEventRequest = {};
 
   const newDate = new Date(inputs.eventStartTime);
-  if (newDate.getTime() !== new Date(eventStartTime).getTime()) {
+  if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
     updates.eventStartTime = newDate.toISOString();
   }
 
   const newNotes = inputs.eventNotes;
-  if (newNotes !== eventNotes) {
+  if (newNotes !== props.currentEvent.eventNotes) {
     updates.eventNotes = newNotes;
   }
 
@@ -148,7 +128,7 @@ function handleSaveClick() {
       <button
         type="submit"
         class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="hasErrors"
+        :disabled="!canSubmit"
         @click="handleSaveClick"
       >
         Save

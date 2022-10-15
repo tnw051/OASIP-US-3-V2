@@ -1,10 +1,10 @@
 // useValidate composable
 // used for input validation and showing errors
 import { computed, reactive, ref, watch } from "vue";
-import { EventTimeSlotResponse } from "../gen-types";
+import { EditEventRequest, EventResponse, EventTimeSlotResponse } from "../gen-types";
 import { getAllocatedTimeSlotsInCategoryOnDate } from "../service/api";
 import { EventTimeSlot } from "../types";
-import { findOverlap } from "./index";
+import { findOverlap, formatDateTimeLocal } from "./index";
 import { makeValidateResult, ValidationResult } from "./validators/common";
 
 // refactor the useEventValidator to pure functions and later use it in the composition API
@@ -79,7 +79,7 @@ function validateStartTime(startTime: Date, duration: number, events: EventTimeS
 
 // initial: false means the field is optional, undefined means the field is required
 // normal: false means no error, undefined means not validated yet
-type InputError = string[] | false | undefined; 
+type InputError = string[] | false | undefined;
 
 interface Errors {
   bookingName: InputError;
@@ -91,64 +91,81 @@ interface Errors {
 
 interface Options {
   getDurationByCategoryId?: (categoryId: number) => number | null;
-  currentTimeSlot?: EventTimeSlot;
-  exclude?: Partial<{
-    bookingName: boolean;
-    bookingEmail: boolean;
-  }>;
+  currentEvent?: EventResponse;
 }
 
 export function useEventValidator(options: Options) {
-  const { getDurationByCategoryId, currentTimeSlot, exclude } = options;
+  const { getDurationByCategoryId, currentEvent } = options;
 
-  let optionalFields = {};
-  if (exclude) {
-    optionalFields = Object.keys(exclude).reduce((acc, key) => {
-      if (exclude[key]) {
-        acc[key] = false;
-      }
-      return acc;
-    }, {});
+  let currentTimeSlot: EventTimeSlot;
+  if (currentEvent) {
+    const { eventStartTime, eventDuration, eventCategory } = currentEvent;
+    const _startTime = new Date(eventStartTime);
+    const _endTime = new Date(_startTime);
+    _endTime.setMinutes(_endTime.getMinutes() + eventDuration);
+
+    currentTimeSlot = {
+      eventStartTime: _startTime,
+      eventEndTime: _endTime,
+      eventDuration,
+      eventCategoryId: Number(eventCategory.id),
+    };
   }
 
   const defaultErrors: Errors = {
-    bookingName: undefined,
-    bookingEmail: undefined,
+    bookingName: false,
+    bookingEmail: false,
     eventNotes: false,
-    eventStartTime: undefined,
+    eventStartTime: false,
     hasOverlappingEvents: false,
-    ...optionalFields,
   };
   const errors = reactive<Errors>(defaultErrors);
 
+  const defaultTextValue = "";
+  const defaultIntValue = 0;
   const defaultInputs = {
-    bookingName: "",
-    bookingEmail: "",
-    eventNotes: "",
-    eventStartTime: "",
-    eventCategoryId: 0,
+    bookingName: currentEvent?.bookingName ?? defaultTextValue,
+    bookingEmail: currentEvent?.bookingEmail ?? defaultTextValue,
+    eventNotes: currentEvent?.eventNotes ?? defaultTextValue,
+    eventStartTime: currentEvent?.eventStartTime ? formatDateTimeLocal(currentEvent.eventStartTime) : defaultTextValue,
+    eventCategoryId: Number(currentEvent?.eventCategory?.id ?? defaultIntValue),
   };
-  const inputs = reactive(defaultInputs);
+  const inputs = reactive({ ...defaultInputs });
 
   const duration = ref<number>();
+  if (currentEvent) {
+    duration.value = currentEvent.eventDuration;
+  }
 
   watch(() => inputs.bookingName, (name) => {
+    if (inputs.bookingName === defaultTextValue) {
+      return;
+    }
+
     const result = validateBookingName(name);
     errors.bookingName = result.valid ? false : result.errors;
   });
 
   watch(() => inputs.bookingEmail, (email) => {
+    if (inputs.bookingEmail === defaultTextValue) {
+      return;
+    }
+
     const result = validateBookingEmail(email);
     errors.bookingEmail = result.valid ? false : result.errors;
   });
 
   watch(() => inputs.eventNotes, (notes) => {
+    if (inputs.eventNotes === defaultTextValue) {
+      return;
+    }
+
     const result = validateEventNotes(notes);
     errors.eventNotes = result.valid ? false : result.errors;
   });
 
   watch(() => inputs.eventStartTime, async (startTime, prevStartTime) => {
-    if (!duration.value) {
+    if (inputs.eventStartTime === defaultTextValue || !duration.value) {
       return;
     }
 
@@ -167,7 +184,8 @@ export function useEventValidator(options: Options) {
   });
 
   watch(() => inputs.eventCategoryId, async (categoryId, prevCategoryId) => {
-    if (categoryId === prevCategoryId ||
+    if (inputs.eventCategoryId === defaultIntValue ||
+      categoryId === prevCategoryId ||
       currentTimeSlot === undefined && getDurationByCategoryId === undefined) {
       return;
     }
@@ -202,8 +220,28 @@ export function useEventValidator(options: Options) {
 
   const hasErrors = computed(() => {
     return Object.entries(errors).some(([key, value]) => {
-      return options.exclude?.[key] !== false && value !== false;
+      return value !== false;
     });
+  });
+
+  const hasChanges = computed(() => {
+    if (currentEvent === undefined) {
+      return false;
+    }
+
+    return inputs.eventCategoryId !== currentEvent.eventCategory.id ||
+      inputs.bookingName !== currentEvent.bookingName ||
+      inputs.bookingEmail !== currentEvent.bookingEmail ||
+      inputs.eventNotes !== currentEvent.eventNotes ||
+      formatDateTimeLocal(inputs.eventStartTime) !== formatDateTimeLocal(currentEvent.eventStartTime);
+  });
+
+  const canSubmit = computed(() => {
+    if (currentEvent) {
+      return !hasErrors.value && hasChanges.value;
+    }
+
+    return !hasErrors.value;
   });
 
   function resetInputsAndErrors() {
@@ -216,5 +254,7 @@ export function useEventValidator(options: Options) {
     inputs,
     resetInputsAndErrors,
     hasErrors,
+    hasChanges,
+    canSubmit,
   };
 }
