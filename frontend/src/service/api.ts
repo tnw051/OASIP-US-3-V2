@@ -20,19 +20,19 @@ import {
   NullablePromise,
 } from "./common";
 
-export async function getEvents(): NullablePromise<EventResponse[]> {
+export async function getEvents(): Promise<EventResponse[]> {
   return dankFetcher(makeUrl("/events"));
 }
 
-export async function getCategories(): NullablePromise<CategoryResponse[]> {
+export async function getCategories(): Promise<CategoryResponse[]> {
   return dankFetcher(makeUrl("/categories"));
 }
 
-export async function getLecturerCategories(): NullablePromise<CategoryResponse[]> {
+export async function getLecturerCategories(): Promise<CategoryResponse[]> {
   return dankFetcher(makeUrl("/categories/lecturer"));
 }
 
-export async function createEvent(newEvent: CreateEventRequest, file: File): NullablePromise<EventResponse> {
+export async function createEvent(newEvent: CreateEventRequest, file: File): Promise<EventResponse> {
   const formData = new FormData();
   for (const [key, value] of Object.entries(newEvent)) {
     formData.append(key, value);
@@ -51,6 +51,8 @@ export async function deleteEvent(id: Id): Promise<boolean> {
   try {
     await dankFetcher(makeUrl(`/events/${id}`), {
       method: "DELETE",
+    }, {
+      noContent: true,
     });
 
     return true;
@@ -59,7 +61,7 @@ export async function deleteEvent(id: Id): Promise<boolean> {
   }
 }
 
-export async function updateEvent(id: Id, editEvent: EditEventRequest): NullablePromise<EventResponse> {
+export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<EventResponse> {
   return dankFetcher(makeUrl(`/events/${id}`), {
     method: "PATCH",
     headers: {
@@ -69,11 +71,11 @@ export async function updateEvent(id: Id, editEvent: EditEventRequest): Nullable
   });
 }
 
-export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): NullablePromise<EventResponse[]> {
+export async function getEventsByCategoryIdOnDate(categoryId: Id, startAt: string): Promise<EventResponse[]> {
   return dankFetcher(makeUrl(`/events?categoryId=${categoryId}&startAt=${startAt}`));
 }
 
-export async function getEventsByCategoryId(categoryId: Id): NullablePromise<EventResponse[]> {
+export async function getEventsByCategoryId(categoryId: Id): Promise<EventResponse[]> {
   return dankFetcher(makeUrl(`/events?categoryId=${categoryId}`));
 }
 
@@ -83,7 +85,7 @@ interface GetEventsFilter {
   startAt?: string;
 }
 
-export async function getEventsByFilter(filter: GetEventsFilter): NullablePromise<EventResponse[]> {
+export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventResponse[]> {
   const { categoryId, type, startAt } = filter;
 
   let uri = "/events?";
@@ -108,7 +110,7 @@ export async function getEventsByFilter(filter: GetEventsFilter): NullablePromis
   return dankFetcher(makeUrl(uri));
 }
 
-export async function updateCategory(id: Id, editCategory: EditCategoryRequest): NullablePromise<CategoryResponse> {
+export async function updateCategory(id: Id, editCategory: EditCategoryRequest): Promise<CategoryResponse> {
   return dankFetcher(makeUrl(`/categories/${id}`), {
     method: "PATCH",
     headers: {
@@ -137,11 +139,11 @@ export async function getUsers(options: GetUsersOptions = {}): NullablePromise<U
 }
 
 
-export async function getRoles(): NullablePromise<Role[]> {
+export async function getRoles(): Promise<Role[]> {
   return dankFetcher(makeUrl("/users/roles"));
 }
 
-export async function createUser(newUser: CreateUserRequest): NullablePromise<UserResponse> {
+export async function createUser(newUser: CreateUserRequest): Promise<UserResponse> {
   const trimmedUser = {
     ...newUser,
     name: newUser.name.trim(),
@@ -161,6 +163,8 @@ export async function deleteUser(id: Id) {
   try {
     await dankFetcher(makeUrl(`/users/${id}`), {
       method: "DELETE",
+    }, {
+      noContent: true,
     });
     return true;
   } catch (error) {
@@ -168,7 +172,7 @@ export async function deleteUser(id: Id) {
   }
 }
 
-export async function updateUser(id: Id, changes: EditUserRequest): NullablePromise<UserResponse> {
+export async function updateUser(id: Id, changes: EditUserRequest): Promise<UserResponse> {
   return dankFetcher(makeUrl(`/users/${id}`), {
     method: "PATCH",
     headers: {
@@ -212,7 +216,7 @@ export async function getAllocatedTimeSlotsInCategoryOnDate(
   categoryId: Id,
   startAt: Date,
   excludeId?: Id,
-): NullablePromise<EventTimeSlotResponse[]> {
+): Promise<EventTimeSlotResponse[]> {
   let url = makeUrl(`/events/allocatedTimeSlots?categoryId=${categoryId}&startAt=${startAt.toISOString()}`);
   if (excludeId) {
     url += `&excludeId=${excludeId}`;

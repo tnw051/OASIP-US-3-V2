@@ -39,6 +39,7 @@ export async function logout() {
     await dankFetcher(makeUrl("/auth/logout"), {
       method: "POST",
     }, {
+      noContent: true,
       noAuth: true,
     });
 

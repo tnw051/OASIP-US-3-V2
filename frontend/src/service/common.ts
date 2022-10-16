@@ -29,6 +29,7 @@ export class ApiUnexpectedError extends Error {
 interface FetchOptions {
   noAuth?: boolean;
   noRefresh?: boolean;
+  noContent?: boolean;
 }
 
 type RefreshTokenResult = {
@@ -39,7 +40,16 @@ type RefreshTokenResult = {
   error: ApiErrorError | ApiUnexpectedError;
 };
 
-export async function dankFetcher<T = unknown>(url: string, options: RequestInit = {}, customOptions: FetchOptions = {}): NullablePromise<T> {
+// function overloads
+export function dankFetcher<T = unknown, O extends FetchOptions & { noContent?: false } = FetchOptions & { noContent?: false }>(url: string, options?: RequestInit, customOptions?: O): Promise<T>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function dankFetcher<T = unknown, O extends FetchOptions & { noContent: true } = FetchOptions & { noContent: true }>(url: string, options?: RequestInit, customOptions?: O): Promise<null>;
+
+export async function dankFetcher<T = unknown, O extends FetchOptions = FetchOptions>(
+  url: string,
+  options: RequestInit = {},
+  customOptions: O = {} as O,
+): Promise<T | null> {
   const finalOptions = {
     ...options,
   };
@@ -74,12 +84,11 @@ export async function dankFetcher<T = unknown>(url: string, options: RequestInit
     throw new ApiUnexpectedError(url, response.status);
   }
 
-  try {
-    return await response.json() as Promise<T>;
-  } catch (error) {
-    console.log("Could not parse response as JSON");
+  if (customOptions.noContent) {
     return null;
   }
+
+  return await response.json();
 }
 
 export function makeAuthHeaders() {
