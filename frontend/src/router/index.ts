@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import { useAuth } from "../utils/useAuth";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import CreateEvent from "../views/CreateEvent.vue";
@@ -10,8 +10,7 @@ import Users from "../views/Users.vue";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
-/** @type {import('vue-router').RouteRecordRaw[]} */
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "home",
@@ -59,6 +58,11 @@ const routes = [
     name: "notFound",
     component: NotFound,
   },
+  {
+    path: "/test",
+    name: "test",
+    component: () => import("../views/Test.vue"),
+  },
 ];
 
 const router = createRouter({
@@ -84,7 +88,7 @@ router.beforeEach(async (to, from) => {
     return { name: "home" };
   }
 
-  if (to.meta.disallowRoles && to.meta.disallowRoles.includes(user.value?.role)) {
+  if (to.meta.disallowRoles && user.value && to.meta.disallowRoles.includes(user.value.role)) {
     console.log(`redirecting to home (role ${user.value?.role} not allowed)`);
     return { name: "home" };
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect } from "vue";
+import { onBeforeMount, ref, watchEffect } from "vue";
 import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
@@ -20,7 +20,7 @@ import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, onAuthLoaded } = useAuth();
+const { isAuthenticated, isLecturer, waitForAuth } = useAuth();
 
 const events = ref<EventResponse[]>([]);
 const categories = ref<CategoryResponse[]>([]);
@@ -55,18 +55,23 @@ const filter = ref<{
 });
 
 // only call method if and only if auth is loaded
-onAuthLoaded(async () => {
-  if (!isAuthenticated.value) {
-    setIsLoading(false);
-    return;
+onBeforeMount(async () => {
+  await waitForAuth();
+
+  if (isAuthenticated.value) {
+    try {
+      const events = await getEvents();
+      setEvents(events);
+      if (isLecturer.value) {
+        categories.value = await getLecturerCategories() || [];
+      } else {
+        categories.value = await getCategories() || [];
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
-  const events = await getEvents();
-  setEvents(events);
-  if (isLecturer.value) {
-    categories.value = await getLecturerCategories();
-  } else {
-    categories.value = await getCategories();
-  }
+
   setIsLoading(false);
 });
 
