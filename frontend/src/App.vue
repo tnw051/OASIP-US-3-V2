@@ -1,20 +1,13 @@
 <script setup>
-import { useRouter } from "vue-router";
 import { useAuth } from "./utils/useAuth";
 
-const router = useRouter();
 const { logout, isAdmin, isLecturer, isAuthenticated, user } = useAuth();
 
 async function handleLogout() {
-  const success = await logout();
-  if (success) {
-    router.push({ name: "login" });
-  } else {
-    alert("Something went wrong");
-  }
+  await logout();
 }
 </script>
- 
+
 <template>
   <nav class="flex items-center justify-between border-b border-gray-200 bg-white px-12 py-4">
     <div class="flex items-center gap-1 text-sm font-medium">
@@ -83,7 +76,7 @@ async function handleLogout() {
 
   <router-view />
 </template>
- 
+
 <style scoped>
 .router-link-active {
   @apply text-sky-600 bg-sky-50;

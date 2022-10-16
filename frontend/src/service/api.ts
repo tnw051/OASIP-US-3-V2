@@ -1,5 +1,4 @@
 import {
-  ApiError,
   CategoryResponse,
   CreateEventRequest,
   CreateUserRequest,
@@ -8,16 +7,18 @@ import {
   EditUserRequest,
   EventResponse,
   EventTimeSlotResponse,
-  LoginResponse,
   MatchRequest,
   Role,
   UserResponse,
 } from "../gen-types";
-import router from "../router";
 import { Id } from "../types";
-import { accessTokenKey, makeUrl } from "./common";
-
-type NullablePromise<T> = Promise<T | null>
+import {
+  ApiErrorError,
+  dankFetcher,
+  makeAuthHeaders,
+  makeUrl,
+  NullablePromise,
+} from "./common";
 
 export async function getEvents(): NullablePromise<EventResponse[]> {
   return dankFetcher(makeUrl("/events"));
@@ -120,8 +121,8 @@ export async function updateCategory(id: Id, editCategory: EditCategoryRequest):
 interface GetUsersOptions {
   onUnauthorized?: () => void;
 }
-export async function getUsers(options: GetUsersOptions = {
-}): NullablePromise<UserResponse[]> {
+
+export async function getUsers(options: GetUsersOptions = {}): NullablePromise<UserResponse[]> {
   const { onUnauthorized } = options;
 
   try {
@@ -220,95 +221,3 @@ export async function getAllocatedTimeSlotsInCategoryOnDate(
   return dankFetcher(url);
 }
 
-export class ApiErrorError extends Error {
-  public content: ApiError;
-
-  constructor(error: ApiError) {
-    super(error.message);
-    this.name = "ApiError";
-    this.content = error;
-  }
-}
-
-export class ApiUnexpectedError extends Error {
-  constructor(public path: string, public status: number) {
-    super(`Unexpected error from '${path}': ${status}`);
-    this.name = "ApiUnexpectedError";
-  }
-}
-
-async function dankFetcher<T = unknown>(url: string, options: RequestInit = {}): NullablePromise<T> {
-  const finalOptions = {
-    ...options,
-  };
-
-  finalOptions.headers = {
-    ...finalOptions.headers,
-    ...makeAuthHeaders(),
-  };
-
-  const response = await fetch(url, finalOptions);
-  if (response.status === 401) {
-    await router.isReady();
-    router.push("/login");
-
-    const { error } = await refreshAccessToken();
-    if (error) {
-      throw new ApiErrorError(error);
-    }
-
-    return dankFetcher(url, options);
-  }
-
-  if (!response.ok) {
-    try {
-      const error = await response.json();
-      if (error.message) {
-        console.log(error.message);
-
-        throw new ApiErrorError(error);
-      }
-    } catch (error) {
-      throw new ApiUnexpectedError(url, response.status);
-    }
-  }
-
-  try {
-    return await response.json() as Promise<T>;
-  } catch (error) {
-    console.log("Could not parse response as JSON");
-    return null;
-  }
-}
-
-function makeAuthHeaders() {
-  const accessToken = localStorage.getItem(accessTokenKey);
-  return {
-    ...(accessToken && {
-      Authorization: `Bearer ${accessToken}`, // add token to headers if it exists
-    }),
-  };
-}
-
-type RefreshTokenResult = {
-  accessToken: string;
-  error: null;
-} | {
-  accessToken: null;
-  error: ApiError;
-};
-
-async function refreshAccessToken(): Promise<RefreshTokenResult> {
-  const response = await fetch(makeUrl("/auth/refresh"), {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    return { accessToken: null, error: await response.json() };
-  }
-
-  const data = await response.json() as LoginResponse;
-  localStorage.setItem(accessTokenKey, data.accessToken);
-
-  return { accessToken: data.accessToken, error: null };
-}
