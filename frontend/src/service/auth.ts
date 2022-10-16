@@ -1,51 +1,51 @@
-import { accessTokenKey, makeUrl } from "./common";
-import { ApiError, LoginRequest, LoginResponse } from "../gen-types";
+import { ApiErrorError, ApiUnexpectedError, dankFetcher, makeUrl } from "./common";
+import { LoginRequest, LoginResponse } from "../gen-types";
+import { reactiveToken } from "../utils/useAuth";
 
-interface LoginOptions {
-  onSuccess?: (r: LoginResponse) => void;
-  onUnauthorized?: (r: ApiError) => void;
-  onNotFound?: (r: ApiError) => void;
-}
+type LoginResult = {
+  accessToken: null;
+  error: ApiErrorError | ApiUnexpectedError;
+} | {
+  accessToken: string;
+  error: null;
+};
 
-export async function login(loginRequest: LoginRequest, options: LoginOptions = {
-}): Promise<void> {
-  const { onSuccess, onUnauthorized, onNotFound } = options;
-  const response = await fetch(makeUrl("/auth/login"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(loginRequest),
-  });
+export async function login(loginRequest: LoginRequest): Promise<LoginResult> {
+  const url = makeUrl("/auth/login");
+  try {
+    const response = await dankFetcher<LoginResponse>(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(loginRequest),
+    }, {
+      noAuth: true,
+    });
 
-  if (response.status === 200) {
-    const data = await response.json() as LoginResponse;
-    localStorage.setItem(accessTokenKey, data.accessToken);
-    onSuccess?.(data);
-  } else if (response.status === 401) {
-    const data = await response.json() as ApiError;
-    onUnauthorized?.(data);
-  } else if (response.status === 404) {
-    const data = await response.json() as ApiError;
-    onNotFound?.(data);
-  } else {
-    console.log("Cannot login");
+    if (response) {
+      return { accessToken: response.accessToken, error: null };
+    }
+  } catch (error) {
+    if (error instanceof ApiErrorError) {
+      return { accessToken: null, error };
+    }
   }
+
+  return { accessToken: null, error: new ApiUnexpectedError(url, 500) };
 }
 
 export async function logout() {
-  const response = await fetch(makeUrl("/auth/logout"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  try {
+    await dankFetcher(makeUrl("/auth/logout"), {
+      method: "POST",
+    }, {
+      noAuth: true,
+    });
 
-  if (response.status === 200) {
-    localStorage.removeItem(accessTokenKey);
     return true;
-  } else {
-    console.log("Cannot logout");
+  } catch (error) {
     return false;
   }
 }
+
