@@ -1,6 +1,5 @@
-import { ApiErrorError, ApiUnexpectedError, dankFetcher, makeUrl } from "./common";
 import { LoginRequest, LoginResponse } from "../gen-types";
-import { reactiveToken } from "../utils/useAuth";
+import { ApiErrorError, ApiUnexpectedError, dankFetcher, makeUrl } from "./common";
 
 type LoginResult = {
   accessToken: null;
