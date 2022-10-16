@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { EditUserRequest, Role, UserResponse } from "../gen-types";
-import { validateEmail, validateName } from "../utils/validators/user";
+import { useUserValidator } from "../utils/useUserValidator";
 
 interface Props {
-  currentUser: UserResponse | null;
+  currentUser: UserResponse;
   roles: Role[];
 }
 
@@ -15,47 +15,23 @@ const emits = defineEmits([
   "cancel",
 ]);
 
-const inputs = ref({
-  name: props.currentUser.name,
-  email: props.currentUser.email,
-  role: props.currentUser.role,
+const { inputs, errors, canSubmit } = useUserValidator({
+  currentUser: props.currentUser,
 });
-
-const errors = ref({
-  name: [],
-  email: [],
-});
-
-const canSubmit = computed(() => {
-  const noErrors = Object.values(errors.value).every((error) => error.length === 0);
-  const noEmptyFields = Object.values(inputs.value).every((value) => value !== "");
-
-  return noErrors && noEmptyFields;
-});
-
-function handleNameInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  errors.value.name = validateName(target.value).errors;
-}
-
-function handleEmailInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  errors.value.email = validateEmail(target.value).errors;
-}
 
 function handleSaveClick() {
   const updates: EditUserRequest = {};
 
-  if (inputs.value.name.trim() !== props.currentUser.name) {
-    updates.name = inputs.value.name;
+  if (inputs.name.trim() !== props.currentUser.name) {
+    updates.name = inputs.name;
   }
 
-  if (inputs.value.email.trim() !== props.currentUser.email) {
-    updates.email = inputs.value.email;
+  if (inputs.email.trim() !== props.currentUser.email) {
+    updates.email = inputs.email;
   }
 
-  if (inputs.value.role !== props.currentUser.role) {
-    updates.role = inputs.value.role;
+  if (inputs.role !== props.currentUser.role) {
+    updates.role = inputs.role;
   }
 
   if (Object.keys(updates).length == 0) {
@@ -66,11 +42,11 @@ function handleSaveClick() {
 }
 
 // computed for each fields whether it is changed
-const isNameChanged = computed(() => inputs.value.name.trim() !== props.currentUser.name);
-const isEmailChanged = computed(() => inputs.value.email.trim() !== props.currentUser.email);
-const isRoleChanged = computed(() => inputs.value.role !== props.currentUser.role);
+const isNameChanged = computed(() => inputs.name.trim() !== props.currentUser.name);
+const isEmailChanged = computed(() => inputs.email.trim() !== props.currentUser.email);
+const isRoleChanged = computed(() => inputs.role !== props.currentUser.role);
 
-const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || isRoleChanged.value);
+// const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || isRoleChanged.value);
 </script>
  
 <template>
@@ -89,10 +65,9 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="text"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your name?"
-        @input="handleNameInput"
       >
       <div
-        v-if="errors.name.length > 0"
+        v-if="errors.name"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
@@ -114,10 +89,9 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="email"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your email?"
-        @input="handleEmailInput"
       >
       <div
-        v-if="errors.email.length > 0"
+        v-if="errors.email"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
@@ -166,7 +140,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
       <button
         type="submit"
         class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit || !isChanged"
+        :disabled="!canSubmit"
         @click="handleSaveClick"
       >
         Save

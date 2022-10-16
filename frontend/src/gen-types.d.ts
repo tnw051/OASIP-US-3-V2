@@ -1,12 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.37.1128 on 2022-10-13 20:18:52.
+// Generated using typescript-generator version 2.37.1128 on 2022-10-16 23:55:00.
 
 export interface ApiError {
     timestamp: string;
     status: number;
     error: string;
     message: string;
+    errors: { [index: string]: string[] };
 }
 
 export interface CategoryResponse {
