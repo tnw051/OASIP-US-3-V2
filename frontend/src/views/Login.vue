@@ -75,7 +75,7 @@ async function handleSubmit() {
   if (success) {
     if (route.query.redirect) {
       console.log("[Login] redirecting to", route.query.redirect);
-      await router.push({ query: route.query.redirect });
+      await router.push(route.query.redirect);
     } else {
       console.log("[Login] redirecting to home");
       await router.push({ name: "home" });
