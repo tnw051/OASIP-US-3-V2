@@ -12,76 +12,80 @@ async function handleLogout() {
 </script>
 
 <template>
-  <nav class="flex items-center justify-between border-b border-gray-200 bg-white px-12 py-4">
-    <div class="flex items-center gap-1 text-sm font-medium">
-      <img
-        src="https://cdn.7tv.app/emote/611cb0c5f20f644c3fadb992/3x"
-        width="64"
-      >
-      <img
-        src="https://cdn.betterttv.net/emote/60a21baf67644f1d67e87a6c/3x"
-        width="64"
-      >
-      <router-link
-        to="/"
-        class="ml-6 rounded-md p-2 text-gray-700 hover:text-sky-600"
-      >
-        Events
-      </router-link>
-      <router-link
-        v-if="!isLecturer"
-        :to="{ name: 'createEvent' }"
-        class="rounded-md p-2 text-gray-700 hover:text-sky-600"
-      >
-        Create
-        Event
-      </router-link>
-      <router-link
-        :to="{ name: 'categories' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Categories
-      </router-link>
-      <router-link
-        v-if="isAdmin"
-        :to="{ name: 'users' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Users
-      </router-link>
-      <router-link
-        v-if="isAdmin"
-        :to="{ name: 'createUser' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Create User
-      </router-link>
-      <router-link
-        v-if="!isAuthenticated"
-        :to="{ name: 'login' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Login
-      </router-link>
-    </div>
-    <div class="text-sm text-gray-700">
-      <span
-        v-if="isAuthenticated"
-        class="font-medium"
-      >{{ user.sub }}</span>
-      <a
-        v-if="isAuthenticated"
-        class="ml-2 cursor-pointer p-2 text-gray-700 hover:text-sky-600"
-        @click="handleLogout"
-      >Logout</a>
-    </div>
-  </nav>
+  <div class="flex h-screen flex-col bg-zinc-50">
+    <nav class="w-full border-b bg-white px-8">
+      <div class="mx-auto flex w-full items-center justify-between">
+        <div class="flex items-center gap-1 text-sm font-medium">
+          <img
+            src="https://cdn.7tv.app/emote/631210ee113e0e8575d2d130/4x.webp"
+            width="64"
+            class="mr-4"
+          >
+          <router-link
+            to="/"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Events
+          </router-link>
+          <router-link
+            v-if="!isLecturer"
+            :to="{ name: 'createEvent' }"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Create
+            Event
+          </router-link>
+          <router-link
+            :to="{ name: 'categories' }"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Categories
+          </router-link>
+          <router-link
+            v-if="isAdmin"
+            :to="{ name: 'users' }"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Users
+          </router-link>
+          <router-link
+            v-if="isAdmin"
+            :to="{ name: 'createUser' }"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Create User
+          </router-link>
+          <router-link
+            v-if="!isAuthenticated"
+            :to="{ name: 'login' }"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Login
+          </router-link>
+        </div>
+        <div class="text-sm text-gray-700">
+          <span
+            v-if="isAuthenticated"
+            class="pr-4 font-medium"
+          >{{ user.sub }}</span>
+          <button
+            v-if="isAuthenticated"
+            class="p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+            @click="handleLogout"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
 
-  <router-view />
+    <router-view />
+  </div>
 </template>
 
 <style scoped>
 .router-link-active {
-  @apply text-sky-600 bg-sky-50;
+  /* @apply text-sky-600 bg-sky-50; */
+  @apply border-blue-600 border-b-2 text-blue-600;
 }
 </style>
