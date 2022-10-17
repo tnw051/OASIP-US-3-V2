@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
+import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -113,9 +114,10 @@ public class EventController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
-    public EventResponse update(@PathVariable Integer id, @Valid @RequestBody EditEventRequest editEvent, Authentication authentication) {
-        if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime or eventNotes must be provided");
+    public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent, Authentication authentication) {
+        if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null
+                && editEvent.getFile() == null && !editEvent.getFile().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
 
         EventResponse event = service.getEvent(id);
@@ -134,6 +136,8 @@ public class EventController {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update file");
         }
     }
 

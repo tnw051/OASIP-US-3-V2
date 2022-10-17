@@ -1,6 +1,7 @@
 package int221.oasip.backendus3.services;
 
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
+import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
@@ -136,10 +138,17 @@ public class EventService {
 
 
     public void delete(Integer id) {
+        Event event = repository.findById(id).orElse(null);
+        if (event == null) {
+            return;
+        }
+
+        deleteFileByBucketUuid(event.getBucketUuid());
+
         repository.deleteById(id);
     }
 
-    public EventResponse update(Integer id, EditEventRequest editEvent) {
+    public EventResponse update(Integer id, EditEventMultipartRequest editEvent) throws IOException {
         Event event = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
 
         if (editEvent.getEventNotes() != null) {
@@ -161,8 +170,61 @@ public class EventService {
             }
         }
 
+        String bucketUuid = event.getBucketUuid();
+        if (editEvent.getFile() != null) {
+            // remove the old file
+            if (editEvent.getFile().isEmpty()) {
+                deleteFileByBucketUuid(bucketUuid);
+                event.setBucketUuid(null);
+            } else {
+                // replace the old file with the new file
+                if (bucketUuid != null) {
+                    replaceFile(bucketUuid, editEvent.getFile());
+                } else {
+                    String newBucketUuid = uploadFile(editEvent.getFile());
+                    event.setBucketUuid(newBucketUuid);
+                }
+            }
+        }
+
         return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
     }
+
+    private void deleteFileByBucketUuid(@Nullable String bucketUuid) {
+        if (bucketUuid == null) {
+            return;
+        }
+
+        File uploadDir = new File(uploadPath, bucketUuid);
+        File[] files = uploadDir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
+        System.out.println("Deleting " + uploadDir.getAbsolutePath());
+        uploadDir.delete();
+    }
+
+    private void replaceFile(String bucketUuid, MultipartFile newFile) throws IOException {
+        File uploadDir = new File(uploadPath, bucketUuid);
+        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
+        // remove all files in the directory
+        File[] files = uploadDir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (!file.isDirectory()) {
+                    file.delete();
+                }
+            }
+        }
+
+        // upload new file to the same directory
+        File destination = new File(uploadDir, newFile.getOriginalFilename());
+        System.out.println("Replacing with " + destination.getAbsolutePath());
+        newFile.transferTo(new File(destination.getAbsolutePath()));
+    }
+
 
     /**
      * if {@code categoryId} is specified, it will be used in all queries, otherwise all categories is assumed
