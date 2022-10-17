@@ -13,9 +13,6 @@ app.config.errorHandler = async (err, vm, info) => {
       return;
     }
   }
-
-  // refresh the page when the error is unhandled
-  router.go(0);
 };
 
 app.use(router).mount("#app");

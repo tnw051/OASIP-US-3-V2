@@ -1,27 +1,49 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from "vue";
-import Modal from "../components/Modal.vue";
-import { Role } from "../gen-types";
-import router from "../router";
+import { Form, Field, ErrorMessage, useForm } from "vee-validate";
+import { toFormValidator } from "@vee-validate/zod";
+import { z } from "zod";
+
 import { createUser, getRoles } from "../service/api";
 import { ApiErrorError } from "../service/common";
-import { useUserValidator } from "../utils/useUserValidator";
+import { onBeforeMount, ref } from "vue";
+import { Role } from "../gen-types";
 
 const roles = ref<Role[]>([]);
-const { inputs, errors, canSubmit } = useUserValidator();
 
 onBeforeMount(async () => {
   roles.value = await getRoles();
 });
 
-const isSuccessModalOpen = ref(false);
-const isErrorModalOpen = ref(false);
+const validationSchema = toFormValidator(
+  z.object({
+    name: z.string().min(1, "Name is required").max(100, "Name exceeds 100 characters"),
+    email: z.string().email("Email is invalid").max(50, "Email exceeds 50 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  }),
+);
 
-async function handleSubmit() {
-  const user = {
-    ...inputs,
-  };
+const { handleSubmit, setErrors } = useForm<{
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: Role;
+}>({
+  validationSchema,
+  initialValues: {
+    name: "whatwhat",
+    email: "what@what.com",
+    password: "123456789",
+    confirmPassword: "123456789",
+    role: "ADMIN",
+  },
+});
 
+const onSubmit = handleSubmit(async (user) => {
   try {
     const createdUser = await createUser({
       name: user.name,
@@ -31,149 +53,116 @@ async function handleSubmit() {
     });
 
     if (createdUser) {
-      isSuccessModalOpen.value = true;
+      alert("User created successfully");
     } else {
-      isErrorModalOpen.value = true;
+      alert("Failed to create user");
     }
   } catch (error) {
     if (error instanceof ApiErrorError) {
       if (error.content.status === 400) {
-        Object.assign(errors, error.content.errors);
-        return;
+        setErrors(error.content.errors);
       }
+    } else {
+      alert("Something went wrong");
     }
-
-    isErrorModalOpen.value = true;
   }
-}
+});
 </script>
  
 <template>
-  <div class="mx-auto mt-8 max-w-md">
+  <div class="flex h-full bg-gray-100">
     <form
-      class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
-      @submit.prevent="handleSubmit"
+      class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-md bg-white p-6 pb-8 shadow"
+      @submit.prevent="onSubmit"
     >
-      <div class="mb-4 flex flex-col text-center text-gray-700">
-        <h1 class="text-2xl font-medium">
-          Create User
-        </h1>
-      </div>
-
+      <h1 class="mb-4 text-center text-xl font-medium">
+        Create User
+      </h1>
+      <!-- Name -->
       <div class="flex flex-col gap-2">
         <label
           for="name"
-          class="required text-sm font-medium text-gray-700"
+          class="text-sm font-medium text-gray-700"
         >Name</label>
-        <input
+        <Field
           id="name"
-          v-model="inputs.name"
-          type="text"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="name"
+          class="rounded border-[1px] bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="What's your name?"
-        >
-        <div
-          v-if="errors.name"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.name"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="name"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Email -->
       <div class="flex flex-col gap-2">
         <label
           for="email"
-          class="required text-sm font-medium text-gray-700"
+          class="text-sm font-medium text-gray-700"
         >Email</label>
-        <input
+        <Field
           id="email"
-          v-model="inputs.email"
-          type="email"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="email"
+          class="rounded border-[1px] bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="What's your email?"
-        >
-        <div
-          v-if="errors.email"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.email"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="email"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Password -->
       <div class="flex flex-col gap-2">
         <label
           for="password"
-          class="required text-sm font-medium text-gray-700"
+          class="text-sm font-medium text-gray-700"
         >Password</label>
-        <input
+        <Field
           id="password"
-          v-model="inputs.password"
+          name="password"
           type="password"
-          required
-          class="rounded bg-gray-100 p-2"
+          class="rounded border-[1px] bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="What's your password?"
-        >
-        <div
-          v-if="errors.password"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.password"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="password"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Confirm Password -->
       <div class="flex flex-col gap-2">
         <label
           for="confirmPassword"
-          class="required text-sm font-medium text-gray-700"
+          class="text-sm font-medium text-gray-700"
         >Confirm password</label>
-        <input
+        <Field
           id="confirmPassword"
-          v-model="inputs.confirmPassword"
+          name="confirmPassword"
           type="password"
-          required
-          class="rounded bg-gray-100 p-2"
+          class="rounded border-[1px] bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="Confirm your password"
-        >
-        <div
-          v-if="errors.confirmPassword"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.confirmPassword"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="confirmPassword"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Role -->
       <div class="flex flex-col gap-2">
         <label
           for="role"
-          class="required text-sm font-medium text-gray-700"
+          class="text-sm font-medium text-gray-700"
         >Role</label>
-        <select
+        <Field
           id="category"
-          v-model="inputs.role"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="role"
+          as="select"
+          class="rounded border-[1px] bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-600"
         >
           <option
             disabled
@@ -189,39 +178,19 @@ async function handleSubmit() {
           >
             {{ role }}
           </option>
-        </select>
-      </div>
+        </Field>
 
-      <button
-        type="submit"
-        class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit"
-      >
-        Create User
-      </button>
+        <button
+          type="submit"
+          class="mt-4 rounded bg-blue-600 p-2 font-medium text-white"
+        >
+          Create User
+        </button>
+      </div>
     </form>
   </div>
-
-  <Modal
-    title="Success"
-    subtitle="User created successfully"
-    :is-open="isSuccessModalOpen"
-    @close="router.go(0)"
-  />
-
-  <Modal
-    title="Error"
-    subtitle="Something went wrong"
-    button-text="Try Again"
-    :is-open="isErrorModalOpen"
-    variant="error"
-    @close="isErrorModalOpen = false"
-  />
 </template>
  
 <style scoped>
-.required::after {
-  content: '*';
-  @apply text-red-500 pl-1
-}
+
 </style>
