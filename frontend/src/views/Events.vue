@@ -104,16 +104,17 @@ function selectEvent(event) {
   });
 }
 
-async function saveEvent(updates) {
+async function saveEvent(updates, file) {
   const selectedEventId = currentEvent.value.id;
 
   if (new Date(updates.eventStartTime).getTime() !== new Date(currentEvent.value.eventStartTime).getTime() ||
     updates.eventNotes !== currentEvent.value.eventNotes) {
-    const updatedEvent = await updateEvent(selectedEventId, updates);
+    const updatedEvent = await updateEvent(selectedEventId, updates, file);
     if (updatedEvent) {
       const event = events.value.find((e) => e.id === selectedEventId);
       event.eventStartTime = updatedEvent.eventStartTime;
       event.eventNotes = updatedEvent.eventNotes;
+      event.bucketUuid = updatedEvent.bucketUuid;
       isEditSuccessModalOpen.value = true;
     } else {
       isEditErrorModalOpen.value = true;

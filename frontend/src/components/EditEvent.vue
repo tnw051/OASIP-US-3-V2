@@ -1,6 +1,9 @@
 <script setup>
+import { ref, watch } from "vue";
+import { getFilenameByBucketUuid } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidator";
+import { useFileInput } from "../utils/useFileInput";
 import Badge from "./Badge.vue";
 
 const props = defineProps({
@@ -28,6 +31,37 @@ const {
   setCategoryId,
 } = useEventValidator();
 
+async function getFilename() {
+  const bucketUuid = props.currentEvent.bucketUuid;
+  if (!bucketUuid) {
+    return;
+  }
+  const file = await getFilenameByBucketUuid(bucketUuid);
+  return file;
+}
+
+const filename = ref();
+const isLoading = ref(true);
+
+getFilename().then((res) => {
+  filename.value = res;
+  isLoading.value = false;
+  if (res) {
+    setPlaceholderWithName(res);
+  }
+});
+
+watch(
+  () => props.currentEvent.bucketUuid,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      isLoading.value = true;
+      filename.value = await getFilename();
+      isLoading.value = false;
+    }
+  },
+);
+
 
 // only use three fields for now (including eventCategoryId)
 inputs.value = {
@@ -52,8 +86,11 @@ function handleSaveClick() {
     updates.eventNotes = newNotes;
   }
 
-  emits("save", updates);
+  assertNoPlaceholder();
+  emits("save", updates, file.value);
 }
+
+const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile, assertNoPlaceholder, setPlaceholderWithName } = useFileInput();
 </script>
  
 <template>
@@ -133,6 +170,45 @@ function handleSaveClick() {
         >
           {{ error }}
         </span>
+      </div>
+    </div>
+
+    <!-- file -->
+    <div class="flex flex-col gap-2">
+      <label
+        for="file"
+        class="text-sm font-medium text-gray-700"
+      >File <span
+        class="font-normal text-gray-400"
+      >(optional)</span></label>
+      <div class="flex items-center justify-between rounded bg-gray-100 p-2">
+        <input
+          id="file"
+          ref="fileInputRef"
+          type="file"
+          @change="handleFileChange"
+        >
+        <!-- remove file button -->
+        <button
+          v-if="file"
+          type="button"
+          class="text-red-500"
+          @click="handleRemoveFile"
+          @blur="handleBlurFileInput"
+        >
+          <span class="material-symbols-outlined m-auto block">
+            delete
+          </span>
+        </button>
+      </div>
+      <div
+        v-if="fileError"
+        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
+      >
+        <span
+          v-for="error in fileError"
+          :key="error"
+        >{{ error }}</span>
       </div>
     </div>
 

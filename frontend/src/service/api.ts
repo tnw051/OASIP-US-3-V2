@@ -111,14 +111,30 @@ export async function deleteEvent(id: Id) {
 }
 
 //UPDATE
-export async function updateEvent(id: Id, editEvent: EditEventRequest): Promise<EventResponse> {
+// null means delete file
+// undefined means no change
+export async function updateEvent(id: Id, editEvent: EditEventRequest, file?: File | null): Promise<EventResponse> {
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(editEvent)) {
+    formData.append(key, value);
+  }
+  if (file) {
+    formData.append("file", file);
+  } else if (file === null) {
+    formData.append("file", new File([], ""));
+  }
+
+  console.log(file);
+  
+  console.log(formData);
+  
+
   const response = await fetch(makeUrl(`/events/${id}`), {
     method: "PATCH",
     headers: {
-      "content-type": "application/json",
       Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
     },
-    body: JSON.stringify(editEvent),
+    body: formData,
   });
   if (response.status === 200) {
     const updatedEvent = await response.json();

@@ -5,6 +5,7 @@ import { createEvent, getCategories } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
+import { useFileInput } from "../utils/useFileInput";
 
 const categories = ref([]);
 const {
@@ -81,62 +82,7 @@ function handleCategoryIdChange() {
 
 
 // file attachment
-const file = ref<File>(null);
-const fileError = ref<string[] | false>(false);
-const fileInputRef = ref<HTMLInputElement | null>(null);
-
-const maxFileSize = 10 * 1024 * 1024;
-
-function handleFileChange(e: Event) {
-  console.log("handleFileChange");
-  
-  const target = e.target as HTMLInputElement;
-  const files = target.files;
-  const selectedFile = files && files[0];
-
-  // user cancelled file selection
-  if (!selectedFile) {
-    // make sure to clear the previous selected file if any
-    handleRemoveFile();
-    if (fileError.value) {
-      fileError.value = false;
-    }
-    return;
-  }
-
-  if (selectedFile.size > maxFileSize) {
-    // if there is no file selected before, clear the file input.
-    fileError.value = [`${selectedFile.name} is too large.`, `Maximum file size is ${maxFileSize / 1024 / 1024} MB.`];
-    if (!file.value) {
-      handleRemoveFile();
-    } else {
-      // otherwise, keep the previous file selected
-      const newFileList = new DataTransfer();
-      const prevFile = file.value;
-      newFileList.items.add(prevFile);
-      fileInputRef.value.files = newFileList.files;
-      fileError.value.push(`The previous file '${prevFile.name}' is still selected.`);
-    }
-
-    return;
-  }
-
-  file.value = selectedFile;
-  fileError.value = false;
-}
-
-function handleBlurFileInput() {
-  if (fileError.value) {
-    fileError.value = false;
-  }
-}
-
-function handleRemoveFile() {
-  file.value = null;
-  if (fileInputRef.value) {
-    fileInputRef.value.value = "";
-  }
-}
+const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile } = useFileInput();
 </script>
  
 <template>
