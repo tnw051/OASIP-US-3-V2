@@ -115,8 +115,8 @@ public class EventController {
     @PatchMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
     public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent, Authentication authentication) {
-        if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null
-                && editEvent.getFile() == null && !editEvent.getFile().isEmpty()) {
+        if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null && editEvent.getFile() == null) {
+            System.out.println("No fields to update");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
 

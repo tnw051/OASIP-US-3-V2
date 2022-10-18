@@ -2,7 +2,6 @@ package int221.oasip.backendus3.services;
 
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
-import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
