@@ -107,8 +107,14 @@ function selectEvent(event) {
 async function saveEvent(updates, file) {
   const selectedEventId = currentEvent.value.id;
 
-  if (new Date(updates.eventStartTime).getTime() !== new Date(currentEvent.value.eventStartTime).getTime() ||
-    updates.eventNotes !== currentEvent.value.eventNotes) {
+  const newDate = new Date(updates.eventStartTime);
+  if ((!isNaN(newDate.getTime()) && newDate.getTime() !== new Date(currentEvent.value.eventStartTime).getTime()) ||
+    updates.eventNotes !== undefined && updates.eventNotes !== currentEvent.value.eventNotes ||
+    file !== undefined) {
+    console.log("updating event");
+    console.log(newDate, new Date(currentEvent.value.eventStartTime));
+    console.log(updates.eventNotes, currentEvent.value.eventNotes);
+
     const updatedEvent = await updateEvent(selectedEventId, updates, file);
     if (updatedEvent) {
       const event = events.value.find((e) => e.id === selectedEventId);

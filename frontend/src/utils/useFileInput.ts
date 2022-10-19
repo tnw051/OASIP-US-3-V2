@@ -3,7 +3,10 @@ import { ref, watch } from "vue";
 export function useFileInput(_placeholderFilename?: string) {
   let placeholderFilename = _placeholderFilename;
   let placeholderFile = new File([""], placeholderFilename);
-  const file = ref<File | null | undefined>(null);
+  console.log("placeholderFilename", placeholderFilename);
+  console.log("placeholderFile", placeholderFile);
+  
+  const file = ref<File | null | undefined>(undefined);
   const fileError = ref<string[] | false>(false);
   const fileInputRef = ref<HTMLInputElement | null>(null);
 
@@ -56,10 +59,18 @@ export function useFileInput(_placeholderFilename?: string) {
   }
 
   function handleRemoveFile() {
-    file.value = null;
+    if (placeholderFilename) {
+      file.value = null;
+    } else {
+      file.value = placeholderFile;
+    }
+
     if (fileInputRef.value) {
       fileInputRef.value.value = "";
     }
+
+    console.log("handleRemoveFile");
+    console.log("file.value", file.value);
   }
 
   watch(fileInputRef, () => {
@@ -74,6 +85,8 @@ export function useFileInput(_placeholderFilename?: string) {
   });
 
   function setPlaceholderWithName(filename: string) {
+    console.log("setPlaceholderWithName", filename);
+    
     placeholderFilename = filename;
     placeholderFile = new File([""], filename);
     if (fileInputRef.value) {
@@ -86,7 +99,7 @@ export function useFileInput(_placeholderFilename?: string) {
 
   // hacky for now
   function assertNoPlaceholder() {
-    if (placeholderFilename && file.value === placeholderFile) {
+    if (file.value === placeholderFile) {
       console.log("no change");
       file.value = undefined;
     }
