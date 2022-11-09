@@ -1,11 +1,12 @@
 package int221.oasip.backendus3.controllers;
 
+import int221.oasip.backendus3.configs.OasipJwtProps;
 import int221.oasip.backendus3.dtos.LoginRequest;
 import int221.oasip.backendus3.dtos.LoginResponse;
 import int221.oasip.backendus3.dtos.MatchRequest;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.services.AuthService;
-import lombok.RequiredArgsConstructor;
+import int221.oasip.backendus3.services.TokenService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,13 +28,21 @@ import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
     private final AuthService service;
     private final AuthenticationManager authenticationManager;
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
+    private final OasipJwtProps jwtProps;
+
+    public AuthController(AuthService service, AuthenticationManager authenticationManager, TokenService tokenService, OasipJwtProps jwtProps) {
+        this.service = service;
+        this.authenticationManager = authenticationManager;
+        this.encoder = tokenService.getEncoder();
+        this.decoder = tokenService.getDecoder();
+        this.jwtProps = jwtProps;
+    }
 
     @Value("${access-token.max-age-seconds}")
     private Long accessTokenMaxAgeSeconds;
@@ -139,7 +148,7 @@ public class AuthController {
 
     private JwtClaimsSet.Builder createBaseClaimsSetBuilder(String subject, String role, Instant exp) {
         return JwtClaimsSet.builder()
-                .issuer("me smiley face")
+                .issuer(jwtProps.getIssueUri())
                 .subject(subject)
                 .claim("role", role)
                 .expiresAt(exp)
