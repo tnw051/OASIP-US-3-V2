@@ -1,3 +1,4 @@
+import { msalInstance, tokenRequest } from "../configs/msalAuthConfig";
 import {
   CategoryResponse,
   CreateEventRequest,
@@ -22,10 +23,9 @@ function makeUrl(path: string) {
 
 //GET
 export async function getEvents(): Promise<EventResponse[]> {
+  const headers = await getHeaders();
   const response = await fetch(makeUrl("/events"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
+    headers,
   });
   if (response.status === 200) {
     const events = response.json();
@@ -34,6 +34,17 @@ export async function getEvents(): Promise<EventResponse[]> {
   } else {
     console.log("Cannot fetch events");
   }
+}
+
+async function getHeaders() {
+  const headers = new Headers();
+  if (localStorage.getItem(accessTokenKey)) {
+    headers.append("Authorization", `Bearer ${localStorage.getItem(accessTokenKey)}`);
+  } else if (msalInstance.getActiveAccount()) {
+    const token = await msalInstance.acquireTokenSilent(tokenRequest);
+    headers.append("Authorization", `Bearer ${token.accessToken}`);
+  }
+  return headers;
 }
 
 export async function getCategories(): Promise<CategoryResponse[]> {
@@ -238,10 +249,9 @@ interface GetUsersOptions {
 export async function getUsers(options: GetUsersOptions = {
 }): Promise<UserResponse[]> {
   const { onUnauthorized } = options;
+  const headers = await getHeaders();
   const response = await fetch(makeUrl("/users"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
+    headers,
   });
   if (response.status === 200) {
     const users = response.json();
@@ -286,10 +296,9 @@ async function refreshAccessToken(): Promise<RefreshTokenResponse> {
 }
 
 export async function getRoles(): Promise<Role[]> {
+  const headers = await getHeaders();
   const response = await fetch(makeUrl("/users/roles"), {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem(accessTokenKey)}`,
-    },
+    headers: headers,
   });
   if (response.status === 200) {
     const roles = response.json();

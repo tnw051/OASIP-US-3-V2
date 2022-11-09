@@ -1,11 +1,32 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from "vue";
+import { InteractionType } from "@azure/msal-browser";
+import { onBeforeMount, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import Modal from "../components/Modal.vue";
+import { useMsalAuthentication } from "../composables/useMsalAuthentication";
+import { tokenRequest } from "../configs/msalAuthConfig";
 import { createEvent, getCategories } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
 import { useFileInput } from "../utils/useFileInput";
+import { useIsLoading } from "../utils/useIsLoading";
+
+const router = useRouter();
+const { isAuthenticated, user, isAdmin, isLecturer } = useAuth();
+const { result, isLecturerMsal } = useMsalAuthentication(InteractionType.Silent, tokenRequest);
+
+const { isLoading, setIsLoading } = useIsLoading(true);
+
+watch(
+  () => result.value,
+  () => {
+    if (isLecturer.value || isLecturerMsal.value) {
+      router.push({ name: "home" });
+    }
+    setIsLoading(false);
+  },
+);
 
 const categories = ref([]);
 const {
@@ -21,7 +42,6 @@ const {
   canSubmit,
 } = useEventValidator();
 
-const { isAuthenticated, user, isAdmin } = useAuth();
 function preFillInputs() {
   if (isAuthenticated.value && !isAdmin.value) {
     inputs.value.bookingEmail = user.value.sub;
@@ -86,7 +106,10 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
 </script>
  
 <template>
-  <div class="mx-auto mt-8 max-w-md">
+  <div
+    v-if="!isLoading"
+    class="mx-auto mt-8 max-w-md"
+  >
     <form
       class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
       @submit.prevent="handleSubmit"

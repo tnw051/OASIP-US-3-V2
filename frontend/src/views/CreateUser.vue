@@ -1,7 +1,25 @@
 <script setup>
-import { computed, onBeforeMount, ref } from "vue";
+import { InteractionType } from "@azure/msal-browser";
+import { computed, onBeforeMount, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import Modal from "../components/Modal.vue";
+import { useMsalAuthentication } from "../composables/useMsalAuthentication";
+import { tokenRequest } from "../configs/msalAuthConfig";
 import { createUser, getRoles } from "../service/api";
+import { useAuth } from "../utils/useAuth";
+
+const router = useRouter();
+const { isAdmin } = useAuth();
+const { error, isAdminMsal } = useMsalAuthentication(InteractionType.Silent, tokenRequest);
+
+watch(
+  () => error.value,
+  (error) => {
+    if ((error && !isAdmin.value) || !isAdminMsal.value) {
+      router.push({ name: "home" });
+    }
+  },
+);
 
 const roles = ref([]);
 
@@ -71,7 +89,7 @@ function validateEmail(e) {
 function validatePassword(e) {
   const password = e.target.value;
   errors.value.password = [];
-  
+
   if (password.length > 14 || password.length < 8) {
     errors.value.password.push("Password must be between 8 and 14 characters");
   }

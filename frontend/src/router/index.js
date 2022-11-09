@@ -7,6 +7,12 @@ import Events from "../views/Events.vue";
 import Login from "../views/Login.vue";
 import NotFound from "../views/NotFound.vue";
 import Users from "../views/Users.vue";
+import Profile from "../views/Profile.vue";
+import { registerGuard } from "./Guard";
+import { useMsalAuthentication } from "../composables/useMsalAuthentication";
+import { InteractionType } from "@azure/msal-browser";
+import { tokenRequest } from "../configs/msalAuthConfig";
+import { useIsAuthenticated } from "../composables/useIsAuthenticated";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
@@ -74,20 +80,22 @@ router.beforeEach(async (to, from) => {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  if ((to.meta.requiresAuth && !isAuthenticated.value)) {
-    console.log(`redirecting to login (will redirect to ${to.path} after login)`);
-    return { name: "login", query: { redirect: to.fullPath } };
-  }
+  // if ((to.meta.requiresAuth && !isAuthenticated.value)) {
+  //   console.log(`redirecting to login (will redirect to ${to.path} after login)`);
+  //   return { name: "login", query: { redirect: to.fullPath } };
+  // }
 
-  if (to.meta.isAdmin && !isAdmin.value) {
-    console.log("redirecting to home (not admin)");
-    return { name: "home" };
-  }
+  // if (to.meta.isAdmin && !isAdmin.value) {
+  //   console.log("redirecting to home (not admin)");
+  //   return { name: "home" };
+  // }
 
-  if (to.meta.disallowRoles && to.meta.disallowRoles.includes(user.value?.role)) {
-    console.log(`redirecting to home (role ${user.value?.role} not allowed)`);
-    return { name: "home" };
-  }
+  // if (to.meta.disallowRoles && to.meta.disallowRoles.includes(user.value?.role)) {
+  //   console.log(`redirecting to home (role ${user.value?.role} not allowed)`);
+  //   return { name: "home" };
+  // }
 });
+
+registerGuard(router);
 
 export default router;

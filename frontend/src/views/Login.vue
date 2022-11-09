@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
+import LoginMsal from "../components/LoginMsal.vue";
 import router from "../router";
 import { useAuth } from "../utils/useAuth";
 
@@ -154,8 +155,18 @@ async function handleSubmit() {
         class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="!canSubmit"
       >
-        Match Password
+        Login
       </button>
+
+      <div class="flex items-center justify-center">
+        <div class="w-1/5 border-t border-gray-300" />
+        <div class="mx-2 text-gray-500">
+          or
+        </div>
+        <div class="w-1/5 border-t border-gray-300" />
+      </div>
+
+      <LoginMsal />
     </form>
   </div>
 </template>
