@@ -26,6 +26,11 @@ const authState = computed(() => ({
   role: user.value?.role || roleMsal.value,
 }));
 
+watch(result, () => {
+  console.log(result.value);
+
+});
+
 async function handleLogout() {
   if (isAuthenticated.value) {
     console.log("Logging out OASIP");
@@ -119,13 +124,13 @@ async function logoutOasip() {
       <div class="flex flex-col text-xs font-medium">
         <span v-if="authState.isAuthenticated">{{ authState.name }}</span>
         <span
-          v-if="authState.isAuthenticated"
-          class="text-blue-400"
-        >{{ authState.role }}</span>
-        <span
-          v-else-if="authState.isGuest"
+          v-if="authState.isGuest"
           class="text-gray-500"
         >Guest</span>
+        <span
+          v-else-if="authState.isAuthenticated"
+          class="text-blue-400"
+        >{{ authState.role }}</span>
       </div>
       <a
         v-if="authState.isAuthenticated"
