@@ -7,12 +7,7 @@ import Events from "../views/Events.vue";
 import Login from "../views/Login.vue";
 import NotFound from "../views/NotFound.vue";
 import Users from "../views/Users.vue";
-import Profile from "../views/Profile.vue";
 import { registerGuard } from "./Guard";
-import { useMsalAuthentication } from "../composables/useMsalAuthentication";
-import { InteractionType } from "@azure/msal-browser";
-import { tokenRequest } from "../configs/msalAuthConfig";
-import { useIsAuthenticated } from "../composables/useIsAuthenticated";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
