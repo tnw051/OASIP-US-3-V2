@@ -123,14 +123,14 @@ async function logoutOasip() {
     <div class="flex items-center text-sm text-gray-700">
       <div class="flex flex-col text-xs font-medium">
         <span v-if="authState.isAuthenticated">{{ authState.name }}</span>
-        <span
+        <!-- <span
           v-if="authState.isGuest"
           class="text-gray-500"
         >Guest</span>
         <span
           v-else-if="authState.isAuthenticated"
           class="text-blue-400"
-        >{{ authState.role }}</span>
+        >{{ authState.role }}</span> -->
       </div>
       <a
         v-if="authState.isAuthenticated"
