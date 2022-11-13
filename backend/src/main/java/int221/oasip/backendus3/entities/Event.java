@@ -45,7 +45,7 @@ public class Event {
     @Column(name = "bucketUuid", length = 36)
     private String bucketUuid;
 
-    @Formula("TIMESTAMPADD('MINUTE', eventDuration, eventStartTime)")
+    @Formula("TIMESTAMPADD(MINUTE, eventDuration, eventStartTime)")
     private Instant eventEndTime;
 
     public Event(EventCategory eventCategory, String bookingName, String bookingEmail, Instant eventStartTime, String eventNotes) {
