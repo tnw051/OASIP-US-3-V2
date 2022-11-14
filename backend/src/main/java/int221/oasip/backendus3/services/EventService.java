@@ -1,11 +1,11 @@
 package int221.oasip.backendus3.services;
 
+import int221.oasip.backendus3.controllers.AuthStatus;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
-import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
@@ -14,11 +14,13 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +36,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -135,6 +138,7 @@ public class EventService {
         return Optional.of(files[0]);
     }
 
+    private final ForbiddenException COMMON_FORBIDDEN_EXCEPTION = new ForbiddenException("User with this email is not allowed to access this resource");
 
     public void delete(Integer id) {
         Event event = repository.findById(id).orElse(null);
@@ -246,70 +250,188 @@ public class EventService {
      * @return List of events based on the options provided
      * @throws IllegalArgumentException if the {@code type} is {@link EventTimeType#DAY} and {@code startAt} is null
      */
-    public List<EventResponse> getEvents(GetEventsOptions options) {
+    public List<EventResponse> getEventsNew(GetEventsOptions options, Authentication authentication) {
         EventTimeType type = EventTimeType.fromString(options.getType());
+
         Instant startAt = options.getStartAt();
         Integer categoryId = options.getCategoryId();
-        Instant now = Instant.now();
+        AuthStatus authStatus = new AuthStatus(authentication);
 
-        List<Integer> categoryIds = null;
-        Integer userId = null;
-        boolean isLecturer = false;
+        List<Integer> categoryIds = categoryId == null ? null : List.of(categoryId);
 
-        if (!options.isAdmin()) {
-            User user = userRepository.findByEmail(options.getUserEmail())
-                    .orElseThrow(() -> new EntityNotFoundException("User with email " + options.getUserEmail() + " not found"));
-
-            if (user.getRole().equals(Role.LECTURER)) {
-                List<Integer> ownCategoryIds = user.getOwnCategories().stream().map(own -> own.getEventCategory().getId()).collect(Collectors.toList());
-                if (categoryId != null && !ownCategoryIds.contains(categoryId)) {
-                    throw new ForbiddenException("Lecturer with email " + options.getUserEmail() + " does not own category with id " + categoryId);
-                }
-                if (categoryId != null) {
-                    categoryIds = List.of(categoryId);
-                } else if (ownCategoryIds.size() > 0) {
-                    categoryIds = ownCategoryIds;
-                }
-                isLecturer = true;
-
-                System.out.println(user.getName() + " is a lecturer");
-                System.out.println("Category IDs: " + categoryIds);
-            } else {
-                if (categoryId != null) {
-                    categoryIds = List.of(categoryId);
-                }
-                userId = user.getId();
-            }
-        }
-
-        List<Event> events;
+        String email = authentication.getName();
         if (EventTimeType.DAY.equals(type)) {
             if (startAt == null) {
                 throw new IllegalArgumentException("startAt cannot be null for type " + EventTimeType.DAY);
             }
-            events = repository.findByDateRangeOfOneDay(startAt, categoryIds, userId);
-        } else if (EventTimeType.UPCOMING.equals(type)) {
-            events = repository.findUpcomingAndOngoingEvents(now, categoryIds, userId);
-        } else if (EventTimeType.PAST.equals(type)) {
-            events = repository.findPastEvents(now, categoryIds, userId);
-        } else if (type != null) {
-            throw new IllegalArgumentException("type " + type + " is not supported");
-        } else if (categoryIds != null) {
-            if (isLecturer) {
-                events = repository.findByEventCategory_IdIn(categoryIds);
-            } else {
-                events = repository.findByEventCategory_IdAndUser_Id(categoryIds.get(0), userId);
-            }
-        } else if (userId != null) {
-            events = repository.findByUser_Id(userId);
-        } else if (options.isAdmin()) {
-            events = repository.findAll();
+            System.out.println("getEventsByDay");
+            return getEventsByDay(authStatus, email, categoryIds, startAt);
+        }
+
+        if (EventTimeType.UPCOMING.equals(type)) {
+            System.out.println("getUpcomingEvents");
+            return getUpcomingEvents(authStatus, email, categoryIds);
+        }
+
+        if (EventTimeType.PAST.equals(type)) {
+            System.out.println("getPastEvents");
+            return getPastEvents(authStatus, email, categoryIds);
+        }
+
+        if (categoryId != null) {
+            System.out.println("getEventsByCategory");
+            return getEventsByCategory(authStatus, email, categoryIds);
+        }
+
+        System.out.println("getAllEvents");
+        return getAllEvents(authStatus, email);
+    }
+
+    public List<EventResponse> getEventsByDay(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds, Instant startAt) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = repository.findByDateRangeOfOneDay(startAt, categoryIds, null);
+        } else if (authStatus.isLecturer) {
+            Set<Integer> filteredCategoryIds = getFilteredCategoryIdsForLecturer(email, categoryIds);
+            events = repository.findByDateRangeOfOneDay(startAt, filteredCategoryIds, null);
+        } else if (authStatus.isStudent) {
+            User student = getUserByEmailOrThrow(email);
+            events = repository.findByDateRangeOfOneDay(startAt, categoryIds, student.getId());
         } else {
-            return List.of();
+            throw COMMON_FORBIDDEN_EXCEPTION;
         }
 
         return modelMapperUtils.mapList(events, EventResponse.class);
     }
+
+    public List<EventResponse> getUpcomingEvents(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = repository.findUpcomingAndOngoingEvents(Instant.now(), categoryIds, null);
+        } else if (authStatus.isLecturer) {
+            Set<Integer> filteredCategoryIds = getFilteredCategoryIdsForLecturer(email, categoryIds);
+            events = repository.findUpcomingAndOngoingEvents(Instant.now(), filteredCategoryIds, null);
+        } else if (authStatus.isStudent) {
+            User student = getUserByEmailOrThrow(email);
+            events = repository.findUpcomingAndOngoingEvents(Instant.now(), categoryIds, student.getId());
+        } else {
+            throw COMMON_FORBIDDEN_EXCEPTION;
+        }
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
+    }
+
+    public List<EventResponse> getPastEvents(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = repository.findPastEvents(Instant.now(), categoryIds, null);
+        } else if (authStatus.isLecturer) {
+            Set<Integer> filteredCategoryIds = getFilteredCategoryIdsForLecturer(email, categoryIds);
+            events = repository.findPastEvents(Instant.now(), filteredCategoryIds, null);
+        } else if (authStatus.isStudent) {
+            User student = getUserByEmailOrThrow(email);
+            events = repository.findPastEvents(Instant.now(), categoryIds, student.getId());
+        } else {
+            throw COMMON_FORBIDDEN_EXCEPTION;
+        }
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
+    }
+
+    public List<EventResponse> getPastEventsExp(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds) {
+        return processEvents(authStatus,
+                () -> repository.findPastEvents(Instant.now(), categoryIds, null),
+                () -> {
+                    Set<Integer> filteredCategoryIds = getFilteredCategoryIdsForLecturer(email, categoryIds);
+                    return repository.findPastEvents(Instant.now(), filteredCategoryIds, null);
+                },
+                () -> {
+                    User student = getUserByEmailOrThrow(email);
+                    return repository.findPastEvents(Instant.now(), categoryIds, student.getId());
+                });
+    }
+
+    public List<EventResponse> getEventsByCategory(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = repository.findByEventCategory_IdIn(categoryIds);
+        } else if (authStatus.isLecturer) {
+            Set<Integer> filteredCategoryIds = getFilteredCategoryIdsForLecturer(email, categoryIds);
+            events = repository.findByEventCategory_IdIn(filteredCategoryIds);
+        } else if (authStatus.isStudent) {
+            User student = getUserByEmailOrThrow(email);
+            events = repository.findByEventCategory_IdAndUser_Id(categoryIds == null ? null : categoryIds.get(0), student.getId());
+        } else {
+            throw COMMON_FORBIDDEN_EXCEPTION;
+        }
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
+    }
+
+    // special case
+    public List<EventResponse> getAllEvents(AuthStatus authStatus, String email) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = repository.findAll();
+        } else if (authStatus.isLecturer) {
+            Set<Integer> ownCategoryIds = getCategoryIdsForLecturer(email);
+            events = repository.findByEventCategory_IdIn(ownCategoryIds);
+        } else if (authStatus.isStudent) {
+            User student = getUserByEmailOrThrow(email);
+            events = repository.findByUser_Id(student.getId());
+        } else {
+            throw COMMON_FORBIDDEN_EXCEPTION;
+        }
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
+    }
+
+//    private Set<EventCategory> getEventCategoriesForLecturer(User lecturer) {
+//        return lecturer.getOwnCategories().stream().map(EventCategoryOwner::getEventCategory).collect(Collectors.toSet());
+//    }
+
+    private Set<Integer> getFilteredCategoryIdsForLecturer(String email, @Nullable List<Integer> untrustedCategoryIds) {
+        User lecturer = getUserByEmailOrThrow(email);
+        Set<Integer> ownCategoryIds = getCategoryIdsForLecturer(lecturer);
+        return untrustedCategoryIds == null ? ownCategoryIds : untrustedCategoryIds.stream().filter(ownCategoryIds::contains).collect(Collectors.toSet());
+    }
+
+    private Set<Integer> getCategoryIdsForLecturer(User lecturer) {
+        return lecturer.getOwnCategories().stream().map(own -> own.getEventCategory().getId()).collect(Collectors.toSet());
+    }
+
+    private Set<Integer> getCategoryIdsForLecturer(String email) {
+        User lecturer = getUserByEmailOrThrow(email);
+        return getCategoryIdsForLecturer(lecturer);
+    }
+
+    private User getUserByEmailOrThrow(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User with email " + email + " not found"));
+    }
+
+    //    delegate function that accept suppliers for different roles
+    public List<EventResponse> processEvents(AuthStatus authStatus, Supplier<List<Event>> adminSupplier, Supplier<List<Event>> lecturerSupplier, Supplier<List<Event>> studentSupplier) {
+        List<Event> events;
+
+        if (authStatus.isAdmin) {
+            events = adminSupplier.get();
+        } else if (authStatus.isLecturer) {
+            events = lecturerSupplier.get();
+        } else if (authStatus.isStudent) {
+            events = studentSupplier.get();
+        } else {
+            throw COMMON_FORBIDDEN_EXCEPTION;
+        }
+
+        return modelMapperUtils.mapList(events, EventResponse.class);
+    }
+
 
     public enum EventTimeType {
         UPCOMING, PAST, DAY;
@@ -329,12 +451,14 @@ public class EventService {
 
     @Builder(builderClassName = "Builder")
     @Getter
+    @AllArgsConstructor
     public static class GetEventsOptions {
+        @Nullable
         private Instant startAt;
+        @Nullable
         private Integer categoryId;
+        @Nullable
         private String type;
-        private String userEmail;
-        private boolean isAdmin;
     }
 
     private void sendmail(Event event) throws MessagingException {

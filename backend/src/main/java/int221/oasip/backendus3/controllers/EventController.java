@@ -2,7 +2,6 @@ package int221.oasip.backendus3.controllers;
 
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
-import int221.oasip.backendus3.dtos.EditEventRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
@@ -18,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,71 +44,57 @@ public class EventController {
             @RequestParam(required = false) String type,
             Authentication authentication
     ) {
+        AuthStatus authStatus = getAuthStatus();
+        if (authStatus.isGuest) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be logged in to access this resource");
+        }
+
         EventService.GetEventsOptions options = EventService.GetEventsOptions.builder()
                 .categoryId(categoryId)
                 .startAt(startAt != null ? startAt.toInstant() : null)
                 .type(type)
-                .isAdmin(isAdmin(authentication))
-                .userEmail(authentication.getName())
                 .build();
 
-        return service.getEvents(options);
+        return service.getEventsNew(options, authentication);
     }
 
     @GetMapping("/{id}")
     public EventResponse getEventById(@PathVariable Integer id, Authentication authentication) {
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        String email = authentication.getName();
-        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
-
-        return event;
+        return getEventIffAllowed(id, authentication);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("!hasRole('LECTURER')")
     public EventResponse create(@Valid CreateEventMultipartRequest newEvent, Authentication authentication) {
-        boolean isGuest = authentication == null;
-        boolean isAdmin = authentication != null && isAdmin(authentication);
+        AuthStatus status = getAuthStatus();
 
-        if (!isGuest && !isAdmin && !authentication.getName().equals(newEvent.getBookingEmail())) {
+        if (!status.isGuest && !status.isAdmin && authentication != null && !authentication.getName().equals(newEvent.getBookingEmail())) {
             // if the user is not a guest, admin or the owner of the event, then they are not allowed to create the event for someone else
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
         }
 
         try {
-            return service.create(newEvent, isGuest, isAdmin);
+            return service.create(newEvent, status.isGuest, status.isAdmin);
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {
             // category not found or user not found
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (MessagingException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
-        } catch (IOException e) {
+        } catch (MessagingException | IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send email");
         }
+    }
+
+    private AuthStatus getAuthStatus() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return new AuthStatus(authentication);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
     public void delete(@PathVariable Integer id, Authentication authentication) {
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        String email = authentication.getName();
-        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
-
+        getEventIffAllowed(id, authentication);
         service.delete(id);
     }
 
@@ -120,15 +106,7 @@ public class EventController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
 
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        String email = authentication.getName();
-        if (!isAdmin(authentication) && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
+        getEventIffAllowed(id, authentication);
 
         try {
             return service.update(id, editEvent);
@@ -139,11 +117,6 @@ public class EventController {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update file");
         }
-    }
-
-    private boolean isAdmin(Authentication authentication) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     // with optional query parameter to only fetch the file name without the file content
@@ -171,5 +144,20 @@ public class EventController {
         } else {
             return bodyBuilder.body(file.getName());
         }
+    }
+
+    private EventResponse getEventIffAllowed(Integer id, Authentication authentication) {
+        EventResponse event = service.getEvent(id);
+        if (event == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
+        }
+
+        String email = authentication.getName();
+        AuthStatus status = getAuthStatus();
+        if (!status.isAdmin && !event.getBookingEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
+        }
+
+        return event;
     }
 }

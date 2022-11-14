@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Integer>, CustomEventRepository {
@@ -14,5 +15,5 @@ public interface EventRepository extends JpaRepository<Event, Integer>, CustomEv
 
     List<Event> findByUser_Id(Integer userId);
 
-    List<Event> findByEventCategory_IdIn(List<Integer> categoryIds);
+    List<Event> findByEventCategory_IdIn(Collection<Integer> categoryIds);
 }

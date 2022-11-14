@@ -12,6 +12,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
 
 public class CustomEventRepositoryImpl implements CustomEventRepository {
@@ -32,7 +33,7 @@ public class CustomEventRepositoryImpl implements CustomEventRepository {
      * @param userId      user id of event
      * @return list of events that ended before or at the {@code startAt}
      */
-    public List<Event> findPastEvents(Instant startAt, @Nullable List<Integer> categoryIds, Integer userId) {
+    public List<Event> findPastEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, Integer userId) {
         return getQueryWithCategoryIdsAndUserId(categoryIds, userId)
                 .where(event.eventEndTime.loe(startAt))
                 .fetch();
@@ -48,19 +49,19 @@ public class CustomEventRepositoryImpl implements CustomEventRepository {
      * @param userId      user id of event
      * @return list of events that started before the {@code startAt} or ended after the {@code startAt}
      */
-    public List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable List<Integer> categoryIds, @Nullable Integer userId) {
+    public List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
         return getQueryWithCategoryIdsAndUserId(categoryIds, userId)
                 .where(event.eventEndTime.gt(startAt))
                 .fetch();
     }
 
-    private JPAQuery<Event> getQueryWithCategoryIdsAndUserId(@Nullable List<Integer> categoryIds, @Nullable Integer userId) {
+    private JPAQuery<Event> getQueryWithCategoryIdsAndUserId(@Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
         return getQuery()
                 .from(event)
                 .where(withCategoryIdsAndUserId(categoryIds, userId));
     }
 
-    private Predicate withCategoryIdsAndUserId(@Nullable List<Integer> categoryIds, @Nullable Integer userId) {
+    private Predicate withCategoryIdsAndUserId(@Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
         BooleanExpression predicate = Expressions.TRUE.isTrue();
         if (categoryIds != null) {
             predicate = event.eventCategory.id.in(categoryIds);
@@ -118,12 +119,12 @@ public class CustomEventRepositoryImpl implements CustomEventRepository {
      * @param userId      user id of event
      * @return list of events in the same day
      */
-    public List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable List<Integer> categoryIds, @Nullable Integer userId) {
+    public List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
         Instant endAt = startAt.plus(1, ChronoUnit.DAYS);
         return findByDateRange(startAt, endAt, categoryIds, userId);
     }
 
-    private List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable List<Integer> categoryIds, @Nullable Integer userId) {
+    private List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
         return getQuery()
                 .from(event)
                 .where(event.eventStartTime.goe(fromInclusive))
