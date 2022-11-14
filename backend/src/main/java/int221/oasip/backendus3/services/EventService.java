@@ -22,20 +22,20 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Nullable;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -47,10 +47,7 @@ public class EventService {
     private final ModelMapperUtils modelMapperUtils;
     private final EventCategoryRepository categoryRepository;
     private final UserRepository userRepository;
-
-    @Value("${upload.path}")
-    private String uploadPath;
-
+    private final FileService fileService;
     @Value("${mail.disable}")
     private boolean mailDisable;
 
@@ -96,7 +93,7 @@ public class EventService {
         e.setId(null);
 
         if (newEvent.getFile() != null && !newEvent.getFile().isEmpty()) {
-            String bucketUuid = uploadFile(newEvent.getFile());
+            String bucketUuid = fileService.uploadFile(newEvent.getFile());
             e.setBucketUuid(bucketUuid);
         }
 
@@ -107,36 +104,6 @@ public class EventService {
         return modelMapper.map(repository.saveAndFlush(e), EventResponse.class);
     }
 
-    // refactor the above uploadFile method as a service method
-    public String uploadFile(MultipartFile file) throws IOException {
-        // generate uuid as a directory name to store the file
-        String uuidNewDir = UUID.randomUUID().toString();
-        File uploadDir = new File(uploadPath, uuidNewDir);
-        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
-
-        File destination = new File(uploadDir, file.getOriginalFilename());
-
-        // check that absolute path is the same as the canonical path to prevent path traversal
-        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
-            // not implmenented
-        }
-
-        System.out.println("Saving to " + destination.getAbsolutePath());
-        file.transferTo(new File(destination.getAbsolutePath()));
-
-        return uuidNewDir;
-    }
-
-    public Optional<File> getFileByBucketUuid(String uuid) {
-        File uploadDir = new File(uploadPath, uuid);
-        // get the only file in the directory
-        File[] files = uploadDir.listFiles();
-        if (files == null || files.length == 0) {
-            return Optional.empty();
-        }
-
-        return Optional.of(files[0]);
-    }
 
     private final ForbiddenException COMMON_FORBIDDEN_EXCEPTION = new ForbiddenException("User with this email is not allowed to access this resource");
 
@@ -146,7 +113,7 @@ public class EventService {
             return;
         }
 
-        deleteFileByBucketUuid(event.getBucketUuid());
+        fileService.deleteFileByBucketUuid(event.getBucketUuid());
 
         repository.deleteById(id);
     }
@@ -177,14 +144,14 @@ public class EventService {
         if (editEvent.getFile() != null) {
             // remove the old file
             if (editEvent.getFile().isEmpty()) {
-                deleteFileByBucketUuid(bucketUuid);
+                fileService.deleteFileByBucketUuid(bucketUuid);
                 event.setBucketUuid(null);
             } else {
                 // replace the old file with the new file
                 if (bucketUuid != null) {
-                    replaceFile(bucketUuid, editEvent.getFile());
+                    fileService.replaceFile(bucketUuid, editEvent.getFile());
                 } else {
-                    String newBucketUuid = uploadFile(editEvent.getFile());
+                    String newBucketUuid = fileService.uploadFile(editEvent.getFile());
                     event.setBucketUuid(newBucketUuid);
                 }
             }
@@ -192,42 +159,6 @@ public class EventService {
 
         return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
     }
-
-    private void deleteFileByBucketUuid(@Nullable String bucketUuid) {
-        if (bucketUuid == null) {
-            return;
-        }
-
-        File uploadDir = new File(uploadPath, bucketUuid);
-        File[] files = uploadDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                file.delete();
-            }
-        }
-        System.out.println("Deleting " + uploadDir.getAbsolutePath());
-        uploadDir.delete();
-    }
-
-    private void replaceFile(String bucketUuid, MultipartFile newFile) throws IOException {
-        File uploadDir = new File(uploadPath, bucketUuid);
-        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
-        // remove all files in the directory
-        File[] files = uploadDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (!file.isDirectory()) {
-                    file.delete();
-                }
-            }
-        }
-
-        // upload new file to the same directory
-        File destination = new File(uploadDir, newFile.getOriginalFilename());
-        System.out.println("Replacing with " + destination.getAbsolutePath());
-        newFile.transferTo(new File(destination.getAbsolutePath()));
-    }
-
 
     /**
      * if {@code categoryId} is specified, it will be used in all queries, otherwise all categories is assumed
@@ -341,6 +272,7 @@ public class EventService {
         return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
+    @SuppressWarnings("unused")
     public List<EventResponse> getPastEventsExp(AuthStatus authStatus, String email, @Nullable List<Integer> categoryIds) {
         return processEvents(authStatus,
                 () -> repository.findPastEvents(Instant.now(), categoryIds, null),

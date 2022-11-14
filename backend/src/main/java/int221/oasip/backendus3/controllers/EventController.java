@@ -7,6 +7,7 @@ import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.services.EventService;
+import int221.oasip.backendus3.services.FileService;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -36,6 +37,7 @@ import java.util.List;
 @AllArgsConstructor
 public class EventController {
     private EventService service;
+    private FileService fileService;
 
     @GetMapping("")
     public List<EventResponse> getEvents(
@@ -125,7 +127,7 @@ public class EventController {
             @PathVariable String uuid,
             @RequestParam(required = false) Boolean noContent
     ) throws IOException {
-        File file = service.getFileByBucketUuid(uuid)
+        File file = fileService.getFileByBucketUuid(uuid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
 
         Path path = Paths.get(file.getAbsolutePath());
