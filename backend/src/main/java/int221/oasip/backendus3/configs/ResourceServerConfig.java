@@ -38,7 +38,6 @@ public class ResourceServerConfig extends WebSecurityConfigurerAdapter {
         addManagerForOasip();
         authenticationManagerResolver.register(myAadResourceServerUtils);
 
-        super.configure(http);
         http
                 .authorizeHttpRequests()
                 .antMatchers("/api/auth/private").authenticated()
