@@ -2,8 +2,8 @@ import { decodeJwt, JWTPayload } from "jose";
 import { ref, watch } from "vue";
 import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthStore";
 import { LoginRequest, Role } from "../../gen-types";
-import { accessTokenKey, login, logout } from "../../service/api";
 import { OasipJwtPayload } from "../../types";
+import { logout, accessTokenKey, login } from "../../service/api";
 
 const state = ref<AuthState>(getDefaultAuthState());
 state.value.status = "loading";
