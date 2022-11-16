@@ -7,7 +7,7 @@ import {
   RedirectRequest,
   SilentRequest,
 } from "@azure/msal-browser";
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { useMsal } from "./useMsal";
 
 export function useMsalAuthentication(interactionType: InteractionType, request: PopupRequest | RedirectRequest | SilentRequest) {
@@ -17,19 +17,11 @@ export function useMsalAuthentication(interactionType: InteractionType, request:
   const result = ref<AuthenticationResult | null>(null);
   const error = ref<AuthError | null>(null);
 
-  const isAdminMsal = ref<boolean>(false);
-  const isLecturerMsal = ref<boolean>(false);
-  const isStudentMsal = ref<boolean>(false);
-  const isGuestMsal = ref<boolean>(false);
-  const roleMsal = ref<string>("");
-
-  const acquireToken = async (requestOverride?: PopupRequest | RedirectRequest | SilentRequest) => {
+  async function acquireToken(requestOverride?: PopupRequest | RedirectRequest | SilentRequest) {
     if (!localInProgress.value) {
       localInProgress.value = true;
       const tokenRequest = requestOverride || request;
       tokenRequest.account = instance.getAllAccounts()[0];
-      console.log(`Acquiring token for ${tokenRequest.scopes}`);
-      
 
       if (inProgress.value === InteractionStatus.Startup || inProgress.value === InteractionStatus.HandleRedirect) {
         try {
@@ -37,7 +29,6 @@ export function useMsalAuthentication(interactionType: InteractionType, request:
 
           if (response) {
             result.value = response;
-            setRoleRefsFromAuthenticationResult(response);
             error.value = null;
             return;
           }
@@ -51,7 +42,6 @@ export function useMsalAuthentication(interactionType: InteractionType, request:
       try {
         const response = await instance.acquireTokenSilent(tokenRequest);
         result.value = response;
-        setRoleRefsFromAuthenticationResult(response);
         error.value = null;
       } catch (e) {
         if (inProgress.value !== InteractionStatus.None) {
@@ -60,7 +50,6 @@ export function useMsalAuthentication(interactionType: InteractionType, request:
 
         if (interactionType === InteractionType.Popup) {
           instance.loginPopup(tokenRequest).then((response) => {
-            setRoleRefsFromAuthenticationResult(response);
             result.value = response;
             error.value = null;
           }).catch((e) => {
@@ -76,50 +65,12 @@ export function useMsalAuthentication(interactionType: InteractionType, request:
       }
       localInProgress.value = false;
     }
-  };
-
-  function setRoleRefsFromAuthenticationResult(result: AuthenticationResult) {
-    const roles = result.account.idTokenClaims.roles;
-    let roleCount = 0;
-
-    if (roles.includes("Admin")) {
-      isAdminMsal.value = true;
-      roleCount++;
-    }
-    if (roles.includes("Lecturer")) {
-      isLecturerMsal.value = true;
-      roleCount++;
-    }
-    if (roles.includes("Student")) {
-      isStudentMsal.value = true;
-      roleCount++;
-    }
-    if (roleCount === 0) {
-      isGuestMsal.value = true;
-    }
-
-    roleMsal.value = roles[0];
   }
-
-  const stopWatcher = watch(inProgress, () => {
-    if (!result.value && !error.value) {
-      acquireToken();
-    } else {
-      stopWatcher();
-    }
-  });
-
-  acquireToken();
 
   return {
     acquireToken,
     result,
     error,
     inProgress: localInProgress,
-    isAdminMsal,
-    isLecturerMsal,
-    isStudentMsal,
-    isGuestMsal,
-    roleMsal,
   };
 }

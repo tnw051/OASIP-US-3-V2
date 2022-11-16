@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { InteractionType } from "@azure/msal-browser";
 import { ref, watchEffect } from "vue";
+import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
-import { useIsAuthenticated } from "../composables/useIsAuthenticated";
-import { useMsalAuthentication } from "../composables/useMsalAuthentication";
-import { tokenRequest } from "../configs/msalAuthConfig";
 import {
   deleteEvent,
   getCategories,
@@ -18,13 +15,10 @@ import {
   updateEvent,
 } from "../service/api";
 import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
-import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, isAuthLoading } = useAuth();
-const isMsalAuthenticated = useIsAuthenticated();
-const { error, isAdminMsal } = useMsalAuthentication(InteractionType.Silent, tokenRequest);
+const { isAuthenticated, isLecturer, isAuthLoading } = useAuthStore();
 
 const events = ref([]);
 const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
@@ -60,7 +54,7 @@ watchEffect(async () => {
     return;
   }
 
-  if (!isAuthenticated.value || (isMsalAuthenticated.value && isAdminMsal.value)) {
+  if (!isAuthenticated.value) {
     setIsLoading(false);
     return;
   }
@@ -279,13 +273,10 @@ async function filterEvents() {
           </template>
 
           <template #empty>
-            <span v-if="isAuthenticated || (isMsalAuthenticated && !isAdminMsal)">
+            <span v-if="isAuthenticated">
               <span v-if="filter.type === eventTypes.UPCOMING">No On-Going or Upcoming Events</span>
               <span v-else-if="filter.type === eventTypes.PAST">No Past Events</span>
               <span v-else>No Scheduled Event</span>
-            </span>
-            <span v-else-if="isMsalAuthenticated && isAdminMsal">
-              Operations not supported yet
             </span>
             <span v-else>
               Please <router-link

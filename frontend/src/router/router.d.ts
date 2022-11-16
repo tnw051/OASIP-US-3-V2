@@ -1,11 +1,11 @@
 import "vue-router";
-import { Role } from "../gen-types";
+import { AuthState } from "../auth/useAuthStore";
 
 declare module "vue-router" {
   interface RouteMeta {
     isAdmin?: boolean;
     requiresAuth?: boolean;
-    disallowRoles?: Role[];
+    checkAuth?: (auth: AuthState) => boolean;
   }
 }
 

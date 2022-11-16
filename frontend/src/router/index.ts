@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from "vue-router";
-import { useAuth } from "../utils/useAuth";
+import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import { useAuthStore } from "../auth/useAuthStore";
 import CategoryEvent from "../views/CategoryEvent.vue";
 import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
@@ -11,8 +11,7 @@ import { registerGuard } from "./Guard";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
-/** @type {import('vue-router').RouteRecordRaw[]} */
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: "/",
     name: "home",
@@ -24,7 +23,9 @@ const routes = [
     name: "createEvent",
     component: CreateEvent,
     meta: {
-      disallowRoles: ["LECTURER"],
+      checkAuth(auth) {
+        return !auth.isLecturer;
+      },
     },
   },
   {
@@ -38,7 +39,9 @@ const routes = [
     component: Users,
     meta: {
       requiresAuth: true,
-      isAdmin: true,
+      checkAuth(auth) {
+        return auth.isAdmin;
+      },
     },
   },
   {
@@ -47,7 +50,9 @@ const routes = [
     component: CreateUser,
     meta: {
       requiresAuth: true,
-      isAdmin: true,
+      checkAuth(auth) {
+        return auth.isAdmin;
+      },
     },
   },
   {
@@ -67,28 +72,25 @@ const router = createRouter({
   routes,
 });
 
-const { isAuthenticated, isAdmin, isAuthLoading, user } = useAuth();
+const { isAuthenticated, user, state } = useAuthStore();
 
-router.beforeEach(async (to, from) => {
-  // wait for auth to initialize before each route
-  while (isAuthLoading.value) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+router.beforeEach((to, from) => {
+  const { requiresAuth, checkAuth } = to.meta;
+
+  if (to.name === "login" && isAuthenticated.value) {
+    return { name: "home" };
   }
 
-  // if ((to.meta.requiresAuth && !isAuthenticated.value)) {
-  //   console.log(`redirecting to login (will redirect to ${to.path} after login)`);
-  //   return { name: "login", query: { redirect: to.fullPath } };
-  // }
+  if (requiresAuth && !isAuthenticated.value) {
+    console.log(`redirecting to login (will redirect to ${to.path} after login)`);
+    return { name: "login", query: { redirect: to.fullPath } };
+  }
 
-  // if (to.meta.isAdmin && !isAdmin.value) {
-  //   console.log("redirecting to home (not admin)");
-  //   return { name: "home" };
-  // }
-
-  // if (to.meta.disallowRoles && to.meta.disallowRoles.includes(user.value?.role)) {
-  //   console.log(`redirecting to home (role ${user.value?.role} not allowed)`);
-  //   return { name: "home" };
-  // }
+  const role = user.value?.role;
+  if (checkAuth && !checkAuth(state.value)) {
+    console.log(`redirecting to home (role ${role} not allowed)`);
+    return { name: "home" };
+  }
 });
 
 registerGuard(router);

@@ -1,11 +1,18 @@
 import { AuthenticationResult, EventType } from "@azure/msal-browser";
 import { createApp } from "vue";
 import App from "./App.vue";
+import { MsalAuthStore } from "./auth/providers/msal";
+import { OasipAuthStore } from "./auth/providers/oasip";
+import { registerAuthStore, initAuthStore } from "./auth/useAuthStore";
 import { msalInstance } from "./configs/msalAuthConfig";
 import "./index.css";
 import { msalPlugin } from "./plugins/msalPlugin";
 import router from "./router/index";
 import { CustomNavigationClient } from "./router/NavigationClient";
+
+registerAuthStore(OasipAuthStore);
+registerAuthStore(MsalAuthStore);
+initAuthStore();
 
 const navigationClient = new CustomNavigationClient(router);
 msalInstance.setNavigationClient(navigationClient);

@@ -1,11 +1,19 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
+import { useOasipAuth } from "../auth/providers/oasip";
+import { useAuthStore } from "../auth/useAuthStore";
 import LoginMsal from "../components/LoginMsal.vue";
 import router from "../router";
-import { useAuth } from "../utils/useAuth";
 
-const { login } = useAuth();
+const { login } = useOasipAuth();
+const { state: authState } = useAuthStore();
+watchEffect(() => {
+  if (authState.value.isAuthenticated) {
+    router.push({ name: "home" });
+  }
+});
+
 const route = useRoute();
 
 function makeDefaultValues() {
@@ -171,4 +179,6 @@ async function handleSubmit() {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+
+</style>

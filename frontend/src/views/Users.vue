@@ -1,29 +1,11 @@
 <script setup>
-import { InteractionType } from "@azure/msal-browser";
-import { computed, onBeforeMount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onBeforeMount, ref } from "vue";
 import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
-import { useMsalAuthentication } from "../composables/useMsalAuthentication";
-import { tokenRequest } from "../configs/msalAuthConfig";
 import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
 import { formatDateTime } from "../utils";
-import { useAuth } from "../utils/useAuth";
 import { useEditing } from "../utils/useEditing";
-
-const router = useRouter();
-const { isAdmin } = useAuth();
-const { error, isAdminMsal } = useMsalAuthentication(InteractionType.Silent, tokenRequest);
-
-watch(
-  () => error.value,
-  (error) => {
-    if ((error && !isAdmin.value) || !isAdminMsal.value) {
-      router.push({ name: "home" });
-    }
-  },
-);
 
 const users = ref([]);
 const roles = ref([]);

@@ -1,32 +1,16 @@
 <script setup lang="ts">
-import { InteractionType } from "@azure/msal-browser";
-import { onBeforeMount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { onBeforeMount, ref, watchEffect } from "vue";
+import { useAuthStore } from "../auth/useAuthStore";
 import Modal from "../components/Modal.vue";
-import { useMsalAuthentication } from "../composables/useMsalAuthentication";
-import { tokenRequest } from "../configs/msalAuthConfig";
 import { createEvent, getCategories } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
-import { useAuth } from "../utils/useAuth";
 import { useEventValidator } from "../utils/useEventValidator";
 import { useFileInput } from "../utils/useFileInput";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const router = useRouter();
-const { isAuthenticated, user, isAdmin, isLecturer } = useAuth();
-const { result, isLecturerMsal } = useMsalAuthentication(InteractionType.Silent, tokenRequest);
+const { isAuthenticated, isAdmin, user } = useAuthStore();
 
 const { isLoading, setIsLoading } = useIsLoading(true);
-
-watch(
-  () => result.value,
-  () => {
-    if (isLecturer.value || isLecturerMsal.value) {
-      router.push({ name: "home" });
-    }
-    setIsLoading(false);
-  },
-);
 
 const categories = ref([]);
 const {
@@ -42,15 +26,20 @@ const {
   canSubmit,
 } = useEventValidator();
 
+watchEffect(() => {
+  preFillInputs();
+});
+
 function preFillInputs() {
   if (isAuthenticated.value && !isAdmin.value) {
-    inputs.value.bookingEmail = user.value.sub;
+    inputs.value.bookingEmail = user.value.email;
   }
 }
 
 onBeforeMount(async () => {
   preFillInputs();
   categories.value = await getCategories();
+  setIsLoading(false);
 });
 
 // format: 2022-02-02T02:02
@@ -156,8 +145,7 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         <span
           v-if="isAuthenticated && !isAdmin"
           class="rounded p-2"
-          :value="user.sub"
-        >{{ user.sub }}</span>
+        >{{ inputs.bookingEmail }}</span>
         <input
           v-else
           id="email"
