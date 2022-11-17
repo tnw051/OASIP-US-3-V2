@@ -1,3 +1,4 @@
+import { setAccessToken } from "../../auth/providers/oasip";
 import { MatchRequest, LoginResponse, LoginRequest } from "../../gen-types";
 import { ErrorResponse } from "../../types";
 import { dank } from "./client";
@@ -9,10 +10,14 @@ interface RefreshTokenResponse {
   error: Error | null;
 }
 
+export const refreshTokenURL = "/auth/refresh";
 export async function refreshAccessToken(): Promise<RefreshTokenResponse> {
-  const response = await dank.post<RefreshTokenResponse>("/auth/refresh");
-  localStorage.setItem(accessTokenKey, response.data.accessToken);
-  return response.data;
+  const response = await dank.post<RefreshTokenResponse>(refreshTokenURL);
+  const data = response?.data;
+  if (data) {
+    setAccessToken(data.accessToken);
+  }
+  return data;
 }
 
 
@@ -28,23 +33,23 @@ interface LoginOptions {
 }
 
 function isErrorResponse(response: LoginResponse | ErrorResponse): response is ErrorResponse {
-  return (response as ErrorResponse).error !== undefined;
+  return (response as ErrorResponse)?.error !== undefined;
 }
 
+export const loginURL = "/auth/login";
 export async function login(loginRequest: LoginRequest, options: LoginOptions = {
 }): Promise<void> {
   try {
-    const response = await dank.post<LoginResponse>("/auth/login", loginRequest);
-    localStorage.setItem(accessTokenKey, response.data.accessToken);
+    const response = await dank.post<LoginResponse>(`${loginURL}`, loginRequest);
     options.onSuccess?.(response.data);
   } catch (error) {
-    const { data } = error.response;
+    const data = error?.response?.data;
     if (isErrorResponse(data)) {
       if (error.response.status === 401) {
         options.onUnauthorized?.(data);
       } else if (error.response.status === 404) {
         options.onNotFound?.(data);
-      } 
+      }
     } else {
       throw error;
     }

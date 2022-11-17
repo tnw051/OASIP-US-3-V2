@@ -3,7 +3,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { MsalAuthStore } from "./auth/providers/msal";
 import { OasipAuthStore } from "./auth/providers/oasip";
-import { registerAuthStore, initAuthStore } from "./auth/useAuthStore";
+import { registerAuthStore, initAuthStore, isAuthStoreReady } from "./auth/useAuthStore";
 import { msalInstance } from "./configs/msalAuthConfig";
 import "./index.css";
 import { msalPlugin } from "./plugins/msalPlugin";
@@ -34,7 +34,7 @@ const app = createApp(App);
 app.use(router);
 app.use(msalPlugin, msalInstance);
 
-router.isReady().then(() => {
+Promise.all([router.isReady(), isAuthStoreReady()]).then(() => {
   // Waiting for the router to be ready prevents race conditions when returning from a loginRedirect or acquireTokenRedirect
   app.mount("#app");
 });

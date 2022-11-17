@@ -4,6 +4,7 @@ import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthS
 import { msalInstance, tokenRequest } from "../../configs/msalAuthConfig";
 
 const state = ref<AuthState>(getDefaultAuthState());
+state.value.status = "loading";
 
 const resultRef = ref<AuthenticationResult | null>(null);
 watch(resultRef, (newValue) => {
@@ -29,7 +30,7 @@ export const MsalAuthStore: AuthStore = {
       });
 
       state.value = getDefaultAuthState();
-  
+
       return true;
     } catch (error) {
       console.error(error);
@@ -54,6 +55,9 @@ export const MsalAuthStore: AuthStore = {
     } catch (error) {
       console.error(error);
     }
+  },
+  async getAccessToken() {
+    return resultRef.value?.accessToken ?? null;
   },
 };
 

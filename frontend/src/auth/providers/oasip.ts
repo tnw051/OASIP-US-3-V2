@@ -1,9 +1,9 @@
 import { decodeJwt, JWTPayload } from "jose";
 import { ref, watch } from "vue";
-import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthStore";
-import { LoginRequest, Role } from "../../gen-types";
+import { LoginRequest } from "../../gen-types";
+import { accessTokenKey, login, logout } from "../../service/api";
 import { OasipJwtPayload } from "../../types";
-import { logout, accessTokenKey, login } from "../../service/api";
+import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthStore";
 
 const state = ref<AuthState>(getDefaultAuthState());
 state.value.status = "loading";
@@ -38,16 +38,9 @@ export const OasipAuthStore: AuthStore = {
   id: "oasip",
   name: "OASIP",
   state,
-  async logout() {
-    const success = await logout();
-    if (success) {
-      user.value = null;
-      return true;
-    }
-    return false;
-  },
+  logout: _logout,
   async preload() {
-    const token = localStorage.getItem(accessTokenKey);
+    const token = _getAccessToken();
     if (token) {
       const loadingDelay = import.meta.env.VITE_AUTH_LOADING_DELAY;
       if (loadingDelay) {
@@ -58,7 +51,35 @@ export const OasipAuthStore: AuthStore = {
     setUserFromToken(token);
     setStore(OasipAuthStore);
   },
+  async getAccessToken() {
+    return _getAccessToken();
+  },
+  async onRefreshTokenFailed() {
+    _logout();
+  },
 };
+
+function _getAccessToken() {
+  return localStorage.getItem(accessTokenKey);
+}
+
+export function setAccessToken(token: string) {
+  localStorage.setItem(accessTokenKey, token);
+}
+
+function removeAccessToken() {
+  localStorage.removeItem(accessTokenKey);
+}
+
+async function _logout() {
+  user.value = null;
+  removeAccessToken();
+  const success = await logout();
+  if (success) {
+    return true;
+  }
+  return false;
+}
 
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -69,6 +90,7 @@ function _login(user: LoginRequest, onSuccess?: () => void) {
         console.log(response);
         alert("Login successful");
         const token = response.accessToken;
+        setAccessToken(token);
         setUserFromToken(token);
         setStore(OasipAuthStore);
         onSuccess?.();
@@ -102,8 +124,4 @@ export function useOasipAuth() {
   };
 }
 
-export const roles = {
-  ADMIN: "ADMIN" as Role,
-  LECTURER: "LECTURER" as Role,
-  STUDENT: "STUDENT" as Role,
-};
+

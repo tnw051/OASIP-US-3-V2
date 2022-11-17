@@ -1,4 +1,10 @@
-import { computed, Ref, ref, watch } from "vue";
+import {
+  computed,
+  Ref,
+  ref,
+  watch,
+  watchEffect,
+} from "vue";
 
 type Profile = {
   id: string;
@@ -31,6 +37,8 @@ export type AuthStore = {
   logout: () => Promise<boolean>;
   preload: () => Promise<void>;
   state: Ref<AuthState>;
+  getAccessToken: () => Promise<string | null>;
+  onRefreshTokenFailed?: () => Promise<void>;
 };
 
 
@@ -64,8 +72,9 @@ export function getDefaultAuthState(): AuthStateExtended {
 }
 
 const state = ref<AuthStateExtended>(getDefaultAuthState());
-const authStore = ref<AuthStore>();
+const authStore = ref<AuthStore | null>();
 const authStores: Map<string, AuthStore> = new Map();
+const isPreloadDone = ref(false);
 
 const authStoreIdKey = "authStoreId";
 
@@ -78,20 +87,20 @@ export function registerAuthStore(store: AuthStore) {
 
 async function preload() {
   const storeId = localStorage.getItem(authStoreIdKey);
-  if (!storeId) {
-    return;
+  if (storeId) {
+    const store = authStores.get(storeId);
+    if (store) {
+      logger.log(`preload: from ${store.id}`);
+      setStore(store);
+      await store.preload();
+      console.log("preload: done");
+    } else {
+      logger.error(`preload: ${storeId} not registered, aborting`);
+    }
   }
-  
-  const store = authStores.get(storeId);
-  if (store) {
-    logger.log(`preload: from ${store.id}`);
-    setStore(store);
-    await store.preload();
-    console.log("preload: done");
-    return;
-  } else {
-    logger.error(`preload: ${storeId} not registered, aborting`);
-  }
+
+
+  isPreloadDone.value = true;
 }
 
 export function setStore(storeConfig: AuthStore) {
@@ -153,6 +162,7 @@ interface UseAuthStore {
   isStudent: Ref<boolean>;
   isGuest: Ref<boolean>;
   user: Ref<Profile | null>;
+  authStore: Ref<AuthStore | null>;
 }
 
 const isAuthenticated = computed(() => state.value.isAuthenticated);
@@ -177,9 +187,24 @@ export function useAuthStore(): UseAuthStore {
     isStudent,
     isGuest,
     user,
+    authStore,
   };
 }
 
 export function initAuthStore() {
   preload();
+}
+
+export async function isAuthStoreReady() {
+  if (isPreloadDone.value) {
+    return true;
+  }
+
+  return new Promise((resolve) => {
+    watchEffect(() => {
+      if (isPreloadDone.value) {
+        resolve(true);
+      }
+    });
+  });
 }
