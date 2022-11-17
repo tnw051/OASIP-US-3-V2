@@ -133,20 +133,14 @@ async function logout(): Promise<boolean> {
   if (!authStore.value) {
     return false;
   }
-  logger.log(`logout: from ${authStore.value.name}`);
+  localStorage.removeItem(authStoreIdKey);
 
-  const success = await authStore.value.logout();
-  if (success) {
-    state.value = getDefaultAuthState();
-    logger.log("logout: reset state to default");
-    authStore.value = null;
-    localStorage.removeItem(authStoreIdKey);
-    logger.log("logout: removed authStoreId from localStorage");
-  } else {
-    logger.error("logout: failed");
-  }
-
-  return success;
+  logger.log(`logout: from ${authStore.value.name}, clearing state`);
+  const logoutFunc = authStore.value.logout;
+  state.value = getDefaultAuthState();
+  authStore.value = null;
+  
+  return await logoutFunc();
 }
 
 interface UseAuthStore {

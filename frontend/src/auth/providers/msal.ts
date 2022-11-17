@@ -4,6 +4,7 @@ import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthS
 import { msalInstance, tokenRequest } from "../../configs/msalAuthConfig";
 
 const state = ref<AuthState>(getDefaultAuthState());
+const isLoadedByRedirectPromise = ref(false);
 state.value.status = "loading";
 
 const resultRef = ref<AuthenticationResult | null>(null);
@@ -25,7 +26,7 @@ export const MsalAuthStore: AuthStore = {
         // logoutHint: result.value?.account?.idTokenClaims?.login_hint,
         onRedirectNavigate: (_url) => {
           // Skipping the server sign-out for the sake of ease of development
-          return false;
+          return true;
         },
       });
 
@@ -38,14 +39,11 @@ export const MsalAuthStore: AuthStore = {
     }
   },
   async preload() {
+    if (isLoadedByRedirectPromise.value) {
+      return;
+    }
     try {
-      // handle rediret from after previous login
-      const redirectResult = await msalInstance.handleRedirectPromise();
-      if (redirectResult) {
-        resultRef.value = redirectResult;
-        return;
-      }
-
+      await _handleRedirectPromise();
       // silent login to get a token
       const silentResult = await msalInstance.acquireTokenSilent(tokenRequest);
       if (silentResult) {
@@ -60,6 +58,20 @@ export const MsalAuthStore: AuthStore = {
     return resultRef.value?.accessToken ?? null;
   },
 };
+
+// handle rediret from after previous login
+export async function _handleRedirectPromise() {
+  if (isLoadedByRedirectPromise.value) {
+    return;
+  }
+  isLoadedByRedirectPromise.value = true;
+  
+  const redirectResult = await msalInstance.handleRedirectPromise();
+  if (redirectResult) {
+    resultRef.value = redirectResult;
+    return;
+  }
+}
 
 function setMsalAuthStateFromAuthenticationResult(result: AuthenticationResult | null) {
   const roles = result.account?.idTokenClaims?.roles;
@@ -107,6 +119,7 @@ function setMsalAuthStateFromAuthenticationResult(result: AuthenticationResult |
 
 async function login() {
   try {
+    await _handleRedirectPromise();
     setStore(MsalAuthStore);
     await msalInstance.loginRedirect(tokenRequest);
   } catch (error) {

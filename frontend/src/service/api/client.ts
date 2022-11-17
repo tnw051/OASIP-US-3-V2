@@ -22,7 +22,7 @@ dank.interceptors.request.use(
       return config;
     }
     
-    const token = await authStore.value.getAccessToken();
+    const token = await authStore.value?.getAccessToken?.();
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
