@@ -7,7 +7,6 @@ import Events from "../views/Events.vue";
 import Login from "../views/Login.vue";
 import NotFound from "../views/NotFound.vue";
 import Users from "../views/Users.vue";
-import { registerGuard } from "./Guard";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
@@ -92,7 +91,5 @@ router.beforeEach((to, from) => {
     return { name: "home" };
   }
 });
-
-registerGuard(router);
 
 export default router;
