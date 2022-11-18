@@ -1,22 +1,25 @@
 package int221.oasip.backendus3.controllers;
 
-import int221.oasip.backendus3.configs.OasipJwtProps;
+import int221.oasip.backendus3.configs.MyUserDetails;
 import int221.oasip.backendus3.dtos.LoginRequest;
 import int221.oasip.backendus3.dtos.LoginResponse;
 import int221.oasip.backendus3.dtos.MatchRequest;
+import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.services.AuthService;
 import int221.oasip.backendus3.services.TokenService;
+import int221.oasip.backendus3.services.UserService;
+import int221.oasip.backendus3.services.jwt.UserClaims;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -25,30 +28,17 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
     private final AuthService service;
     private final AuthenticationManager authenticationManager;
-    private final JwtEncoder encoder;
-    private final JwtDecoder decoder;
-    private final OasipJwtProps jwtProps;
-
-    public AuthController(AuthService service, AuthenticationManager authenticationManager, TokenService tokenService, OasipJwtProps jwtProps) {
-        this.service = service;
-        this.authenticationManager = authenticationManager;
-        this.encoder = tokenService.getEncoder();
-        this.decoder = tokenService.getDecoder();
-        this.jwtProps = jwtProps;
-    }
-
-    @Value("${access-token.max-age-seconds}")
-    private Long accessTokenMaxAgeSeconds;
-
-    @Value("${refresh-token.max-age-seconds}")
-    private Long refreshTokenMaxAgeSeconds;
+    private final UserService userService;
+    private final TokenService tokenService;
 
     @Value("${refresh-token.secure}")
     private Boolean refreshTokenSecure;
@@ -64,7 +54,6 @@ public class AuthController {
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
-
     }
 
     @PostMapping("/login")
@@ -79,33 +68,33 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
 
-        GrantedAuthority roleAuthority = authentication.getAuthorities().stream().findFirst().orElse(null);
-        String role = roleAuthority != null ? roleAuthority.getAuthority() : "WHAT";
+        MyUserDetails userDetails = (MyUserDetails) authentication.getPrincipal();
 
-        Jwt accessToken = generateAccessToken(authentication.getName(), role);
-        Jwt refreshToken = generateRefreshToken(authentication.getName(), role);
+        Jwt accessToken = tokenService.generateAccessToken(UserClaims.from(userDetails));
+        Jwt refreshToken = tokenService.generateRefreshToken(UserClaims.from(userDetails));
         setRefreshTokenCookie(response, refreshToken);
 
         return new LoginResponse(accessToken.getTokenValue());
     }
 
-    // refresh token endpoint
     @PostMapping("/refresh")
     public LoginResponse refresh(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
         if (refreshToken == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is missing or has expired");
         }
 
-        Jwt jwt;
         try {
-            jwt = decoder.decode(refreshToken);
+            Jwt jwt = tokenService.decode(refreshToken);
+            UserResponse user = Optional.of(jwt.getClaimAsString("id"))
+                    .map(Integer::valueOf)
+                    .map(userService::getById)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+            Jwt accessToken = tokenService.generateAccessToken(UserClaims.from(user));
+            return new LoginResponse(accessToken.getTokenValue());
         } catch (JwtException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
-
-        Jwt accessToken = generateAccessToken(jwt.getSubject(), jwt.getClaimAsString("role"));
-
-        return new LoginResponse(accessToken.getTokenValue());
     }
 
     @PostMapping("/logout")
@@ -134,35 +123,8 @@ public class AuthController {
         return cookie;
     }
 
-    private Jwt generateAccessToken(String subject, String role) {
-        Instant accessTokenExpiresAt = Instant.now().plusSeconds(accessTokenMaxAgeSeconds);
-        JwtClaimsSet accessTokenClaims = createBaseClaimsSetBuilder(subject, role, accessTokenExpiresAt).build();
-        return encodeTokenWithDefaultHeaders(accessTokenClaims);
-    }
-
-    private Jwt generateRefreshToken(String subject, String role) {
-        Instant refreshTokenExpiresAt = Instant.now().plusSeconds(refreshTokenMaxAgeSeconds);
-        JwtClaimsSet refreshTokenClaims = createBaseClaimsSetBuilder(subject, role, refreshTokenExpiresAt).build();
-        return encodeTokenWithDefaultHeaders(refreshTokenClaims);
-    }
-
-    private JwtClaimsSet.Builder createBaseClaimsSetBuilder(String subject, String role, Instant exp) {
-        return JwtClaimsSet.builder()
-                .issuer(jwtProps.getIssueUri())
-                .subject(subject)
-                .claim("role", role)
-                .expiresAt(exp)
-                .issuedAt(Instant.now());
-    }
-
-    private Jwt encodeTokenWithDefaultHeaders(JwtClaimsSet claims) {
-        JwsHeader headers = JwsHeader.with(MacAlgorithm.HS256).build();
-        return encoder.encode(JwtEncoderParameters.from(headers, claims));
-    }
-
     @GetMapping("/private")
     public String hello() {
         return "What is he doing? LULW";
     }
 }
-

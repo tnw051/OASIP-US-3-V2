@@ -6,7 +6,7 @@ import int221.oasip.backendus3.dtos.UserResponse;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.ValidationErrors;
-import int221.oasip.backendus3.services.UserServive;
+import int221.oasip.backendus3.services.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequestMapping("/api/users")
 @AllArgsConstructor
 public class UserController {
-    private UserServive service;
+    private UserService service;
 
     @GetMapping("")
     public List<UserResponse> getUsers() {

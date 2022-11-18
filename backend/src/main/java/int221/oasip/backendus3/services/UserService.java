@@ -19,7 +19,7 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
-public class UserServive {
+public class UserService {
     private UserRepository repository;
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
@@ -112,5 +112,10 @@ public class UserServive {
         }
 
         return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
+    }
+
+    public UserResponse getById(Integer id) {
+        User user = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+        return modelMapper.map(user, UserResponse.class);
     }
 }
