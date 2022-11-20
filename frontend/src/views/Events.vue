@@ -2,10 +2,11 @@
 import { ref, watchEffect } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
+import BaseTable from "../components/BaseTable.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
-import Table from "../components/Table.vue";
+import PageLayout from "../components/PageLayout.vue";
 import {
   deleteEvent,
   getCategories,
@@ -14,7 +15,7 @@ import {
   getLecturerCategories,
   updateEvent,
 } from "../service/api";
-import { formatDateTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
+import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
@@ -165,15 +166,14 @@ async function filterEvents() {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-[1440px] py-8 px-12">
-    <div class="flex flex-col text-slate-700">
-      <h1 class="text-4xl font-semibold">
-        Events
-      </h1>
+  <PageLayout header="Events">
+    <template #subheader>
       <div class="mb-4 flex justify-between">
         <div class="mb-4 mt-2">
           {{ events.length }} events shown
         </div>
+
+        <!-- Filter -->
         <div class="flex flex-wrap gap-6">
           <div class="flex flex-col gap-1">
             <label class="text-xs text-slate-600">Category</label>
@@ -229,8 +229,11 @@ async function filterEvents() {
           </div>
         </div>
       </div>
-      <div class="flex">
-        <Table
+    </template>
+
+    <template #content>
+      <div class="flex justify-start">
+        <BaseTable
           :headers="[
             {
               name: 'Name',
@@ -255,21 +258,36 @@ async function filterEvents() {
           @delete="startConfirmCancel"
           @select="selectEvent"
         >
-          <template #cell:bookingName="{ item }">
-            <span class="font-medium">{{ item.bookingName }}</span>
+          <template #cell:bookingName="{ item, dClass }">
+            <td :class="dClass">
+              <span class="font-medium">{{ item.bookingName }}</span>
+            </td>
           </template>
 
-          <template #cell:eventStartTime="{ item }">
-            <div class="flex flex-col">
-              <span class="">{{ formatDateTime(new Date(item.eventStartTime)) }}</span>
-              <span class="text-sm text-slate-500">{{ item.eventDuration }} minutes</span>
-            </div>
+          <template #cell:eventStartTime="{ item, dClass }">
+            <td
+              :class="dClass"
+              class="w-80"
+            >
+              <div class="material-icon-settings flex flex-col text-slate-600">
+                <div class="flex flex-col gap-1 text-sm">
+                  <div class="flex gap-2">
+                    <span class="material-symbols-outlined pt-1 text-slate-800">
+                      calendar_month
+                    </span>
+                    {{ formatDateAndFromToTime(new Date(item.eventStartTime), item.eventDuration) }}
+                  </div>
+                </div>
+              </div>
+            </td>
           </template>
 
-          <template #cell:eventCategory="{ item }">
-            <div class="flex">
-              <Badge :text="item.eventCategory.eventCategoryName" />
-            </div>
+          <template #cell:eventCategory="{ item, dClass }">
+            <td :class="dClass">
+              <div class="flex">
+                <Badge :text="item.eventCategory.eventCategoryName" />
+              </div>
+            </td>
           </template>
 
           <template #empty>
@@ -285,7 +303,7 @@ async function filterEvents() {
               >login</router-link> to view events
             </span>
           </template>
-        </Table>
+        </BaseTable>
 
         <div
           v-if="currentEvent.id"
@@ -306,8 +324,8 @@ async function filterEvents() {
           />
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </PageLayout>
 
   <Modal
     title="Success"
@@ -355,5 +373,15 @@ async function filterEvents() {
 </template>
 
 <style scoped>
+.material-icon-settings {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 48;
+}
 
+.material-symbols-outlined {
+  font-size: 1.2rem;
+}
 </style>

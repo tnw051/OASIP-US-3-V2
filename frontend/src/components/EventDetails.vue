@@ -47,7 +47,7 @@ watch(
  
 <template>
   <div
-    class=" flex w-full flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5"
+    class="min-w-sm flex max-w-sm flex-col gap-3 break-words rounded-2xl border-b-2 border-white/50 bg-white p-6 shadow-xl shadow-black/5"
   >
     <!-- close button -->
     <div

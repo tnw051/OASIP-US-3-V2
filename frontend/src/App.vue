@@ -23,83 +23,93 @@ async function handleLogout() {
 </script>
  
 <template>
-  <nav class="flex items-center justify-between border-b border-gray-200 bg-white px-12 py-4">
-    <div class="flex items-center gap-1 text-sm font-medium">
-      <img
-        src="https://cdn.7tv.app/emote/611cb0c5f20f644c3fadb992/3x"
-        width="64"
-      >
-      <img
-        src="https://cdn.betterttv.net/emote/60a21baf67644f1d67e87a6c/3x"
-        width="64"
-      >
-      <router-link
-        to="/"
-        class="ml-6 rounded-md p-2 text-gray-700 hover:text-sky-600"
-      >
-        Events
-      </router-link>
-      <router-link
-        v-if="!authState.isLecturer"
-        :to="{ name: 'createEvent' }"
-        class="rounded-md p-2 text-gray-700 hover:text-sky-600"
-      >
-        Create
-        Event
-      </router-link>
-      <router-link
-        :to="{ name: 'categories' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Categories
-      </router-link>
-      <router-link
-        v-if="authState.isAdmin"
-        :to="{ name: 'users' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Users
-      </router-link>
-      <router-link
-        v-if="authState.isAdmin"
-        :to="{ name: 'createUser' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Create User
-      </router-link>
-      <router-link
-        v-if="!authState.isAuthenticated"
-        :to="{ name: 'login' }"
-        class="ml-2 p-2 text-gray-700 hover:text-sky-600"
-      >
-        Login
-      </router-link>
-    </div>
-    <div class="flex items-center text-sm text-gray-700">
-      <div class="flex flex-col text-xs font-medium">
-        <span v-if="authState.isAuthenticated">{{ authState.user?.name }}</span>
-        <span
-          v-if="authState.isGuest"
-          class="text-gray-500"
-        >Guest</span>
-        <span
-          v-else-if="authState.isAuthenticated"
-          class="text-blue-400"
-        >{{ authState.user.role }}</span>
+  <div class="flex h-screen flex-col bg-[#f7fafd]">
+    <nav class="h-16 w-full shrink-0 grow-0 border-b bg-white px-8">
+      <div class="mx-auto flex h-full items-center justify-between">
+        <div class="flex items-center text-sm font-medium">
+          <img
+            src="https://cdn.7tv.app/emote/631210ee113e0e8575d2d130/4x.webp"
+            width="64"
+            class="mr-4"
+          >
+          <router-link
+            to="/"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Events
+          </router-link>
+          <router-link
+            v-if="!authState.isLecturer"
+            :to="{ name: 'createEvent' }"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Create
+            Event
+          </router-link>
+          <router-link
+            :to="{ name: 'categories' }"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Categories
+          </router-link>
+          <router-link
+            v-if="authState.isAdmin"
+            :to="{ name: 'users' }"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Users
+          </router-link>
+          <router-link
+            v-if="authState.isAdmin"
+            :to="{ name: 'createUser' }"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Create User
+          </router-link>
+          <router-link
+            v-if="!authState.isAuthenticated"
+            :to="{ name: 'login' }"
+            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            Login
+          </router-link>
+        </div>
+        <div class="flex items-center text-sm text-gray-700">
+          <div
+            v-if="authState.user"
+            class="flex flex-col text-xs font-medium"
+          >
+            <span
+              v-if="authState.isAuthenticated"
+              class="pr-4 font-medium"
+            >{{ authState.user.name }}</span>
+            <span
+              v-if="authState.isGuest"
+              class="text-gray-500"
+            >Guest</span>
+            <span
+              v-else-if="authState.isAuthenticated"
+              class="text-sky-500"
+            >{{ authState.user.role }}</span>
+          </div>
+          <button
+            v-if="authState.isAuthenticated"
+            class="ml-4 cursor-pointer rounded-md border border-gray-200 p-2 text-gray-700 hover:text-sky-500"
+            @click="handleLogout"
+          >
+            Logout
+          </button>
+        </div>
       </div>
-      <a
-        v-if="authState.isAuthenticated"
-        class="ml-4 cursor-pointer rounded-md border border-gray-200 p-2 text-gray-700 hover:text-sky-600"
-        @click="handleLogout"
-      >Logout</a>
-    </div>
-  </nav>
+    </nav>
 
-  <router-view />
+    <router-view class="grow" />
+  </div>
 </template>
- 
+
 <style scoped>
 .router-link-active {
   @apply text-sky-600 bg-sky-50;
+  /* @apply border-blue-500 border-b-2 text-blue-500; */
 }
 </style>
