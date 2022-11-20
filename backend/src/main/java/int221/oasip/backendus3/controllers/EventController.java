@@ -67,7 +67,6 @@ public class EventController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startAt,
             @RequestParam(required = false) Integer excludeEventId
     ) {
-        System.out.println(excludeEventId);
         return service.getAllocatedTimeSlotsInCategoryOnDate(categoryId, startAt.toInstant(), excludeEventId);
     }
 

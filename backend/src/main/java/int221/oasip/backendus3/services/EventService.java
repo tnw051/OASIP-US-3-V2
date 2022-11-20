@@ -356,6 +356,12 @@ public class EventService {
         return modelMapperUtils.mapList(events, EventResponse.class);
     }
 
+    public List<EventTimeSlotResponse> getAllocatedTimeSlotsInCategoryOnDate(Integer categoryId, Instant startAt, Integer excludeEventId) {
+        List<Event> events = repository.findByDateRangeOfOneDay(startAt, List.of(categoryId), excludeEventId);
+        return events.stream()
+                .map(event -> new EventTimeSlotResponse(event.getEventStartTime(), event.getEventDuration(), categoryId))
+                .collect(Collectors.toList());
+    }
 
     public enum EventTimeType {
         UPCOMING, PAST, DAY;
