@@ -34,13 +34,6 @@ const { handleSubmit, setErrors, errors } = useForm<{
   role: Role;
 }>({
   validationSchema,
-  initialValues: {
-    name: "whatwhat",
-    email: "what@what.com",
-    password: "123456789",
-    confirmPassword: "123456789",
-    role: "ADMIN",
-  },
 });
 
 const onSubmit = handleSubmit(async (user) => {
