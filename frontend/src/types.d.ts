@@ -16,4 +16,7 @@ interface OasipJwtPayload {
     role: Role;
     exp: number;
     iat: number;
+    name: string;
+    id: Id;
+    email: string;
 }

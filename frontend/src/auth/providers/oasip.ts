@@ -17,14 +17,14 @@ watch(user, (u) => {
     return;
   }
 
+  const {id, name, email, role} = u;
   state.value = {
     user: {
-      // TODO: update oasip jwt payload
-      id: u?.sub,
-      name: u?.sub,
-      email: u?.sub,
-      role: u?.role,
-      roles: [u?.role],
+      id: id.toString(),
+      name,
+      email,
+      role,
+      roles: [role],
     },
     isAdmin: u?.role === "ADMIN",
     isLecturer: u?.role === "LECTURER",
