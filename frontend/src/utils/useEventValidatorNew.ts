@@ -62,7 +62,7 @@ export function useEventValidator(options: Options) {
     z.object({
       bookingName: z.string().min(1, "Name is required").max(100, "Name exceeds 100 characters"),
       bookingEmail: z.string().email("Email is invalid").max(50, "Email exceeds 50 characters"),
-      eventNotes: z.string().max(500, "Notes exceed 500 characters"),
+      eventNotes: z.string().max(500, "Notes exceed 500 characters").optional(),
       eventStartTime: z.string().refine((value) => {
         const date = new Date(value);
         const now = new Date();
@@ -92,12 +92,12 @@ export function useEventValidator(options: Options) {
   });
     
 
-  const VEE_VALIDATE_TIMEOUT = 250;
+  const VEE_VALIDATE_TIMEOUT = 100;
   watch(() => values.eventStartTime, async (startTime, prevStartTime) => {
     console.log(`startTime: ${startTime}, prevStartTime: ${prevStartTime}`);
     console.log(`duration: ${duration.value}`);
 
-    if (startTime === defaultTextValue || !duration.value) {
+    if (!startTime || !values.eventCategoryId) {
       return;
     }
 
@@ -120,9 +120,9 @@ export function useEventValidator(options: Options) {
   watch(() => values.eventCategoryId, async (categoryId, prevCategoryId) => {
     console.log(`categoryId: ${categoryId}, prevCategoryId: ${prevCategoryId}`);
 
-    if (categoryId === defaultIntValue ||
-      categoryId === prevCategoryId ||
-      currentTimeSlot === null && getDurationByCategoryId === undefined) {
+    if (categoryId === undefined ||
+      !values.eventStartTime ||
+      (currentTimeSlot === null && getDurationByCategoryId === undefined)) {
       return;
     }
 
@@ -179,7 +179,11 @@ export function useEventValidator(options: Options) {
       return !hasErrors.value && hasChanges.value;
     }
 
-    return !hasErrors.value;
+    return !hasErrors.value && 
+      values.bookingName !== undefined &&
+      values.bookingEmail !== undefined &&
+      values.eventStartTime !== undefined &&
+      values.eventCategoryId !== undefined;
   });
 
   // function resetInputsAndErrors() {

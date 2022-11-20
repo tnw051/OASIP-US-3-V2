@@ -78,15 +78,14 @@ const onSubmit = handleSubmit(async (inputs) => {
   } catch (error) {
     if (error instanceof AxiosError) {
       const errorResponse = error.response?.data as ErrorResponse;
-      if (error.response?.status !== 400) {
-        isErrorModalOpen.value = true;
-        return;
+      if (error.response?.status === 400) {
+        setErrors({
+          bookingName: errorResponse.errors?.bookingName?.[0],
+          bookingEmail: errorResponse.errors?.bookingEmail?.[0],
+          eventStartTime: errorResponse.errors?.eventStartTime?.[0],
+        });
       }
-      setErrors({
-        bookingName: errorResponse.errors?.bookingName[0],
-        bookingEmail: errorResponse.errors?.bookingEmail[0],
-        eventStartTime: errorResponse.errors?.eventStartTime[0],
-      });
+      isErrorModalOpen.value = true;
     }
   }
 });
@@ -265,7 +264,7 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         <button
           type="submit"
           class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="canSubmit"
+          :disabled="!canSubmit"
         >
           Create
           Event
