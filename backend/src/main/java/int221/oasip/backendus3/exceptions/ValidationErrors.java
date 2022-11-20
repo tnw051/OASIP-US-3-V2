@@ -4,14 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class ValidationErrors extends RuntimeException {
-    private final Map<String, Collection<String>> errors = new HashMap<>();
+    private final Map<String, List<String>> errors = new HashMap<>();
 
     public ValidationErrors() {
         super("Validation errors");
@@ -28,7 +25,7 @@ public class ValidationErrors extends RuntimeException {
         bindingResult.getFieldErrors().forEach(error -> addFieldError(error.getField(), error.getDefaultMessage()));
     }
 
-    public Map<String, Collection<String>> getErrors() {
+    public Map<String, List<String>> getErrors() {
         return errors;
     }
 

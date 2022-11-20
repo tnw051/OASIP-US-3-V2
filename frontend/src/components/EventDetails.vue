@@ -1,15 +1,15 @@
-<script setup>
+<script setup lang="ts">
+import { EventResponse } from "../gen-types";
 import { formatDateAndFromToTime } from "../utils";
 import Badge from "./Badge.vue";
 import { getFilenameByBucketUuid, getBucketURL } from "../service/api";
 import { onBeforeMount, ref, watch } from "vue";
 
-const props = defineProps({
-  currentEvent: {
-    type: Object,
-    default: () => ({}),
-  },
-});
+interface Props {
+  currentEvent: EventResponse;
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "close",

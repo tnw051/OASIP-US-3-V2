@@ -1,97 +1,37 @@
-<script setup>
-import { computed, ref } from "vue";
+<script setup lang="ts">
+import { computed } from "vue";
+import { EditUserRequest, Role, UserResponse } from "../gen-types";
+import { useUserValidator } from "../utils/useUserValidator";
 
-const props = defineProps({
-  currentUser: {
-    type: Object,
-    default: () => ({}),
-  },
-  roles: {
-    type: Array,
-    default: () => [],
-  },
-});
+interface Props {
+  currentUser: UserResponse;
+  roles: Role[];
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "save",
   "cancel",
 ]);
 
-
-function makeDefaultValues() {
-  const defaultValue = "";
-  return {
-    name: defaultValue,
-    email: defaultValue,
-    role: "STUDENT",
-  };
-}
-
-const inputs = ref(makeDefaultValues());
-
-const errors = ref({
-  name: [],
-  email: [],
+const { inputs, errors, canSubmit } = useUserValidator({
+  currentUser: props.currentUser,
 });
-
-const canSubmit = computed(() => {
-  const noErrors = Object.values(errors.value).every((error) => error.length === 0);
-  const noEmptyFields = Object.values(inputs.value).every((value) => value !== "");
-
-  return noErrors && noEmptyFields;
-});
-
-function validateName(e) {
-  const name = e.target.value;
-  errors.value.name = [];
-
-  if (name.length > 100) {
-    errors.value.name.push("Name must be less than 100 characters");
-  }
-
-  if (name.trim().length === 0) {
-    errors.value.name.push("Name must not be blank");
-  }
-}
-
-function validateEmail(e) {
-  const email = e.target.value;
-  errors.value.email = [];
-
-  if (email.length > 50) {
-    errors.value.email.push("Email must be less than 50 characters");
-  }
-
-  if (email.trim().length === 0) {
-    errors.value.email.push("Email must not be blank");
-  }
-
-  // RFC2822 https://regexr.com/2rhq7
-  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-  if (!emailRegex.test(email)) {
-    errors.value.email.push("Email is invalid");
-  }
-}
-
-inputs.value = {
-  name: props.currentUser.name,
-  email: props.currentUser.email,
-  role: props.currentUser.role,
-};
 
 function handleSaveClick() {
-  const updates = {};
+  const updates: EditUserRequest = {};
 
-  if (inputs.value.name.trim() !== props.currentUser.name) {
-    updates.name = inputs.value.name;
+  if (inputs.name.trim() !== props.currentUser.name) {
+    updates.name = inputs.name;
   }
 
-  if (inputs.value.email.trim() !== props.currentUser.email) {
-    updates.email = inputs.value.email;
+  if (inputs.email.trim() !== props.currentUser.email) {
+    updates.email = inputs.email;
   }
 
-  if (inputs.value.role !== props.currentUser.role) {
-    updates.role = inputs.value.role;
+  if (inputs.role !== props.currentUser.role) {
+    updates.role = inputs.role;
   }
 
   if (Object.keys(updates).length == 0) {
@@ -102,11 +42,11 @@ function handleSaveClick() {
 }
 
 // computed for each fields whether it is changed
-const isNameChanged = computed(() => inputs.value.name.trim() !== props.currentUser.name);
-const isEmailChanged = computed(() => inputs.value.email.trim() !== props.currentUser.email);
-const isRoleChanged = computed(() => inputs.value.role !== props.currentUser.role);
+const isNameChanged = computed(() => inputs.name.trim() !== props.currentUser.name);
+const isEmailChanged = computed(() => inputs.email.trim() !== props.currentUser.email);
+const isRoleChanged = computed(() => inputs.role !== props.currentUser.role);
 
-const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || isRoleChanged.value);
+// const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || isRoleChanged.value);
 </script>
  
 <template>
@@ -125,10 +65,9 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="text"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your name?"
-        @input="validateName"
       >
       <div
-        v-if="errors.name.length > 0"
+        v-if="errors.name"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
@@ -150,10 +89,9 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
         type="email"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your email?"
-        @input="validateEmail"
       >
       <div
-        v-if="errors.email.length > 0"
+        v-if="errors.email"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
@@ -202,7 +140,7 @@ const isChanged = computed(() => isNameChanged.value || isEmailChanged.value || 
       <button
         type="submit"
         class="mt-2 flex-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit || !isChanged"
+        :disabled="!canSubmit"
         @click="handleSaveClick"
       >
         Save

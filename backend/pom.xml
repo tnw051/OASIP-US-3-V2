@@ -152,6 +152,9 @@
                     <classPatterns>
                         <pattern>**.dtos.*</pattern>
                     </classPatterns>
+                    <excludeClasses>
+                        <class>int221.oasip.backendus3.dtos.CreateEventMultipartRequest</class>
+                    </excludeClasses>
                     <classes>
                         <class>int221.oasip.backendus3.entities.Role</class>
                     </classes>

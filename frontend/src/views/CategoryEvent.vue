@@ -1,13 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeMount, ref } from "vue";
 import EditCategory from "../components/EditCategory.vue";
 import Modal from "../components/Modal.vue";
 import Table from "../components/Table.vue";
+import { CategoryResponse, EditCategoryRequest } from "../gen-types";
 import { getCategories, updateCategory } from "../service/api";
+import { BaseSlotProps } from "../types";
 import { useEditing } from "../utils/useEditing";
 
-const categories = ref([]);
-const { editingItem: currentCategory, isEditing, startEditing, stopEditing } = useEditing({});
+const categories = ref<CategoryResponse[]>([]);
+const { editingState, startEditing, stopEditing } = useEditing<CategoryResponse>();
 
 onBeforeMount(async () => {
   const _categories = await getCategories();
@@ -19,17 +21,22 @@ onBeforeMount(async () => {
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 
-async function saveCategory(newValues) {
-  const categoryId = currentCategory.value.id;
-  const updates = {};
+async function saveCategory(newValues: EditCategoryRequest) {
+  if(!editingState.isEditing) {
+    return;
+  }
+  
+  const currentCategory = editingState.item;
+  const categoryId = currentCategory.id;
+  const updates: EditCategoryRequest = {};
 
-  if (newValues.eventCategoryName !== currentCategory.value.eventCategoryName) {
+  if (newValues.eventCategoryName !== currentCategory.eventCategoryName) {
     updates.eventCategoryName = newValues.eventCategoryName;
   }
-  if (newValues.eventCategoryDescription !== currentCategory.value.eventCategoryDescription) {
+  if (newValues.eventCategoryDescription !== currentCategory.eventCategoryDescription) {
     updates.eventCategoryDescription = newValues.eventCategoryDescription;
   }
-  if (newValues.eventDuration !== currentCategory.value.eventDuration) {
+  if (newValues.eventDuration !== currentCategory.eventDuration) {
     updates.eventDuration = newValues.eventDuration;
   }
 
@@ -37,7 +44,9 @@ async function saveCategory(newValues) {
     const updatedCategory = await updateCategory(categoryId, updates);
     if (updatedCategory) {
       const category = categories.value.find((c) => c.id === categoryId);
-      Object.assign(category, updatedCategory);
+      if (category) {
+        Object.assign(category, updatedCategory);
+      }
       isEditSuccessModalOpen.value = true;
     } else {
       isEditErrorModalOpen.value = true;
@@ -46,6 +55,9 @@ async function saveCategory(newValues) {
 
   stopEditing();
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<CategoryResponse>;
 </script>
 
 <template>
@@ -77,19 +89,19 @@ async function saveCategory(newValues) {
           ]"
           :items="categories"
           enable-edit
-          :selected-key="currentCategory.id"
+          :selected-key="editingState.item?.id.toString()"
           :key-extractor="(category) => category.id"
           @edit="startEditing"
         >
-          <template #cell:name="{ item }">
+          <template #cell:name="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventCategoryName }}</span>
           </template>
 
-          <template #cell:description="{ item }">
+          <template #cell:description="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventCategoryDescription }}</span>
           </template>
 
-          <template #cell:duration="{ item }">
+          <template #cell:duration="{ item }: SlotProps">
             <span class="font-medium">{{ item.eventDuration }}</span>
           </template>
 
@@ -99,13 +111,13 @@ async function saveCategory(newValues) {
         </Table>
 
         <div
-          v-if="currentCategory.id"
+          v-if="editingState.isEditing"
           class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditCategory
-            v-if="isEditing"
+            v-if="editingState.isEditing"
             class="sticky top-24"
-            :category="currentCategory"
+            :category="editingState.item"
             :categories="categories"
             @cancel="stopEditing"
             @save="saveCategory"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect } from "vue";
+import { onBeforeMount, ref, watchEffect } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import BaseTable from "../components/BaseTable.vue";
@@ -18,23 +18,26 @@ import {
 import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
+import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
+import {BaseSlotProps} from '../types';
 
 const { isAuthenticated, isLecturer, isAuthLoading } = useAuthStore();
 
-const events = ref([]);
-const { editingItem: currentEvent, withNoEditing, isEditing, startEditing, stopEditing } = useEditing({});
-const categories = ref([]);
+const events = ref<EventResponse[]>([]);
+const categories = ref<CategoryResponse[]>([]);
+const { editingState, withNoEditing, startEditing, stopEditing } = useEditing<EventResponse>();
 const { isLoading, setIsLoading } = useIsLoading(true);
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
 const isCancelSuccessModalOpen = ref(false);
 const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
+const selectedEvent = ref<EventResponse | null>(null);
 
 const eventTypes = {
-  DAY: "day",
-  UPCOMING: "upcoming",
-  PAST: "past",
+  DAY: "day" as const,
+  UPCOMING: "upcoming" as const,
+  PAST: "past" as const,
   ALL: null,
 };
 
@@ -42,35 +45,37 @@ const categoryTypes = {
   ALL: null,
 };
 
-const filter = ref({
+const filter = ref<{
+  categoryId: number | null;
+  type: "day" | "upcoming" | "past" | null;
+  date: string;
+}>({
   categoryId: categoryTypes.ALL,
   type: eventTypes.ALL,
   date: "",
 });
 
-// only call method if and only if isLoading is false
-watchEffect(async () => {
-  console.log("useAuth.isLoading", isAuthLoading.value);
+// only call method if and only if auth is loaded
+onBeforeMount(async () => {
   if (isAuthLoading.value) {
     return;
   }
 
-  if (!isAuthenticated.value) {
-    setIsLoading(false);
-    return;
+  if (isAuthenticated.value) {
+    const events = await getEvents();
+    setEvents(events);
+    if (isLecturer.value) {
+      categories.value = await getLecturerCategories() || [];
+    } else {
+      categories.value = await getCategories() || [];
+    }
   }
-  const events = await getEvents();
-  setEvents(events);
-  if (isLecturer.value) {
-    categories.value = await getLecturerCategories();
-  } else {
-    categories.value = await getCategories();
-  }
+
   setIsLoading(false);
 });
 
 function setEvents(_events, sort = sortDirections.DESC) {
-  const dateExtractor = (event) => event.eventStartTime;
+  const dateExtractor = (event: EventResponse) => event.eventStartTime;
 
   if (sort === sortDirections.DESC) {
     sortByDateInPlace(_events, dateExtractor, sortDirections.DESC);
@@ -81,14 +86,19 @@ function setEvents(_events, sort = sortDirections.DESC) {
   events.value = _events;
 }
 
-const eventToBeDeleted = ref(null);
+const eventToBeDeleted = ref<EventResponse>();
 
-function startConfirmCancel(event) {
+function startConfirmCancel(event: EventResponse) {
   eventToBeDeleted.value = event;
   isCancelConfirmModalOpen.value = true;
 }
 
-async function confirmCancelEvent(event) {
+async function confirmCancelEvent() {
+  const event = eventToBeDeleted.value;
+  if (!event) {
+    return;
+  }
+
   const isSuccess = await deleteEvent(event.id);
   isCancelConfirmModalOpen.value = false;
   if (isSuccess) {
@@ -99,13 +109,21 @@ async function confirmCancelEvent(event) {
   }
 }
 
-function selectEvent(event) {
-  withNoEditing(() => {
-    currentEvent.value = event;
-  });
+function openEventDetails(event: EventResponse) {
+  selectedEvent.value = event;
 }
 
-async function saveEvent(updates, file) {
+function closeEventDetails() {
+  selectedEvent.value = null;
+}
+
+async function saveEvent(updates: EditEventRequest, file) {
+  const currentEvent = editingState.item;
+  if (!currentEvent) {
+    return;
+  }
+
+
   const selectedEventId = currentEvent.value.id;
 
   const newDate = new Date(updates.eventStartTime);
@@ -153,9 +171,8 @@ async function filterEvents() {
 
   setIsLoading(true);
   const events = await getEventsByFilter(_filter);
-  const ascending = [eventTypes.UPCOMING, eventTypes.DAY];
 
-  if (ascending.includes(_type)) {
+  if (_type === eventTypes.UPCOMING || _type === eventTypes.DAY) {
     setEvents(events, sortDirections.ASC);
   } else {
     setEvents(events, sortDirections.DESC);
@@ -163,6 +180,9 @@ async function filterEvents() {
 
   setIsLoading(false);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type SlotProps = BaseSlotProps<EventResponse>;
 </script>
 
 <template>
@@ -251,20 +271,27 @@ async function filterEvents() {
           :items="events"
           enable-edit
           enable-delete
-          :selected-key="currentEvent.id"
+          :selected-key="editingState.item?.id.toString()"
           :key-extractor="(event) => event.id"
           :is-loading="isLoading"
-          @edit="startEditing"
+          @edit="(event) => {
+            closeEventDetails();
+            startEditing(event);
+          }"
           @delete="startConfirmCancel"
-          @select="selectEvent"
+          @select="(event) => {
+            withNoEditing(() => {
+              openEventDetails(event);
+            });
+          }"
         >
-          <template #cell:bookingName="{ item, dClass }">
+          <template #cell:bookingName="{ item, dClass }: SlotProps">
             <td :class="dClass">
               <span class="font-medium">{{ item.bookingName }}</span>
             </td>
           </template>
 
-          <template #cell:eventStartTime="{ item, dClass }">
+          <template #cell:eventStartTime="{ item, dClass }: SlotProps">
             <td
               :class="dClass"
               class="w-80"
@@ -282,7 +309,7 @@ async function filterEvents() {
             </td>
           </template>
 
-          <template #cell:eventCategory="{ item, dClass }">
+          <template #cell:eventCategory="{ item, dClass }: SlotProps">
             <td :class="dClass">
               <div class="flex">
                 <Badge :text="item.eventCategory.eventCategoryName" />
@@ -306,21 +333,21 @@ async function filterEvents() {
         </BaseTable>
 
         <div
-          v-if="currentEvent.id"
+          v-if="editingState.isEditing || selectedEvent"
           class="relative w-4/12 bg-slate-100 p-4"
         >
           <EditEvent
-            v-if="isEditing"
+            v-if="editingState.isEditing"
             class="sticky top-24"
-            :current-event="currentEvent"
-            @cancel="isEditing = false"
+            :current-event="editingState.item"
+            @cancel="stopEditing"
             @save="saveEvent"
           />
           <EventDetails
-            v-else
+            v-if="selectedEvent"
             class="sticky top-24"
-            :current-event="currentEvent"
-            @close="currentEvent = {}"
+            :current-event="selectedEvent"
+            @close="closeEventDetails"
           />
         </div>
       </div>
@@ -368,7 +395,7 @@ async function filterEvents() {
     variant="error"
     :is-open="isCancelConfirmModalOpen"
     @close="isCancelConfirmModalOpen = false"
-    @confirm="confirmCancelEvent(eventToBeDeleted)"
+    @confirm="confirmCancelEvent"
   />
 </template>
 

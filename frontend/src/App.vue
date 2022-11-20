@@ -13,12 +13,8 @@ watch(authState, () => {
 });
 
 async function handleLogout() {
-  const success = await logout();
-  if (success) {
-    router.push({ name: "login" });
-  } else {
-    alert("Something went wrong");
-  }
+  await logout();
+  await router.go(0);
 }
 </script>
  

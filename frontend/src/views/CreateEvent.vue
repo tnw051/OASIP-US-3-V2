@@ -2,7 +2,9 @@
 import { onBeforeMount, ref, watchEffect } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Modal from "../components/Modal.vue";
+import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
+import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidator";
 import { useFileInput } from "../utils/useFileInput";
@@ -12,19 +14,18 @@ const { isAuthenticated, isAdmin, user } = useAuthStore();
 
 const { isLoading, setIsLoading } = useIsLoading(true);
 
-const categories = ref([]);
-const {
+const categories = ref<CategoryResponse[]>([]);
+  const {
   errors,
   inputs,
-  validateBookingName,
-  validateBookingEmail,
-  validateEventNotes,
-  validateStartTime,
-  validateCategoryId,
-  setEventDuration,
-  resetInputs,
-  canSubmit,
-} = useEventValidator();
+  resetInputsAndErrors,
+  hasErrors,
+} = useEventValidator({
+  getDurationByCategoryId(categoryId) {
+    const category = categories.value.find((c) => c.id === categoryId);
+    return category ? category.eventDuration : null;
+  },
+});
 
 watchEffect(() => {
   preFillInputs();
@@ -32,7 +33,7 @@ watchEffect(() => {
 
 function preFillInputs() {
   if (isAuthenticated.value && !isAdmin.value) {
-    inputs.value.bookingEmail = user.value.email;
+    inputs.bookingEmail = user.value.email;
   }
 }
 
@@ -49,46 +50,32 @@ const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
 async function handleSubmit() {
-  const event = {
-    ...inputs.value,
-
-    // convert local time to UTC in ISO-8601 format
-    eventStartTime: new Date(inputs.value.eventStartTime).toISOString(),
-  };
-
   try {
     const createdEvent = await createEvent({
-      bookingEmail: event.bookingEmail,
-      bookingName: event.bookingName,
-      eventCategoryId: Number(event.eventCategoryId),
-      eventNotes: event.eventNotes,
-      eventStartTime: event.eventStartTime,
+      bookingName: inputs.bookingName,
+      bookingEmail: inputs.bookingEmail,
+      // convert local time to UTC in ISO-8601 format
+      eventCategoryId: Number(inputs.eventCategoryId),
+      eventStartTime: new Date(inputs.eventStartTime).toISOString(),
     }, file.value ? file.value : null);
 
     if (createdEvent) {
-      resetInputs();
+      resetInputsAndErrors();
       preFillInputs();
       isSuccessModalOpen.value = true;
     } else {
       isErrorModalOpen.value = true;
     }
   } catch (errorResponse) {
-    if (errorResponse.status !== 400) {
+    const error = errorResponse as ErrorResponse;
+    if (error.status !== 400) {
       isErrorModalOpen.value = true;
       return;
     }
 
-    Object.assign(errors.value, errorResponse.errors);
+    Object.assign(errors, error.errors);
   }
 }
-
-function handleCategoryIdChange() {
-  const eventCategoryId = inputs.value.eventCategoryId;
-  const category = categories.value.find((category) => category.id === eventCategoryId);
-  setEventDuration(category.eventDuration);
-  validateCategoryId();
-}
-
 
 // file attachment
 const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile } = useFileInput();
@@ -121,10 +108,9 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your booking name?"
-          @input="validateBookingName"
         >
         <div
-          v-if="errors.bookingName.length > 0"
+          v-if="errors.bookingName"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
@@ -140,8 +126,6 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           class="text-sm font-medium text-gray-700"
           :class="{ 'required': !isAuthenticated || isAdmin }"
         >Booking Email</label>
-        <!-- <span v-if="isAuthenticated" id="email" type="email" :value="user.sub" class="p-2 rounded"
-          @input="validateBookingEmail" placeholder="What's your email?"> -->
         <span
           v-if="isAuthenticated && !isAdmin"
           class="rounded p-2"
@@ -154,10 +138,9 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           required
           class="rounded bg-gray-100 p-2"
           placeholder="What's your email?"
-          @input="validateBookingEmail"
         >
         <div
-          v-if="errors.bookingEmail.length > 0"
+          v-if="errors.bookingEmail"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
@@ -180,17 +163,15 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           :max="inputConstraits.MAX_DATETIME_LOCAL"
           required
           class="rounded bg-gray-100 p-2"
-          @input="validateStartTime"
         >
         <div
-          v-if="errors.eventStartTime.length > 0 || errors.hasOverlappingEvents"
+          v-if="errors.eventStartTime"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in errors.eventStartTime"
-            :key="error"
+            :key="error.toString()"
           >{{ error }}</span>
-          <span v-if="errors.hasOverlappingEvents">Start time overlaps with other event(s)</span>
         </div>
       </div>
 
@@ -204,7 +185,6 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           v-model="inputs.eventCategoryId"
           required
           class="rounded bg-gray-100 p-2"
-          @change="handleCategoryIdChange"
         >
           <option
             disabled
@@ -237,10 +217,9 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
           v-model="inputs.eventNotes"
           class="rounded bg-gray-100 p-2"
           placeholder="What's your event about?"
-          @input="validateEventNotes"
         />
         <div
-          v-if="errors.eventNotes.length > 0"
+          v-if="errors.eventNotes"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
@@ -290,7 +269,7 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         <button
           type="submit"
           class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="!canSubmit"
+          :disabled="hasErrors"
         >
           Create
           Event

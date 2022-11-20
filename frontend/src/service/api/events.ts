@@ -1,4 +1,4 @@
-import { CreateEventRequest, EditEventRequest, EventResponse } from "../../gen-types";
+import { CreateEventRequest, EditEventRequest, EventResponse, EventTimeSlotResponse } from "../../gen-types";
 import { Id } from "../../types";
 import { dank } from "./client";
 
@@ -80,5 +80,19 @@ export async function getEventsByFilter(filter: GetEventsFilter): Promise<EventR
   const response = await dank.get<EventResponse[]>("/events", {
     params: urlSearchParams,
   });
+  return response.data;
+}
+
+export async function getAllocatedTimeSlotsInCategoryOnDate(
+  categoryId: Id,
+  startAt: Date,
+  excludeId?: Id,
+): Promise<EventTimeSlotResponse[]> {
+  let url = `/events/allocatedTimeSlots?categoryId=${categoryId}&startAt=${startAt.toISOString()}`;
+  if (excludeId) {
+    url += `&excludeId=${excludeId}`;
+  }
+
+  const response = await dank.get<EventTimeSlotResponse[]>(url);
   return response.data;
 }

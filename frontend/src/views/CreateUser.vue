@@ -1,260 +1,168 @@
-<script setup>
-import { computed, onBeforeMount, ref } from "vue";
-import Modal from "../components/Modal.vue";
+<script setup lang="ts">
+import { toFormValidator } from "@vee-validate/zod";
+import { ErrorMessage, Field, useForm } from "vee-validate";
+import { z } from "zod";
+
+import { AxiosError } from "axios";
+import { onBeforeMount, ref } from "vue";
+import { Role } from "../gen-types";
 import { createUser, getRoles } from "../service/api";
 
-const roles = ref([]);
+const roles = ref<Role[]>([]);
 
 onBeforeMount(async () => {
   roles.value = await getRoles();
 });
 
-function makeDefaultValues() {
-  const defaultValue = "";
-  return {
-    name: defaultValue,
-    email: defaultValue,
-    password: defaultValue,
-    confirmPassword: defaultValue,
-    role: "STUDENT",
-  };
-}
+const validationSchema = toFormValidator(
+  z.object({
+    name: z.string().min(1, "Name is required").max(100, "Name exceeds 100 characters"),
+    email: z.string().email("Email is invalid").max(50, "Email exceeds 50 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  }),
+);
 
-const inputs = ref(makeDefaultValues());
-
-const errors = ref({
-  name: [],
-  email: [],
-  password: [],
-  confirmPassword: [],
+const { handleSubmit, setErrors, errors } = useForm<{
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: Role;
+}>({
+  validationSchema,
+  initialValues: {
+    name: "whatwhat",
+    email: "what@what.com",
+    password: "123456789",
+    confirmPassword: "123456789",
+    role: "ADMIN",
+  },
 });
 
-const canSubmit = computed(() => {
-  const noErrors = Object.values(errors.value).every((error) => error.length === 0);
-  const noEmptyFields = Object.values(inputs.value).every((value) => value !== "");
-
-  return noErrors && noEmptyFields;
-});
-
-function validateName(e) {
-  const bookingName = e.target.value;
-  errors.value.name = [];
-
-  if (bookingName.length > 100) {
-    errors.value.name.push("Name must be less than 100 characters");
-  }
-
-  if (bookingName.trim().length === 0) {
-    errors.value.name.push("Name must not be blank");
-  }
-}
-
-function validateEmail(e) {
-  const email = e.target.value;
-  errors.value.email = [];
-
-  if (email.length > 50) {
-    errors.value.email.push("Email must be less than 50 characters");
-  }
-
-  if (email.trim().length === 0) {
-    errors.value.email.push("Email must not be blank");
-  }
-
-  // RFC2822 https://regexr.com/2rhq7
-  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-  if (!emailRegex.test(email)) {
-    errors.value.email.push("Email is invalid");
-  }
-}
-
-function validatePassword(e) {
-  const password = e.target.value;
-  errors.value.password = [];
-
-  if (password.length > 14 || password.length < 8) {
-    errors.value.password.push("Password must be between 8 and 14 characters");
-  }
-
-  if (password.length === 0) {
-    errors.value.password.push("Password must not be blank");
-  }
-}
-
-function validateConfirmPassword(e) {
-  const password = inputs.value.password;
-  const confirmPassword = e.target.value;
-  errors.value.confirmPassword = [];
-
-  if (confirmPassword !== password) {
-    errors.value.confirmPassword.push("Passwords do not match");
-  }
-}
-
-
-const isSuccessModalOpen = ref(false);
-const isErrorModalOpen = ref(false);
-
-async function handleSubmit() {
-  const user = {
-    ...inputs.value,
-  };
-  delete user.confirmPassword;
-
+const onSubmit = handleSubmit(async (user) => {
   try {
-    const createdUser = await createUser(user);
+    const createdUser = await createUser({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      role: user.role,
+    });
 
     if (createdUser) {
-      resetInputs();
-      isSuccessModalOpen.value = true;
+      alert("User created successfully");
     } else {
-      isErrorModalOpen.value = true;
+      alert("Failed to create user");
     }
-  } catch (errorResponse) {
-    if (errorResponse.status !== 400) {
-      isErrorModalOpen.value = true;
-      return;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      if (error.response.status === 400) {
+        setErrors(error.response.data.errors);
+      }
+    } else {
+      alert("Something went wrong");
     }
-
-    Object.assign(errors.value, errorResponse.errors);
   }
-}
-
-function resetInputs() {
-  inputs.value = makeDefaultValues();
-}
+});
 </script>
  
 <template>
-  <div class="mx-auto mt-8 max-w-md">
+  <div class="flex h-full bg-gray-100">
     <form
-      class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
-      @submit.prevent="handleSubmit"
+      class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-md bg-white p-6 pb-8 shadow"
+      @submit.prevent="onSubmit"
     >
-      <div class="mb-4 flex flex-col text-center text-gray-700">
-        <h1 class="text-2xl font-medium">
-          Create User
-        </h1>
-      </div>
-
+      <h1 class="mb-4 text-center text-xl font-medium">
+        Create User
+      </h1>
+      <!-- Name -->
       <div class="flex flex-col gap-2">
         <label
           for="name"
           class="required text-sm font-medium text-gray-700"
         >Name</label>
-        <input
+        <Field
           id="name"
-          v-model="inputs.name"
-          type="text"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="name"
+          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
           placeholder="What's your name?"
-          @input="validateName"
-        >
-        <div
-          v-if="errors.name.length > 0"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.name"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="name"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Email -->
       <div class="flex flex-col gap-2">
         <label
           for="email"
           class="required text-sm font-medium text-gray-700"
         >Email</label>
-        <input
+        <Field
           id="email"
-          v-model="inputs.email"
-          type="email"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="email"
+          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
           placeholder="What's your email?"
-          @input="validateEmail"
-        >
-        <div
-          v-if="errors.email.length > 0"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.email"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="email"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Password -->
       <div class="flex flex-col gap-2">
         <label
           for="password"
           class="required text-sm font-medium text-gray-700"
         >Password</label>
-        <input
+        <Field
           id="password"
-          v-model="inputs.password"
+          name="password"
           type="password"
-          required
-          class="rounded bg-gray-100 p-2"
+          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
           placeholder="What's your password?"
-          @input="validatePassword"
-        >
-        <div
-          v-if="errors.password.length > 0"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.password"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="password"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Confirm Password -->
       <div class="flex flex-col gap-2">
         <label
           for="confirmPassword"
           class="required text-sm font-medium text-gray-700"
         >Confirm password</label>
-        <input
+        <Field
           id="confirmPassword"
-          v-model="inputs.confirmPassword"
+          name="confirmPassword"
           type="password"
-          required
-          class="rounded bg-gray-100 p-2"
+          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
           placeholder="Confirm your password"
-          @input="validateConfirmPassword"
-        >
-        <div
-          v-if="errors.confirmPassword.length > 0"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.confirmPassword"
-            :key="error"
-          >
-            {{ error }}
-          </span>
-        </div>
+        />
+        <ErrorMessage
+          name="confirmPassword"
+          class="-mt-1 rounded text-sm text-red-500"
+        />
       </div>
 
+      <!-- Role -->
       <div class="flex flex-col gap-2">
         <label
           for="role"
           class="required text-sm font-medium text-gray-700"
         >Role</label>
-        <select
+        <Field
           id="category"
-          v-model="inputs.role"
-          required
-          class="rounded bg-gray-100 p-2"
+          name="role"
+          as="select"
+          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
         >
           <option
             disabled
@@ -270,39 +178,23 @@ function resetInputs() {
           >
             {{ role }}
           </option>
-        </select>
-      </div>
+        </Field>
 
-      <button
-        type="submit"
-        class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="!canSubmit"
-      >
-        Create User
-      </button>
+        <button
+          type="submit"
+          class="mt-4 rounded bg-sky-500 p-2 font-medium text-white hover:bg-sky-600 disabled:opacity-50"
+          :disabled="Object.keys(errors).length > 0"
+        >
+          Create User
+        </button>
+      </div>
     </form>
   </div>
-
-  <Modal
-    title="Success"
-    subtitle="User created successfully"
-    :is-open="isSuccessModalOpen"
-    @close="isSuccessModalOpen = false"
-  />
-
-  <Modal
-    title="Error"
-    subtitle="Something went wrong"
-    button-text="Try Again"
-    :is-open="isErrorModalOpen"
-    variant="error"
-    @close="isErrorModalOpen = false"
-  />
 </template>
  
 <style scoped>
 .required::after {
-  content: '*';
+  content: "*";
   @apply text-red-500 pl-1
 }
 </style>

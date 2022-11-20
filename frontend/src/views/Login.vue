@@ -80,17 +80,20 @@ async function handleSubmit() {
     ...inputs.value,
   };
 
-  login(user, () => {
+  const { success, error } = await login(user);
+  if (success) {
     if (route.query.redirect) {
       console.log("[Login] redirecting to", route.query.redirect);
-      router.push(route.query.redirect);
+      await router.push(route.query.redirect);
     } else {
       console.log("[Login] redirecting to home");
-      router.push({ name: "home" });
+      await router.push({ name: "home" });
     }
-  });
-
-  inputs.value.password = ""; // clear password every time user submits
+  } else {
+    console.log("[Login] error", error);
+    inputs.value.password = ""; // clear password every time user submits
+    alert(error);
+  }
 }
 </script>
 

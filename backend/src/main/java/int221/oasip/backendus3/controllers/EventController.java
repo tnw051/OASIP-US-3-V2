@@ -3,6 +3,7 @@ package int221.oasip.backendus3.controllers;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
+import int221.oasip.backendus3.dtos.EventTimeSlotResponse;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -58,6 +59,16 @@ public class EventController {
                 .build();
 
         return service.getEventsNew(options, authentication);
+    }
+
+    @GetMapping("/allocatedTimeSlots")
+    public List<EventTimeSlotResponse> getAllocatedTimeSlotsInCategoryOnDate(
+            @RequestParam Integer categoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startAt,
+            @RequestParam(required = false) Integer excludeEventId
+    ) {
+        System.out.println(excludeEventId);
+        return service.getAllocatedTimeSlotsInCategoryOnDate(categoryId, startAt.toInstant(), excludeEventId);
     }
 
     @GetMapping("/{id}")

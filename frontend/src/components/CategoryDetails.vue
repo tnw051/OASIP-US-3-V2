@@ -1,10 +1,11 @@
-<script setup>
-const props = defineProps({
-  currentCategory: {
-    type: Object,
-    default: () => ({}),
-  },
-});
+<script setup lang="ts">
+import { CategoryResponse } from "../gen-types";
+
+interface Props {
+  currentCategory: CategoryResponse;
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits(["close"]);
 </script>

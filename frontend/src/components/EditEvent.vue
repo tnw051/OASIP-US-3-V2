@@ -1,17 +1,15 @@
-<script setup>
-import { ref, watch } from "vue";
-import { getFilenameByBucketUuid } from "../service/api";
+<script setup lang="ts">
+import { EditEventRequest, EventResponse } from "../gen-types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidator";
 import { useFileInput } from "../utils/useFileInput";
 import Badge from "./Badge.vue";
 
-const props = defineProps({
-  currentEvent: {
-    type: Object,
-    default: () => ({}),
-  },
-});
+interface Props {
+  currentEvent: EventResponse;
+}
+
+const props = defineProps<Props>();
 
 const emits = defineEmits([
   "save",
@@ -23,65 +21,20 @@ const minDateTImeLocal = formatDateTimeLocal(new Date());
 const {
   errors,
   inputs,
-  validateEventNotes,
-  validateStartTime,
-  setEventDuration,
   canSubmit,
-  setEventId,
-  setCategoryId,
-} = useEventValidator();
-
-async function getFilename() {
-  const bucketUuid = props.currentEvent.bucketUuid;
-  if (!bucketUuid) {
-    return;
-  }
-  const file = await getFilenameByBucketUuid(bucketUuid);
-  return file;
-}
-
-const filename = ref();
-const isLoading = ref(true);
-
-getFilename().then((res) => {
-  filename.value = res;
-  isLoading.value = false;
-  if (res) {
-    setPlaceholderWithName(res);
-  }
+} = useEventValidator({
+  currentEvent: props.currentEvent,
 });
 
-watch(
-  () => props.currentEvent.bucketUuid,
-  async (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-      isLoading.value = true;
-      filename.value = await getFilename();
-      isLoading.value = false;
-    }
-  },
-);
-
-
-// only use three fields for now (including eventCategoryId)
-inputs.value = {
-  eventStartTime: formatDateTimeLocal(new Date(props.currentEvent.eventStartTime)),
-  eventNotes: props.currentEvent.eventNotes,
-};
-
-setEventId(props.currentEvent.id);
-setEventDuration(props.currentEvent.eventDuration);
-setCategoryId(props.currentEvent.eventCategory.id);
-
 function handleSaveClick() {
-  const updates = {};
+  const updates: EditEventRequest = {};
 
-  const newDate = new Date(inputs.value.eventStartTime);
+  const newDate = new Date(inputs.eventStartTime);
   if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
     updates.eventStartTime = newDate.toISOString();
   }
 
-  const newNotes = inputs.value.eventNotes;
+  const newNotes = inputs.eventNotes;
   if (newNotes !== props.currentEvent.eventNotes) {
     updates.eventNotes = newNotes;
   }
@@ -130,19 +83,15 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         :max="inputConstraits.MAX_DATETIME_LOCAL"
         required
         class="rounded bg-gray-100 p-2"
-        @input="validateStartTime"
       >
       <div
-        v-if="errors.eventStartTime.length > 0 || errors.hasOverlappingEvents"
+        v-if="errors.eventStartTime"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
           v-for="error in errors.eventStartTime"
           :key="error"
-        >
-          {{ error }}
-          <span v-if="errors.hasOverlappingEvents">Start time overlaps with other event(s)</span>
-        </span>
+        >{{ error }}</span>
       </div>
     </div>
 
@@ -158,10 +107,9 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         v-model="inputs.eventNotes"
         class="rounded bg-gray-100 p-2"
         placeholder="What's your event about?"
-        @input="validateEventNotes"
       />
       <div
-        v-if="errors.eventNotes.length > 0"
+        v-if="errors.eventNotes"
         class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
       >
         <span
