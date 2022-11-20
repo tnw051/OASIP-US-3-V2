@@ -1,25 +1,35 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watchEffect } from "vue";
+import { AxiosError } from "axios";
+import { ErrorMessage, Field, useIsFormDirty, useIsFormTouched } from "vee-validate";
+import {
+  onBeforeMount,
+  onMounted,
+  ref,
+  watch,
+  watchEffect,
+} from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Modal from "../components/Modal.vue";
 import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
 import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
-import { useEventValidator } from "../utils/useEventValidator";
+import { useEventValidator } from "../utils/useEventValidatorNew";
 import { useFileInput } from "../utils/useFileInput";
 import { useIsLoading } from "../utils/useIsLoading";
 
 const { isAuthenticated, isAdmin, user } = useAuthStore();
 
-const { isLoading, setIsLoading } = useIsLoading(true);
-
 const categories = ref<CategoryResponse[]>([]);
-  const {
+const {
+  handleSubmit,
+  resetForm,
+  setValues,
+  setErrors, 
+  values,
   errors,
-  inputs,
-  resetInputsAndErrors,
   hasErrors,
+  canSubmit,
 } = useEventValidator({
   getDurationByCategoryId(categoryId) {
     const category = categories.value.find((c) => c.id === categoryId);
@@ -32,24 +42,24 @@ watchEffect(() => {
 });
 
 function preFillInputs() {
-  if (isAuthenticated.value && !isAdmin.value) {
-    inputs.bookingEmail = user.value.email;
+  if (isAuthenticated.value && !isAdmin.value && user.value) {
+    setValues({
+      bookingEmail: user.value.email,
+    });
   }
 }
 
 onBeforeMount(async () => {
-  preFillInputs();
   categories.value = await getCategories();
-  setIsLoading(false);
 });
 
 // format: 2022-02-02T02:02
-const minDateTImeLocal = formatDateTimeLocal(new Date());
+const minDateTimeLocal = formatDateTimeLocal(new Date());
 
 const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
-async function handleSubmit() {
+const onSubmit = handleSubmit(async (inputs) => {
   try {
     const createdEvent = await createEvent({
       bookingName: inputs.bookingName,
@@ -60,22 +70,26 @@ async function handleSubmit() {
     }, file.value ? file.value : null);
 
     if (createdEvent) {
-      resetInputsAndErrors();
-      preFillInputs();
+      resetForm();
       isSuccessModalOpen.value = true;
     } else {
       isErrorModalOpen.value = true;
     }
-  } catch (errorResponse) {
-    const error = errorResponse as ErrorResponse;
-    if (error.status !== 400) {
-      isErrorModalOpen.value = true;
-      return;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const errorResponse = error.response?.data as ErrorResponse;
+      if (error.response?.status !== 400) {
+        isErrorModalOpen.value = true;
+        return;
+      }
+      setErrors({
+        bookingName: errorResponse.errors?.bookingName[0],
+        bookingEmail: errorResponse.errors?.bookingEmail[0],
+        eventStartTime: errorResponse.errors?.eventStartTime[0],
+      });
     }
-
-    Object.assign(errors, error.errors);
   }
-}
+});
 
 // file attachment
 const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile } = useFileInput();
@@ -83,12 +97,11 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
  
 <template>
   <div
-    v-if="!isLoading"
     class="mx-auto mt-8 max-w-md"
   >
     <form
       class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
-      @submit.prevent="handleSubmit"
+      @submit.prevent="onSubmit"
     >
       <div class="mb-4 flex flex-col text-center text-gray-700">
         <h1 class="text-2xl font-medium">
@@ -96,93 +109,76 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         </h1>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="name"
-          class="required text-sm font-medium text-gray-700"
-        >Booking Name</label>
-        <input
-          id="name"
-          v-model="inputs.bookingName"
-          type="text"
-          required
-          class="rounded bg-gray-100 p-2"
-          placeholder="What's your booking name?"
-        >
-        <div
-          v-if="errors.bookingName"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.bookingName"
-            :key="error"
-          >{{ error }}</span>
+      <div class="flex flex-col gap-1">
+        <!-- Name -->
+        <div class="flex flex-col gap-1">
+          <label
+            for="bookingName"
+            class="required text-sm font-medium text-slate-500"
+          >Booking Name</label>
+          <Field
+            id="bookingName"
+            name="bookingName"
+            class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+            placeholder="What's your booking name?"
+          />
+          <ErrorMessage
+            name="bookingName"
+            class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+          />
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <label
+            for="bookingEmail"
+            class="required text-sm font-medium text-slate-500"
+          >Booking Email</label>
+          <Field
+            id="bookingEmail"
+            name="bookingEmail"
+            class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+            placeholder="What's your booking email?"
+            :class="{
+              'border-green-500': isAuthenticated && !isAdmin,
+            }"
+          />
+          <ErrorMessage
+            name="bookingEmail"
+            class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+          />
         </div>
       </div>
 
       <div class="flex flex-col gap-2">
         <label
-          for="email"
-          class="text-sm font-medium text-gray-700"
-          :class="{ 'required': !isAuthenticated || isAdmin }"
-        >Booking Email</label>
-        <span
-          v-if="isAuthenticated && !isAdmin"
-          class="rounded p-2"
-        >{{ inputs.bookingEmail }}</span>
-        <input
-          v-else
-          id="email"
-          v-model="inputs.bookingEmail"
-          type="email"
-          required
-          class="rounded bg-gray-100 p-2"
-          placeholder="What's your email?"
-        >
-        <div
-          v-if="errors.bookingEmail"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.bookingEmail"
-            :key="error"
-          >{{ error }}</span>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <label
-          for="startTime"
-          class="required text-sm font-medium text-gray-700"
+          for="eventStartTime"
+          class="required text-sm font-medium text-slate-500"
         >Start Time</label>
-        <input
-          id="startTime"
-          v-model="inputs.eventStartTime"
+        <Field
+          id="eventStartTime"
+          name="eventStartTime"
           type="datetime-local"
-          :min="minDateTImeLocal"
+          :min="minDateTimeLocal"
           :max="inputConstraits.MAX_DATETIME_LOCAL"
           required
           class="rounded bg-gray-100 p-2"
-        >
-        <div
-          v-if="errors.eventStartTime"
+        />
+        <ErrorMessage
+          name="eventStartTime"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.eventStartTime"
-            :key="error.toString()"
-          >{{ error }}</span>
-        </div>
+        />
       </div>
 
       <div class="flex flex-col gap-2">
         <label
-          for="category"
-          class="required text-sm font-medium text-gray-700"
+          for="eventCategoryId"
+          class="required text-sm font-medium text-slate-500"
         >Category</label>
-        <select
-          id="category"
-          v-model="inputs.eventCategoryId"
+        <Field
+          id="eventCategoryId"
+          name="eventCategoryId"
+          as="select"
           required
           class="rounded bg-gray-100 p-2"
         >
@@ -202,31 +198,31 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
               category.eventDuration
             }} min.)
           </option>
-        </select>
+        </Field>
+        <ErrorMessage
+          name="eventCategoryId"
+          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
         <label
-          for="notes"
-          class="text-sm font-medium text-gray-700"
+          for="eventNotes"
+          class="text-sm font-medium text-slate-500"
         >Notes <span
           class="font-normal text-gray-400"
         >(optional)</span></label>
-        <textarea
-          id="notes"
-          v-model="inputs.eventNotes"
+        <Field
+          id="eventNotes"
+          name="eventNotes"
+          as="textarea"
           class="rounded bg-gray-100 p-2"
           placeholder="What's your event about?"
         />
-        <div
-          v-if="errors.eventNotes"
+        <ErrorMessage
+          name="eventNotes"
           class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in errors.eventNotes"
-            :key="error"
-          >{{ error }}</span>
-        </div>
+        />
       </div>
 
       <div class="flex flex-col gap-2">
@@ -268,8 +264,8 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
 
         <button
           type="submit"
-          class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="hasErrors"
+          class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="canSubmit"
         >
           Create
           Event
