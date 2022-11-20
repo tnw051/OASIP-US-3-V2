@@ -72,113 +72,122 @@ const onSubmit = handleSubmit(async (user) => {
 <template>
   <div class="flex h-full bg-gray-100">
     <form
-      class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-md bg-white p-6 pb-8 shadow"
+      class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-xl bg-white p-6 pb-8 shadow"
       @submit.prevent="onSubmit"
     >
-      <h1 class="mb-4 text-center text-xl font-medium">
+      <h1 class="mb-1 text-xl font-medium">
         Create User
       </h1>
-      <!-- Name -->
-      <div class="flex flex-col gap-2">
-        <label
-          for="name"
-          class="required text-sm font-medium text-gray-700"
-        >Name</label>
-        <Field
-          id="name"
-          name="name"
-          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
-          placeholder="What's your name?"
-        />
-        <ErrorMessage
-          name="name"
-          class="-mt-1 rounded text-sm text-red-500"
-        />
-      </div>
 
-      <!-- Email -->
-      <div class="flex flex-col gap-2">
-        <label
-          for="email"
-          class="required text-sm font-medium text-gray-700"
-        >Email</label>
-        <Field
-          id="email"
-          name="email"
-          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
-          placeholder="What's your email?"
-        />
-        <ErrorMessage
-          name="email"
-          class="-mt-1 rounded text-sm text-red-500"
-        />
-      </div>
+      <div class="mb-3 border-b border-gray-200" />
 
-      <!-- Password -->
-      <div class="flex flex-col gap-2">
-        <label
-          for="password"
-          class="required text-sm font-medium text-gray-700"
-        >Password</label>
-        <Field
-          id="password"
-          name="password"
-          type="password"
-          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
-          placeholder="What's your password?"
-        />
-        <ErrorMessage
-          name="password"
-          class="-mt-1 rounded text-sm text-red-500"
-        />
-      </div>
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <!-- Name -->
+          <div class="flex flex-col gap-1">
+            <label
+              for="name"
+              class="required text-sm font-medium text-slate-500"
+            >Name</label>
+            <Field
+              id="name"
+              name="name"
+              class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="What's your name?"
+            />
+            <ErrorMessage
+              name="name"
+              class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+            />
+          </div>
 
-      <!-- Confirm Password -->
-      <div class="flex flex-col gap-2">
-        <label
-          for="confirmPassword"
-          class="required text-sm font-medium text-gray-700"
-        >Confirm password</label>
-        <Field
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
-          placeholder="Confirm your password"
-        />
-        <ErrorMessage
-          name="confirmPassword"
-          class="-mt-1 rounded text-sm text-red-500"
-        />
-      </div>
+          <!-- Email -->
+          <div class="flex flex-col gap-1">
+            <label
+              for="email"
+              class="required text-sm font-medium text-slate-500"
+            >Email</label>
+            <Field
+              id="email"
+              name="email"
+              class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="What's your email?"
+            />
+            <ErrorMessage
+              name="email"
+              class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+            />
+          </div>
+        </div>
 
-      <!-- Role -->
-      <div class="flex flex-col gap-2">
-        <label
-          for="role"
-          class="required text-sm font-medium text-gray-700"
-        >Role</label>
-        <Field
-          id="category"
-          name="role"
-          as="select"
-          class="rounded border bg-white p-1 px-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600/50" 
-        >
-          <option
-            disabled
-            selected
-            value=""
+        <div class="flex flex-col gap-1">
+          <!-- Password -->
+          <div class="flex flex-col gap-1">
+            <label
+              for="password"
+              class="required text-sm font-medium text-slate-500"
+            >Password</label>
+            <Field
+              id="password"
+              name="password"
+              type="password"
+              class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="What's your password?"
+            />
+            <ErrorMessage
+              name="password"
+              class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+            />
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="flex flex-col gap-1">
+            <label
+              for="confirmPassword"
+              class="required text-sm font-medium text-slate-500"
+            >Confirm password</label>
+            <Field
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="Confirm your password"
+            />
+            <ErrorMessage
+              name="confirmPassword"
+              class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
+            />
+          </div>
+        </div>
+
+        <!-- Role -->
+        <div class="flex flex-col gap-1">
+          <label
+            for="role"
+            class="required text-sm font-medium text-slate-500"
+          >Role</label>
+          <Field
+            id="category"
+            name="role"
+            as="select"
+            class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
-            Select role
-          </option>
-          <option
-            v-for="role in roles"
-            :key="role"
-            :value="role"
-          >
-            {{ role }}
-          </option>
-        </Field>
+            <option
+              disabled
+              selected
+              value=""
+            >
+              Select role
+            </option>
+            <option
+              v-for="role in roles"
+              :key="role"
+              :value="role"
+            >
+              {{ role }}
+            </option>
+          </Field>
+        </div>
 
         <button
           type="submit"
