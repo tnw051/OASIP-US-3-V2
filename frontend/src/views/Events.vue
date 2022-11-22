@@ -268,8 +268,8 @@ type SlotProps = BaseSlotProps<EventResponse>;
             },
           ]"
           :items="events"
-          enable-edit
-          enable-delete
+          :enable-edit="!isLecturer"
+          :enable-delete="!isLecturer"
           :selected-key="editingState.isEditing && editingState.item.id.toString()"
           :key-extractor="(event) => event.id"
           :is-loading="isLoading"
