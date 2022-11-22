@@ -1,5 +1,6 @@
 package int221.oasip.backendus3.controllers;
 
+import int221.oasip.backendus3.configs.AuthUtils;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
@@ -18,8 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -39,15 +38,15 @@ import java.util.List;
 public class EventController {
     private EventService service;
     private FileService fileService;
+    private AuthUtils authUtils;
 
     @GetMapping("")
     public List<EventResponse> getEvents(
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startAt,
-            @RequestParam(required = false) String type,
-            Authentication authentication
+            @RequestParam(required = false) String type
     ) {
-        AuthStatus authStatus = getAuthStatus();
+        AuthStatus authStatus = authUtils.getAuthStatus();
         if (authStatus.isGuest) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be logged in to access this resource");
         }
@@ -58,7 +57,7 @@ public class EventController {
                 .type(type)
                 .build();
 
-        return service.getEventsNew(options, authentication);
+        return service.getEventsNew(options);
     }
 
     @GetMapping("/allocatedTimeSlots")
@@ -71,23 +70,16 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public EventResponse getEventById(@PathVariable Integer id, Authentication authentication) {
-        return getEventIffAllowed(id, authentication);
+    public EventResponse getEventById(@PathVariable Integer id) {
+        return getEventIffAllowed(id);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("!hasRole('LECTURER')")
-    public EventResponse create(@Valid CreateEventMultipartRequest newEvent, Authentication authentication) {
-        AuthStatus status = getAuthStatus();
-
-        if (!status.isGuest && !status.isAdmin && authentication != null && !authentication.getName().equals(newEvent.getBookingEmail())) {
-            // if the user is not a guest, admin or the owner of the event, then they are not allowed to create the event for someone else
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email in request body does not match the authenticated user");
-        }
-
+    public EventResponse create(@Valid CreateEventMultipartRequest newEvent) {
         try {
-            return service.create(newEvent, status.isGuest, status.isAdmin);
+            return service.create(newEvent);
         } catch (EventOverlapException e) {
             throw new FieldNotValidException("eventStartTime", e.getMessage());
         } catch (EntityNotFoundException e) {
@@ -98,27 +90,22 @@ public class EventController {
         }
     }
 
-    private AuthStatus getAuthStatus() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return new AuthStatus(authentication);
-    }
-
     @DeleteMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
-    public void delete(@PathVariable Integer id, Authentication authentication) {
-        getEventIffAllowed(id, authentication);
+    public void delete(@PathVariable Integer id) {
+        getEventIffAllowed(id);
         service.delete(id);
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
-    public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent, Authentication authentication) {
+    public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null && editEvent.getFile() == null) {
             System.out.println("No fields to update");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
 
-        getEventIffAllowed(id, authentication);
+        getEventIffAllowed(id);
 
         try {
             return service.update(id, editEvent);
@@ -158,15 +145,15 @@ public class EventController {
         }
     }
 
-    private EventResponse getEventIffAllowed(Integer id, Authentication authentication) {
+    private EventResponse getEventIffAllowed(Integer id) {
         EventResponse event = service.getEvent(id);
         if (event == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
         }
 
-        String email = authentication.getName();
-        AuthStatus status = getAuthStatus();
-        if (!status.isAdmin && !event.getBookingEmail().equals(email)) {
+        AuthStatus authStatus = authUtils.getAuthStatus();
+        String email = authStatus.getEmail();
+        if (!authStatus.isAdmin && !event.getBookingEmail().equals(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
         }
 

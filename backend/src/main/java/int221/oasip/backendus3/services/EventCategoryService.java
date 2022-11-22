@@ -3,9 +3,11 @@ package int221.oasip.backendus3.services;
 import int221.oasip.backendus3.dtos.CategoryResponse;
 import int221.oasip.backendus3.dtos.EditCategoryRequest;
 import int221.oasip.backendus3.entities.EventCategory;
+import int221.oasip.backendus3.entities.EventCategoryOwner;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.exceptions.NotUniqueException;
+import int221.oasip.backendus3.repository.EventCategoryOwnerRepository;
 import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
@@ -13,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -20,6 +23,7 @@ public class EventCategoryService {
     private EventCategoryRepository repository;
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
+    private EventCategoryOwnerRepository eventCategoryOwnerRepository;
 
     public List<CategoryResponse> getAll() {
         return modelMapperUtils.mapList(repository.findAll(), CategoryResponse.class);
@@ -54,6 +58,7 @@ public class EventCategoryService {
     }
 
     public List<CategoryResponse> getLecturerCategories(String email) {
-        return modelMapperUtils.mapList(repository.findByOwners_User_Email(email), CategoryResponse.class);
+        List<EventCategory> categories = eventCategoryOwnerRepository.findByOwnerEmail(email).stream().map(EventCategoryOwner::getEventCategory).collect(Collectors.toList());
+        return modelMapperUtils.mapList(categories, CategoryResponse.class);
     }
 }

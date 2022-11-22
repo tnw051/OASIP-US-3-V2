@@ -8,7 +8,6 @@ import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -41,8 +40,4 @@ public class User {
     @Generated(GenerationTime.ALWAYS)
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private List<EventCategoryOwner> ownCategories;
 }

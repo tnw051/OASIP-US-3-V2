@@ -10,10 +10,10 @@ import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Integer>, CustomEventRepository {
     @Query("SELECT E FROM Event E WHERE :categoryId = E.eventCategory.id AND " +
-            "(:userId IS NULL OR :userId = E.user.id)")
-    List<Event> findByEventCategory_IdAndUser_Id(Integer categoryId, @Nullable Integer userId);
+            "(:email IS NULL OR :email = E.bookingEmail)")
+    List<Event> findByEventCategory_IdAndBookingEmail(Integer categoryId, @Nullable String email);
 
-    List<Event> findByUser_Id(Integer userId);
+    List<Event> findByBookingEmail(String email);
 
     List<Event> findByEventCategory_IdIn(Collection<Integer> categoryIds);
 }

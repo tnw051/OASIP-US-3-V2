@@ -1,5 +1,6 @@
 package int221.oasip.backendus3.controllers;
 
+import int221.oasip.backendus3.configs.AuthUtils;
 import int221.oasip.backendus3.dtos.CategoryResponse;
 import int221.oasip.backendus3.dtos.EditCategoryRequest;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
@@ -7,8 +8,6 @@ import int221.oasip.backendus3.exceptions.NotUniqueException;
 import int221.oasip.backendus3.services.EventCategoryService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -20,6 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 public class EventCategoryController {
     private EventCategoryService service;
+    private AuthUtils authUtils;
 
     @GetMapping("")
     public List<CategoryResponse> getCategories() {
@@ -43,8 +43,12 @@ public class EventCategoryController {
 
     // TODO: merge with getCategories()?
     @GetMapping("/lecturer")
-    @PreAuthorize("hasRole('LECTURER')")
-    public List<CategoryResponse> getLecturerCategories(Authentication authentication) {
-        return service.getLecturerCategories(authentication.getName());
+    public List<CategoryResponse> getLecturerCategories() {
+        AuthStatus authStatus = authUtils.getAuthStatus();
+        if (!authStatus.isLecturer) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only lecturer can access this resource");
+        }
+
+        return service.getLecturerCategories(authStatus.getEmail());
     }
 }

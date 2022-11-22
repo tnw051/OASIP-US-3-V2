@@ -26,7 +26,7 @@ export const MsalAuthStore: AuthStore = {
         // logoutHint: result.value?.account?.idTokenClaims?.login_hint,
         onRedirectNavigate: (_url) => {
           // Skipping the server sign-out for the sake of ease of development
-          return true;
+          return false;
         },
       });
 

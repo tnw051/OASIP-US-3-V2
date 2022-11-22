@@ -17,57 +17,55 @@ import java.util.List;
 
 public class CustomEventRepositoryImpl implements CustomEventRepository {
 
+    private final QEvent event = QEvent.event;
     @PersistenceContext
     private EntityManager entityManager;
-
-    private final QEvent event = QEvent.event;
-
 
     /**
      * Get past events (events that ended before or at the {@code startAt} time)
      * <p>{@code categoryIds} is optional. If it is not null, only events with category id in the list will be returned.
-     * <p>{@code userId} is optional. If it is not null, only events with the user id will be returned.
+     * <p>{@code email} is optional. If it is not null, only events with that email will be returned.
      *
      * @param startAt     start time of event
      * @param categoryIds list of category ids
-     * @param userId      user id of event
+     * @param email       email of user
      * @return list of events that ended before or at the {@code startAt}
      */
-    public List<Event> findPastEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, Integer userId) {
-        return getQueryWithCategoryIdsAndUserId(categoryIds, userId)
+    public List<Event> findPastEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, String email) {
+        return getQueryWithCategoryIdsAndEmail(categoryIds, email)
                 .where(event.eventEndTime.loe(startAt))
                 .fetch();
     }
 
-        /**
+    /**
      * Get upcoming and ongoing events (events that end after the {@code startAt} time)
      * <p>{@code categoryIds} is optional. If it is not null, only events with category id in the list will be returned.
-     * <p>{@code userId} is optional. If it is not null, only events with the user id will be returned.
+     * <p>{@code email} is optional. If it is not null, only events with that email will be returned.
      *
      * @param startAt     start time of event
      * @param categoryIds list of category ids
-     * @param userId      user id of event
+     * @param email       email of user
      * @return list of events that started before the {@code startAt} or ended after the {@code startAt}
      */
-    public List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
-        return getQueryWithCategoryIdsAndUserId(categoryIds, userId)
+    public List<Event> findUpcomingAndOngoingEvents(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable String email) {
+        return getQueryWithCategoryIdsAndEmail(categoryIds, email)
                 .where(event.eventEndTime.gt(startAt))
                 .fetch();
     }
 
-    private JPAQuery<Event> getQueryWithCategoryIdsAndUserId(@Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
+    private JPAQuery<Event> getQueryWithCategoryIdsAndEmail(@Nullable Collection<Integer> categoryIds, @Nullable String email) {
         return getQuery()
                 .from(event)
-                .where(withCategoryIdsAndUserId(categoryIds, userId));
+                .where(withCategoryIdsAndBookingEmail(categoryIds, email));
     }
 
-    private Predicate withCategoryIdsAndUserId(@Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
+    private Predicate withCategoryIdsAndBookingEmail(@Nullable Collection<Integer> categoryIds, @Nullable String email) {
         BooleanExpression predicate = Expressions.TRUE.isTrue();
         if (categoryIds != null) {
             predicate = event.eventCategory.id.in(categoryIds);
         }
-        if (userId != null) {
-            predicate = predicate.and(event.user.id.eq(userId));
+        if (email != null) {
+            predicate = predicate.and(event.bookingEmail.eq(email));
         }
         return predicate;
     }
@@ -105,31 +103,41 @@ public class CustomEventRepositoryImpl implements CustomEventRepository {
         }
 
         return query.fetch();
+    }
 
-
+    @Override
+    public List<Event> findByDateRangeOfOneDay(Instant startAt, Collection<Integer> categoryIds, String email) {
+        return findByDateRangeOfOneDay(startAt, categoryIds, email, null);
     }
 
     /**
      * Get all events that started in the selected day, starting from {@code startAt} (inclusive) to {@code startAt + 1 day} (exclusive)
      * <p>{@code categoryIds} is optional. If it is not null, only events with category id in the list will be returned.
-     * <p>{@code userId} is optional. If it is not null, only events with the user id will be returned.
+     * <p>{@code email} is optional. If it is not null, only events with that email will be returned.
+     * <p>{@code excludeEventId} is optional. If it is not null, the event with the id will be excluded from the result.
      *
-     * @param startAt     start time of event
-     * @param categoryIds list of category ids
-     * @param userId      user id of event
+     * @param startAt        start time of event
+     * @param categoryIds    list of category ids
+     * @param email          email of user
+     * @param excludeEventId event id to be excluded
      * @return list of events in the same day
      */
-    public List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
+    public List<Event> findByDateRangeOfOneDay(Instant startAt, @Nullable Collection<Integer> categoryIds, @Nullable String email, @Nullable Integer excludeEventId) {
         Instant endAt = startAt.plus(1, ChronoUnit.DAYS);
-        return findByDateRange(startAt, endAt, categoryIds, userId);
+        return findByDateRange(startAt, endAt, categoryIds, email, excludeEventId);
     }
 
-    private List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable Collection<Integer> categoryIds, @Nullable Integer userId) {
-        return getQuery()
+    private List<Event> findByDateRange(Instant fromInclusive, Instant toExclusive, @Nullable Collection<Integer> categoryIds, @Nullable String email, @Nullable Integer excludeEventId) {
+        JPAQuery<Event> query = getQuery()
                 .from(event)
                 .where(event.eventStartTime.goe(fromInclusive))
                 .where(event.eventStartTime.lt(toExclusive))
-                .where(withCategoryIdsAndUserId(categoryIds, userId))
-                .fetch();
+                .where(withCategoryIdsAndBookingEmail(categoryIds, email));
+
+        if (excludeEventId != null) {
+            query.where(event.id.ne(excludeEventId));
+        }
+
+        return query.fetch();
     }
 }

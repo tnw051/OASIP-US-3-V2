@@ -60,4 +60,12 @@ public class MyAadResourceServerUtils implements ProviderRegistrar {
     public void registerProvider(MyJwtIssuerAuthenticationManagerResolver authenticationManagerResolver) {
         aadTrustedIssuerRepository().getTrustedIssuers().forEach(issuer -> authenticationManagerResolver.addManager(issuer, jwtAuthenticationProvider()));
     }
+
+    public boolean isAadToken(Jwt jwt) {
+        return aadTrustedIssuerRepository().getTrustedIssuers().contains(jwt.getIssuer().toString());
+    }
+
+    public String getEmail(Jwt jwt) {
+        return jwt.getClaimAsString("preferred_username");
+    }
 }
