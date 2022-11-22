@@ -44,6 +44,7 @@ public class ResourceServerConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "APPROLE_Admin")
                 .antMatchers("/api/auth/match").hasRole("ADMIN")
                 .antMatchers(HttpMethod.POST, "/api/events").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/events/allocatedTimeSlots").permitAll()
                 .antMatchers("/api/events/test-lecturer").hasRole("LECTURER")
                 .antMatchers(HttpMethod.GET, "/api/events/files/**").permitAll()
 //                .antMatchers("/api/events/test").permitAll()

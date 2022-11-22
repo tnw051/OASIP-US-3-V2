@@ -9,7 +9,6 @@ import { createEvent, getCategories } from "../service/api";
 import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidatorNew";
-import { useFileInput } from "../utils/useFileInput";
 
 const { isAuthenticated, isAdmin, user } = useAuthStore();
 
@@ -18,7 +17,7 @@ const {
   handleSubmit,
   resetForm,
   setFieldValue,
-  setErrors, 
+  setErrors,
   canSubmit,
 } = useEventValidator({
   getDurationByCategoryId(categoryId) {
@@ -55,7 +54,7 @@ const onSubmit = handleSubmit(async (inputs) => {
       // convert local time to UTC in ISO-8601 format
       eventCategoryId: Number(inputs.eventCategoryId),
       eventStartTime: new Date(inputs.eventStartTime).toISOString(),
-    }, file.value ? file.value : null);
+    }, file.value ?? null);
 
     if (createdEvent) {
       resetForm();
@@ -78,16 +77,35 @@ const onSubmit = handleSubmit(async (inputs) => {
   }
 });
 
-// file attachment
-const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile } = useFileInput();
+const file = ref<File | null>(null);
+const fileError = ref<string | null>(null);
+
+const maxFileSize = 10 * 1024 * 1024;
+function handleFileChange(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const files = target.files;
+  if (files === null || files.length === 0) {
+    return;
+  }
+  if (files[0].size > maxFileSize) {
+    fileError.value = "File size is too large";
+    return;
+  }
+  file.value = files[0];
+  fileError.value = null;
+  console.log("Changed file", file.value);
+}
+
+function handleRemoveFile() {
+  file.value = null;
+  fileError.value = null;
+}
 </script>
  
 <template>
-  <div
-    class="mx-auto mt-8 max-w-md"
-  >
+  <div class="mt-8 w-full">
     <form
-      class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
+      class="m-auto flex max-w-sm flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
       @submit.prevent="onSubmit"
     >
       <div class="mb-4 flex flex-col text-center text-gray-700">
@@ -121,6 +139,9 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
             for="bookingEmail"
             class="text-sm font-medium text-slate-500"
             :required="isAuthenticated && !isAdmin"
+            :class="{
+              'required': !(isAuthenticated && !isAdmin),
+            }"
           >Booking Email</label>
           <Field
             id="bookingEmail"
@@ -155,7 +176,7 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         />
         <ErrorMessage
           name="eventStartTime"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
+          class="mx-1 rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         />
       </div>
 
@@ -218,32 +239,54 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         <label
           for="file"
           class="text-sm font-medium text-gray-700"
-        >File <span
-          class="font-normal text-gray-400"
-        >(optional)</span></label>
-        <div class="flex items-center justify-between rounded bg-gray-100 p-2">
-          <input
-            id="file"
-            ref="fileInputRef"
-            type="file"
-            @change="handleFileChange"
-          >
-          <!-- remove file button -->
-          <button
+        >
+          File <span class="font-normal text-gray-400">(optional)</span>
+        </label>
+
+        <input
+          id="file"
+          type="file"
+          class="hidden"
+          @change="handleFileChange"
+        >
+
+        <div class="flex rounded bg-gray-100 text-gray-700">
+          <div
             v-if="file"
-            type="button"
-            class="text-red-500"
-            @click="handleRemoveFile"
-            @blur="handleBlurFileInput"
+            class="flex w-full items-center justify-between gap-2 p-2"
           >
-            <span class="material-symbols-outlined m-auto block">
-              delete
+            <label
+              for="file"
+              class="cursor-pointer text-sm font-medium"
+            >
+              {{ file.name }}
+            </label>
+            <button
+              v-if="file"
+              type="button"
+              class="text-red-500"
+              @click="handleRemoveFile"
+            >
+              <span class="material-symbols-outlined m-auto block">
+                delete
+              </span>
+            </button>
+          </div>
+
+          <label
+            v-else
+            for="file"
+            class="flex w-full cursor-pointer items-center justify-between gap-2 p-2 text-sm font-medium"
+          >Choose a file
+            <span class="material-symbols-outlined">
+              attach_file
             </span>
-          </button>
+          </label>
         </div>
+
         <div
           v-if="fileError"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
+          class="mx-1 rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         >
           <span
             v-for="error in fileError"

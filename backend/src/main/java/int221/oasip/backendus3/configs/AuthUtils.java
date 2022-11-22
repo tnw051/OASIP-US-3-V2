@@ -18,8 +18,11 @@ public class AuthUtils {
             throw new IllegalStateException("Authentication is null");
         }
 
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        String email = myAadResourceServerUtils.isAadToken(jwt) ? myAadResourceServerUtils.getEmail(jwt) : jwt.getClaimAsString("email");
+        String email = null;
+        if (authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            email = myAadResourceServerUtils.isAadToken(jwt) ? myAadResourceServerUtils.getEmail(jwt) : jwt.getClaimAsString("email");
+        }
 
         return new AuthStatus(authentication, email);
     }
