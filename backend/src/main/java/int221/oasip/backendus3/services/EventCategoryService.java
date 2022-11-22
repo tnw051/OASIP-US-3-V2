@@ -54,6 +54,6 @@ public class EventCategoryService {
     }
 
     public List<CategoryResponse> getLecturerCategories(String email) {
-        return modelMapperUtils.mapList(repository.findByOwners_User_Email(email), CategoryResponse.class);
+        return modelMapperUtils.mapList(repository.findByOwners_User_ProfileEmail(email), CategoryResponse.class);
     }
 }

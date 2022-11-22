@@ -123,6 +123,22 @@ public class AuthController {
         return cookie;
     }
 
+    //    create a new user from Azure AD or do nothing if user already exists
+    @PostMapping("/aad")
+    public void authorizeAad(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        String tid = jwt.getClaimAsString("tid");
+        String oid = jwt.getClaimAsString("oid");
+        String email = jwt.getClaimAsString("preferred_username");
+
+        if (tid == null || oid == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is missing tenantId or objectId");
+        }
+
+        userService.createAadUserIfNotExists(email, tid, oid);
+    }
+
+
     @GetMapping("/private")
     public String hello() {
         return "What is he doing? LULW";

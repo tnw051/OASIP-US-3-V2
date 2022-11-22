@@ -44,11 +44,16 @@ public class MyAadResourceServerUtils implements ProviderRegistrar {
         return jwtDecoder;
     }
 
-    private AadTrustedIssuerRepository aadTrustedIssuerRepository() {
+    public AadTrustedIssuerRepository aadTrustedIssuerRepository() {
         if (aadTrustedIssuerRepository == null) {
             aadTrustedIssuerRepository = new AadTrustedIssuerRepository(authProperties.getProfile().getTenantId());
         }
         return aadTrustedIssuerRepository;
+    }
+
+    public boolean isAadToken(Jwt jwt) {
+        String issuer = jwt.getIssuer().toString();
+        return aadTrustedIssuerRepository().isTrusted(issuer);
     }
 
     public JwtAuthenticationProvider jwtAuthenticationProvider() {

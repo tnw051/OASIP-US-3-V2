@@ -3,6 +3,8 @@ package int221.oasip.backendus3.services;
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.entities.AadUser;
+import int221.oasip.backendus3.entities.Profile;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -26,7 +29,7 @@ public class UserService {
     private Argon2PasswordEncoder argon2PasswordEncoder;
 
     public List<UserResponse> getAll() {
-        List<User> users = repository.findAll(Sort.by("name"));
+        List<User> users = repository.findAll(Sort.by("profile_name"));
         return modelMapperUtils.mapList(users, UserResponse.class);
     }
 
@@ -39,10 +42,10 @@ public class UserService {
 
         ValidationErrors errors = new ValidationErrors();
 
-        if (repository.findByName(strippedName).isPresent()) {
+        if (repository.findByProfileName(strippedName).isPresent()) {
             errors.addFieldError("name", "Name is not unique");
         }
-        if (repository.findByEmail(strippedEmail).isPresent()) {
+        if (repository.findByProfileEmail(strippedEmail).isPresent()) {
             errors.addFieldError("email", "Email is not unique");
         }
         try {
@@ -55,10 +58,14 @@ public class UserService {
         }
 
         User user = new User();
-        user.setName(strippedName);
-        user.setEmail(strippedEmail);
-        user.setPassword(argon2PasswordEncoder.encode(password));
-        user.setRole(parsedRole);
+        Profile profile = new Profile();
+        profile.setName(strippedName);
+        profile.setEmail(strippedEmail);
+        profile.setPassword(argon2PasswordEncoder.encode(password));
+        profile.setRole(parsedRole);
+
+        profile.setUser(user);
+        user.setProfile(profile);
 
         return modelMapper.map(repository.saveAndFlush(user), UserResponse.class);
     }
@@ -73,13 +80,14 @@ public class UserService {
 
     public UserResponse update(Integer id, EditUserRequest request) {
         User user = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+        Profile profile = user.getProfile();
 
         ValidationErrors errors = new ValidationErrors();
         if (request.getName() != null) {
             String strippedName = request.getName().strip();
-            if (!user.getName().equals(strippedName)) {
-                if (!repository.existsByName(strippedName)) {
-                    user.setName(strippedName);
+            if (!profile.getName().equals(strippedName)) {
+                if (!repository.existsByProfileName(strippedName)) {
+                    profile.setName(strippedName);
                 } else {
                     errors.addFieldError("name", "Name is not unique");
                 }
@@ -88,9 +96,9 @@ public class UserService {
 
         if (request.getEmail() != null) {
             String strippedEmail = request.getEmail().strip();
-            if (!user.getEmail().equals(strippedEmail)) {
-                if (!repository.existsByEmail(strippedEmail)) {
-                    user.setEmail(strippedEmail);
+            if (!profile.getEmail().equals(strippedEmail)) {
+                if (!repository.existsByProfileEmail(strippedEmail)) {
+                    profile.setEmail(strippedEmail);
                 } else {
                     errors.addFieldError("email", "Email is not unique");
                 }
@@ -101,7 +109,7 @@ public class UserService {
             String strippedRoleRaw = request.getRole().strip();
             try {
                 Role parsedRole = Role.fromString(strippedRoleRaw);
-                user.setRole(parsedRole);
+                profile.setRole(parsedRole);
             } catch (IllegalArgumentException e) {
                 errors.addFieldError("role", "Invalid role, must be either student, admin, or lecturer");
             }
@@ -117,5 +125,24 @@ public class UserService {
     public UserResponse getById(Integer id) {
         User user = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
         return modelMapper.map(user, UserResponse.class);
+    }
+
+    public void createAadUserIfNotExists(String email, String tid, String oid) {
+        Optional<User> oasipUser = repository.findByProfileEmail(email);
+        User user = new User();
+        if (oasipUser.isPresent()) {
+            user = oasipUser.get();
+            if (user.getAadUser() != null) {
+                return;
+            }
+        }
+
+        AadUser aadUser = new AadUser();
+        aadUser.setTid(tid);
+        aadUser.setOid(oid);
+        aadUser.setUser(user);
+        user.setAadUser(aadUser);
+
+        repository.saveAndFlush(user);
     }
 }

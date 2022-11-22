@@ -8,18 +8,30 @@ import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.List;
 
 @Entity
-@Table(name = "user")
+@Table(name = "profile")
 @Getter
 @Setter
 @ToString
-public class User {
+public class Profile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "userId", nullable = false)
+    @Column(name = "profileId", nullable = false)
     private Integer id;
+
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "email", nullable = false, length = 50)
+    private String email;
+
+    @Column(name = "password", nullable = false, length = 100)
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role;
 
     @Generated(GenerationTime.INSERT)
     @Column(name = "createdOn", nullable = false)
@@ -29,15 +41,8 @@ public class User {
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userId", nullable = false)
     @ToString.Exclude
-    private List<EventCategoryOwner> ownCategories;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    private Profile profile;
-
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    private AadUser aadUser;
+    private User user;
 }

@@ -24,8 +24,18 @@ CREATE TABLE IF NOT EXISTS `oasip`.`eventCategory` (
   `eventCategoryDescription` VARCHAR(500) NULL,
   `eventDuration` INT NOT NULL,
   PRIMARY KEY (`eventCategoryId`),
-  UNIQUE INDEX `eventCategoryName_UNIQUE` (`eventCategoryName` ASC) VISIBLE,
-  CHECK (eventDuration BETWEEN 1 AND 480))
+  UNIQUE INDEX `eventCategoryName_UNIQUE` (`eventCategoryName` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `oasip`.`user`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `oasip`.`user` (
+  `userId` INT NOT NULL AUTO_INCREMENT,
+  `createdOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`userId`))
 ENGINE = InnoDB;
 
 
@@ -39,13 +49,12 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
   `eventStartTime` DATETIME NOT NULL,
   `eventDuration` INT NOT NULL,
   `eventNotes` VARCHAR(500) NULL,
-  `eventCategoryId` INT NOT NULL,
-  `userId` INT NULL DEFAULT NULL,
   `bucketUuid` VARCHAR(36) NULL,
+  `eventCategoryId` INT NOT NULL,
+  `userId` INT NULL,
   PRIMARY KEY (`eventId`),
   INDEX `fk_event_eventCategory_idx` (`eventCategoryId` ASC) VISIBLE,
   INDEX `fk_event_user1_idx` (`userId` ASC) VISIBLE,
-  CHECK (eventDuration BETWEEN 1 AND 480),
   CONSTRAINT `fk_event_eventCategory`
     FOREIGN KEY (`eventCategoryId`)
     REFERENCES `oasip`.`eventCategory` (`eventCategoryId`)
@@ -54,26 +63,33 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
   CONSTRAINT `fk_event_user1`
     FOREIGN KEY (`userId`)
     REFERENCES `oasip`.`user` (`userId`)
-    ON DELETE SET NULL
+    ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+
 -- -----------------------------------------------------
--- Table `oasip`.`user`
+-- Table `oasip`.`profile`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `oasip`.`user` (
-  `userId` INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `oasip`.`profile` (
+  `profileId` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
   `email` VARCHAR(50) NOT NULL,
+  `role` ENUM('ADMIN', 'LECTURER', 'STUDENT') NOT NULL DEFAULT 'student',
   `password` VARCHAR(100) NOT NULL,
-  `role` ENUM('ADMIN', 'LECTURER', 'STUDENT') NOT NULL DEFAULT 'STUDENT',
   `createdOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updatedOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`userId`),
+  `userId` INT NOT NULL,
+  PRIMARY KEY (`profileId`),
   UNIQUE INDEX `userName_UNIQUE` (`name` ASC) VISIBLE,
-  UNIQUE INDEX `userEmail_UNIQUE` (`email` ASC) VISIBLE)
+  UNIQUE INDEX `userEmail_UNIQUE` (`email` ASC) VISIBLE,
+  INDEX `fk_profile_user1_idx` (`userId` ASC) VISIBLE,
+  CONSTRAINT `fk_profile_user1`
+    FOREIGN KEY (`userId`)
+    REFERENCES `oasip`.`user` (`userId`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
-
 
 
 -- -----------------------------------------------------
@@ -81,19 +97,39 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `oasip`.`eventCategoryOwner` (
   `eventCategoryOwnerId` INT NOT NULL AUTO_INCREMENT,
-  `userId` INT NOT NULL,
   `eventCategoryId` INT NOT NULL,
+  `userId` INT NOT NULL,
   INDEX `fk_user_has_eventCategory_eventCategory1_idx` (`eventCategoryId` ASC) VISIBLE,
-  INDEX `fk_user_has_eventCategory_user1_idx` (`userId` ASC) VISIBLE,
   PRIMARY KEY (`eventCategoryOwnerId`),
-  CONSTRAINT `fk_user_has_eventCategory_user1`
-    FOREIGN KEY (`userId`)
-    REFERENCES `oasip`.`user` (`userId`)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION,
+  INDEX `fk_eventCategoryOwner_user1_idx` (`userId` ASC) VISIBLE,
   CONSTRAINT `fk_user_has_eventCategory_eventCategory1`
     FOREIGN KEY (`eventCategoryId`)
     REFERENCES `oasip`.`eventCategory` (`eventCategoryId`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_eventCategoryOwner_user1`
+    FOREIGN KEY (`userId`)
+    REFERENCES `oasip`.`user` (`userId`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `oasip`.`aadUser`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `oasip`.`aadUser` (
+  `aadUserId` INT NOT NULL AUTO_INCREMENT,
+  `tid` VARCHAR(36) NOT NULL,
+  `oid` VARCHAR(36) NOT NULL,
+  `createdOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedOn` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `userId` INT NOT NULL,
+  PRIMARY KEY (`aadUserId`),
+  INDEX `fk_profile_user1_idx` (`userId` ASC) VISIBLE,
+  CONSTRAINT `fk_profile_user10`
+    FOREIGN KEY (`userId`)
+    REFERENCES `oasip`.`user` (`userId`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -102,4 +138,3 @@ ENGINE = InnoDB;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-

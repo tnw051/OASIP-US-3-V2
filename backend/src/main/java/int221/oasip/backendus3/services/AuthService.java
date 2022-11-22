@@ -16,8 +16,8 @@ public class AuthService {
 
     public boolean match(MatchRequest matchRequest) {
         String strippedEmail = matchRequest.getEmail().strip();
-        User user = userRepository.findByEmail(strippedEmail).orElseThrow(() -> new EntityNotFoundException("A user with the specified email DOES NOT exist"));
+        User user = userRepository.findByProfileEmail(strippedEmail).orElseThrow(() -> new EntityNotFoundException("A user with the specified email DOES NOT exist"));
 
-        return argon2PasswordEncoder.matches(matchRequest.getPassword(), user.getPassword());
+        return argon2PasswordEncoder.matches(matchRequest.getPassword(), user.getProfile().getPassword());
     }
 }

@@ -1,7 +1,8 @@
 import { AuthenticationResult } from "@azure/msal-browser";
 import { ref, watch } from "vue";
-import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthStore";
 import { msalInstance, tokenRequest } from "../../configs/msalAuthConfig";
+import { authorizeAad } from "../../service/api";
+import { AuthState, AuthStore, getDefaultAuthState, setStore } from "../useAuthStore";
 
 const state = ref<AuthState>(getDefaultAuthState());
 const isLoadedByRedirectPromise = ref(false);
@@ -26,7 +27,7 @@ export const MsalAuthStore: AuthStore = {
         // logoutHint: result.value?.account?.idTokenClaims?.login_hint,
         onRedirectNavigate: (_url) => {
           // Skipping the server sign-out for the sake of ease of development
-          return true;
+          return false;
         },
       });
 
@@ -43,9 +44,15 @@ export const MsalAuthStore: AuthStore = {
       return;
     }
     try {
-      await _handleRedirectPromise();
+      const isRedirect = await _handleRedirectPromise();
+      if (isRedirect) {
+        // every time the login is successful, create the AAD user in the backend if it doesn't exist
+        await authorizeAad();
+      }
       // silent login to get a token
       const silentResult = await msalInstance.acquireTokenSilent(tokenRequest);
+      console.log("silent login result", silentResult);
+
       if (silentResult) {
         resultRef.value = silentResult;
         return;
@@ -62,14 +69,16 @@ export const MsalAuthStore: AuthStore = {
 // handle rediret from after previous login
 export async function _handleRedirectPromise() {
   if (isLoadedByRedirectPromise.value) {
-    return;
+    return true;
   }
   isLoadedByRedirectPromise.value = true;
-  
+
   const redirectResult = await msalInstance.handleRedirectPromise();
   if (redirectResult) {
     resultRef.value = redirectResult;
-    return;
+    return true;
+  } else {
+    return false;
   }
 }
 

@@ -8,5 +8,5 @@ import java.util.List;
 public interface EventCategoryRepository extends JpaRepository<EventCategory, Integer> {
     EventCategory findByEventCategoryNameIgnoreCase(String name);
 
-    List<EventCategory> findByOwners_User_Email(String email);
+    List<EventCategory> findByOwners_User_ProfileEmail(String email);
 }

@@ -19,10 +19,10 @@ import java.time.Instant;
 @Service
 public class TokenService {
     public static final String HMAC_SHA_256 = "HmacSHA256";
-    private static final String CLAIM_ID = "id";
-    private static final String CLAIM_NAME = "name";
-    private static final String CLAIM_EMAIL = "email";
-    private static final String CLAIM_ROLE = "role";
+    public static final String CLAIM_ID = "id";
+    public static final String CLAIM_NAME = "name";
+    public static final String CLAIM_EMAIL = "email";
+    public static final String CLAIM_ROLE = "role";
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
     private final String jwtSecret;

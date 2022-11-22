@@ -60,3 +60,8 @@ export async function logout(): Promise<boolean> {
   const response = await dank.post("/auth/logout");
   return response.status === 200;
 }
+
+export async function authorizeAad(): Promise<boolean> {
+  const response = await dank.post("/auth/aad");
+  return response.status === 200;
+}
