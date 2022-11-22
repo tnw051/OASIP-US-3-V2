@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watchEffect } from "vue";
+import { onBeforeMount, ref } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import BaseTable from "../components/BaseTable.vue";
@@ -7,6 +7,7 @@ import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
 import PageLayout from "../components/PageLayout.vue";
+import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
 import {
   deleteEvent,
   getCategories,
@@ -15,11 +16,10 @@ import {
   getLecturerCategories,
   updateEvent,
 } from "../service/api";
+import { BaseSlotProps } from "../types";
 import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
-import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
-import {BaseSlotProps} from '../types';
 
 const { isAuthenticated, isLecturer, isAuthLoading } = useAuthStore();
 
@@ -118,21 +118,20 @@ function closeEventDetails() {
 }
 
 async function saveEvent(updates: EditEventRequest, file) {
-  const currentEvent = editingState.item;
-  if (!currentEvent) {
+  if (!editingState.isEditing) {
     return;
   }
 
-
-  const selectedEventId = currentEvent.value.id;
+  const currentEvent = editingState.item;
+  const selectedEventId = currentEvent.id;
 
   const newDate = new Date(updates.eventStartTime);
-  if ((!isNaN(newDate.getTime()) && newDate.getTime() !== new Date(currentEvent.value.eventStartTime).getTime()) ||
-    updates.eventNotes !== undefined && updates.eventNotes !== currentEvent.value.eventNotes ||
+  if ((!isNaN(newDate.getTime()) && newDate.getTime() !== new Date(currentEvent.eventStartTime).getTime()) ||
+    updates.eventNotes !== undefined && updates.eventNotes !== currentEvent.eventNotes ||
     file !== undefined) {
     console.log("updating event");
-    console.log(newDate, new Date(currentEvent.value.eventStartTime));
-    console.log(updates.eventNotes, currentEvent.value.eventNotes);
+    console.log(newDate, new Date(currentEvent.eventStartTime));
+    console.log(updates.eventNotes, currentEvent.eventNotes);
 
     const updatedEvent = await updateEvent(selectedEventId, updates, file);
     if (updatedEvent) {
@@ -271,7 +270,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
           :items="events"
           enable-edit
           enable-delete
-          :selected-key="editingState.item?.id.toString()"
+          :selected-key="editingState.isEditing && editingState.item.id.toString()"
           :key-extractor="(event) => event.id"
           :is-loading="isLoading"
           @edit="(event) => {
