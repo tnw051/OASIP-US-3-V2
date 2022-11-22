@@ -49,10 +49,6 @@ export function useEventValidator(options: Options) {
     };
   }
 
-
-  const defaultTextValue = "";
-  const defaultIntValue = 0;
-
   const duration = ref<number>();
   if (currentEvent) {
     duration.value = currentEvent.eventDuration;
@@ -72,7 +68,7 @@ export function useEventValidator(options: Options) {
     }),
   );
 
-  const { handleSubmit, controlledValues, setErrors, setFieldError, errors, resetForm, setValues, values  } = useForm({
+  const { handleSubmit, setErrors,  errors, resetForm, setFieldValue, values  } = useForm({
     validationSchema: eventValidationSchema,
     initialValues: currentEvent ? {
       bookingName: currentEvent.bookingName,
@@ -192,14 +188,12 @@ export function useEventValidator(options: Options) {
   // }
 
   return {
-    // errors,
-    // resetInputsAndErrors,
     hasErrors,
     hasChanges,
     canSubmit,
     handleSubmit,
     resetForm,
-    setValues, 
+    setFieldValue,
     setErrors,
     values,
     errors,

@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { AxiosError } from "axios";
-import { ErrorMessage, Field, useIsFormDirty, useIsFormTouched } from "vee-validate";
-import {
-  onBeforeMount,
-  onMounted,
-  ref,
-  watch,
-  watchEffect,
-} from "vue";
+import { ErrorMessage, Field } from "vee-validate";
+import { onBeforeMount, ref, watchEffect } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Modal from "../components/Modal.vue";
 import { CategoryResponse } from "../gen-types";
@@ -16,7 +10,6 @@ import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidatorNew";
 import { useFileInput } from "../utils/useFileInput";
-import { useIsLoading } from "../utils/useIsLoading";
 
 const { isAuthenticated, isAdmin, user } = useAuthStore();
 
@@ -24,11 +17,8 @@ const categories = ref<CategoryResponse[]>([]);
 const {
   handleSubmit,
   resetForm,
-  setValues,
+  setFieldValue,
   setErrors, 
-  values,
-  errors,
-  hasErrors,
   canSubmit,
 } = useEventValidator({
   getDurationByCategoryId(categoryId) {
@@ -43,9 +33,7 @@ watchEffect(() => {
 
 function preFillInputs() {
   if (isAuthenticated.value && !isAdmin.value && user.value) {
-    setValues({
-      bookingEmail: user.value.email,
-    });
+    setFieldValue("bookingEmail", user.value.email);
   }
 }
 
@@ -131,15 +119,17 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
         <div class="flex flex-col gap-1">
           <label
             for="bookingEmail"
-            class="required text-sm font-medium text-slate-500"
+            class="text-sm font-medium text-slate-500"
+            :required="isAuthenticated && !isAdmin"
           >Booking Email</label>
           <Field
             id="bookingEmail"
             name="bookingEmail"
             class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
             placeholder="What's your booking email?"
+            :disabled="isAuthenticated && !isAdmin"
             :class="{
-              'border-green-500': isAuthenticated && !isAdmin,
+              'border-none bg-[#ffffff]': isAuthenticated && !isAdmin,
             }"
           />
           <ErrorMessage
