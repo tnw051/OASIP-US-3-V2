@@ -98,9 +98,9 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="mx-auto mt-8 max-w-md">
+  <div class="mt-8 w-full">
     <form
-      class="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
+      class="m-auto flex max-w-sm flex-col gap-3 rounded-xl bg-white p-6 pb-8 shadow"
       @submit.prevent="handleSubmit"
     >
       <div class="mb-4 flex flex-col text-center text-gray-700">
