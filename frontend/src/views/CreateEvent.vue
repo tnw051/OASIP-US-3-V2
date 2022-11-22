@@ -10,7 +10,7 @@ import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import { useEventValidator } from "../utils/useEventValidatorNew";
 
-const { isAuthenticated, isAdmin, user } = useAuthStore();
+const { isAuthenticated, isStudent, user } = useAuthStore();
 
 const categories = ref<CategoryResponse[]>([]);
 const {
@@ -31,7 +31,7 @@ watchEffect(() => {
 });
 
 function preFillInputs() {
-  if (isAuthenticated.value && !isAdmin.value && user.value) {
+  if (isAuthenticated.value && isStudent.value && user.value) {
     setFieldValue("bookingEmail", user.value.email);
   }
 }
@@ -138,9 +138,9 @@ function handleRemoveFile() {
           <label
             for="bookingEmail"
             class="text-sm font-medium text-slate-500"
-            :required="isAuthenticated && !isAdmin"
+            :required="!isStudent"
             :class="{
-              'required': !(isAuthenticated && !isAdmin),
+              'required': !isStudent,
             }"
           >Booking Email</label>
           <Field
@@ -148,9 +148,9 @@ function handleRemoveFile() {
             name="bookingEmail"
             class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
             placeholder="What's your booking email?"
-            :disabled="isAuthenticated && !isAdmin"
+            :disabled="isStudent"
             :class="{
-              'border-none bg-[#ffffff]': isAuthenticated && !isAdmin,
+              'border-none bg-[#ffffff]': isStudent,
             }"
           />
           <ErrorMessage
