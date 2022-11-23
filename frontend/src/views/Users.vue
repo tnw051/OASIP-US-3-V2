@@ -8,6 +8,8 @@ import { BaseSlotProps } from "../types";
 import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
 import { formatDateTime } from "../utils/index";
 import { useEditing } from "../utils/useEditing";
+import BaseTable from "../components/BaseTable.vue";
+import PageLayout from "../components/PageLayout.vue";
 
 const users = ref<UserResponse[]>([]);
 const roles = ref<Role[]>([]);
@@ -98,32 +100,31 @@ type SlotProps = BaseSlotProps<UserResponse>;
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-[1440px] py-8 px-12">
-    <div class="flex flex-col text-slate-700">
-      <h1 class="text-4xl font-semibold">
-        Users
-      </h1>
-      <div class="mb-4 flex justify-between">
-        <div class="mb-4 mt-2">
+  <PageLayout header="Users">
+    <template #subheader>
+      <div class="mb-4 mt-2 flex justify-between">
+        <div>
           {{ users.length }} users shown
         </div>
-        <div class="flex items-center">
-          <label for="showDetails">Show Details</label>
+        <div class="flex items-center gap-2">
           <input
             id="showDetails"
             v-model="showDetails"
             type="checkbox"
             class="ml-2"
           >
+          <label for="showDetails">Show Details</label>
         </div>
       </div>
+    </template>
+    <template #content>
       <div class="flex">
-        <Table
+        <BaseTable
           :headers="headers"
           :items="users"
           enable-edit
           enable-delete
-          :selected-key="editingState.item?.id.toString()"
+          :selected-key="editingState.isEditing && editingState.item?.id.toString()"
           :key-extractor="(user) => user.id"
           @edit="startEditing"
           @delete="confirmDeleteUser"
@@ -154,7 +155,7 @@ type SlotProps = BaseSlotProps<UserResponse>;
               >login</router-link> to view users
             </span>
           </template>
-        </Table>
+        </BaseTable>
 
         <div
           v-if="editingState.isEditing"
@@ -170,8 +171,8 @@ type SlotProps = BaseSlotProps<UserResponse>;
           />
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </PageLayout>
 
   <Modal
     title="Success"

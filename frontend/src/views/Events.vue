@@ -261,6 +261,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
             {
               name: 'Date & Time',
               key: 'eventStartTime',
+              override: true,
             },
             {
               name: 'Category',
@@ -284,10 +285,8 @@ type SlotProps = BaseSlotProps<EventResponse>;
             });
           }"
         >
-          <template #cell:bookingName="{ item, dClass }: SlotProps">
-            <td :class="dClass">
-              <span class="font-medium">{{ item.bookingName }}</span>
-            </td>
+          <template #cell:bookingName="{ item }: SlotProps">
+            <span class="font-medium">{{ item.bookingName }}</span>
           </template>
 
           <template #cell:eventStartTime="{ item, dClass }: SlotProps">
@@ -295,10 +294,10 @@ type SlotProps = BaseSlotProps<EventResponse>;
               :class="dClass"
               class="w-80"
             >
-              <div class="material-icon-settings flex flex-col text-slate-600">
+              <div class="material-icon-settings flex flex-col">
                 <div class="flex flex-col gap-1 text-sm">
                   <div class="flex gap-2">
-                    <span class="material-symbols-outlined pt-1 text-slate-800">
+                    <span class="material-symbols-outlined pt-1">
                       calendar_month
                     </span>
                     {{ formatDateAndFromToTime(new Date(item.eventStartTime), item.eventDuration) }}
@@ -308,12 +307,10 @@ type SlotProps = BaseSlotProps<EventResponse>;
             </td>
           </template>
 
-          <template #cell:eventCategory="{ item, dClass }: SlotProps">
-            <td :class="dClass">
-              <div class="flex">
-                <Badge :text="item.eventCategory.eventCategoryName" />
-              </div>
-            </td>
+          <template #cell:eventCategory="{ item }: SlotProps">
+            <div class="flex">
+              <Badge :text="item.eventCategory.eventCategoryName" />
+            </div>
           </template>
 
           <template #empty>

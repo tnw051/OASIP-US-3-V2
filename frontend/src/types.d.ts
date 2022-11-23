@@ -24,7 +24,7 @@ export interface OasipJwtPayload {
 
 export interface BaseSlotProps<T> {
     item: T;
-    dClass: string;
+    dClass?: string;
 }
 
 export interface EventTimeSlot {

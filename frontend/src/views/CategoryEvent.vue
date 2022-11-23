@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from "vue";
+import BaseTable from "../components/BaseTable.vue";
 import EditCategory from "../components/EditCategory.vue";
 import Modal from "../components/Modal.vue";
+import PageLayout from "../components/PageLayout.vue";
 import Table from "../components/Table.vue";
 import { CategoryResponse, EditCategoryRequest } from "../gen-types";
 import { getCategories, updateCategory } from "../service/api";
@@ -61,18 +63,15 @@ type SlotProps = BaseSlotProps<CategoryResponse>;
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-[1440px] py-8 px-12">
-    <div class="flex flex-col text-slate-700">
-      <h1 class="text-4xl font-semibold">
-        Categories
-      </h1>
-      <div class="mb-4 flex justify-between">
-        <div class="mb-4 mt-2">
-          {{ categories.length }} events shown
-        </div>
+  <PageLayout header="Categories">
+    <template #subheader>
+      <div class="mb-4 mt-2">
+        {{ categories.length }} events shown
       </div>
+    </template>
+    <template #content>
       <div class="flex">
-        <Table
+        <BaseTable
           :headers="[
             {
               name: 'Category Name',
@@ -81,15 +80,16 @@ type SlotProps = BaseSlotProps<CategoryResponse>;
             {
               name: 'Description',
               key: 'description',
+              override: true,
             },
             {
-              name: 'Duration',
+              name: 'Duration (min.)',
               key: 'duration',
             },
           ]"
           :items="categories"
           enable-edit
-          :selected-key="editingState.item?.id.toString()"
+          :selected-key="editingState.isEditing && editingState.item?.id.toString()"
           :key-extractor="(category) => category.id"
           @edit="startEditing"
         >
@@ -97,8 +97,13 @@ type SlotProps = BaseSlotProps<CategoryResponse>;
             <span class="font-medium">{{ item.eventCategoryName }}</span>
           </template>
 
-          <template #cell:description="{ item }: SlotProps">
-            <span class="font-medium">{{ item.eventCategoryDescription }}</span>
+          <template #cell:description="{ item, dClass }: SlotProps">
+            <td
+              :class="dClass"
+              class="w-6/12"
+            >
+              <span class="font-medium">{{ item.eventCategoryDescription }}</span>
+            </td>
           </template>
 
           <template #cell:duration="{ item }: SlotProps">
@@ -108,7 +113,7 @@ type SlotProps = BaseSlotProps<CategoryResponse>;
           <template #empty>
             No categories found
           </template>
-        </Table>
+        </BaseTable>
 
         <div
           v-if="editingState.isEditing"
@@ -124,8 +129,8 @@ type SlotProps = BaseSlotProps<CategoryResponse>;
           />
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </PageLayout>
 
   <Modal
     title="Success"

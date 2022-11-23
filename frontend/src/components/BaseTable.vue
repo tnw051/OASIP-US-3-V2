@@ -30,10 +30,19 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  defaultClass: {
+    type: String,
+    required: false,
+    default: "",
+  },
 });
 
 const emits = defineEmits(["edit", "delete", "select"]);
 const enableActions = computed(() => props.enableEdit || props.enableDelete);
+
+const mergedDefaultClass = computed(() => {
+  return [props.defaultClass, "text-slate-600"];
+});
 
 // let user pass <td> to slot instead of content inside <td>
 </script>
@@ -74,13 +83,31 @@ const enableActions = computed(() => props.enableEdit || props.enableDelete);
         ]"
         @click="emits('select', item)"
       >
-        <slot
-          v-for="(header, headerIndex, ) in headers"
+        <template
+          v-for="(header, headerIndex) in headers"
           :key="header"
-          :name="`cell:${header.key}`"
-          :item="item"
-          :d-class="['px-2 py-2', { 'py-3': headerIndex === 0 }]"
-        />
+        >
+          <td
+            v-if="!header.override"
+            :class="['px-2 py-2', { 'py-3': headerIndex === 0 }, mergedDefaultClass]"
+          >
+            <slot
+              :name="`cell:${header.key}`"
+              :item="item"
+            >
+              {{ item[header.key] }}
+            </slot>
+          </td>
+          <slot
+            v-else
+            :name="`cell:${header.key}`"
+            :item="item"
+            :d-class="['px-2 py-2', { 'py-3': headerIndex === 0 }, mergedDefaultClass]"
+          >
+            {{ item[header.key] }}
+          </slot>
+        </template>
+        
 
         <td
           v-if="enableActions"
