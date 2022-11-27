@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { AxiosError } from "axios";
-import { ErrorMessage, Field } from "vee-validate";
 import { onBeforeMount, ref, watchEffect } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
+import FileUploader from "../components/form/FileUploader.vue";
+import InputField from "../components/form/InputField.vue";
+import { useFile } from "../composables/useFile";
 import Modal from "../components/Modal.vue";
 import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
@@ -46,6 +48,8 @@ const minDateTimeLocal = formatDateTimeLocal(new Date());
 const isSuccessModalOpen = ref(false);
 const isErrorModalOpen = ref(false);
 
+const { file, fileError, handleChangeFile, handleRemoveFile } = useFile();
+
 const onSubmit = handleSubmit(async (inputs) => {
   try {
     const createdEvent = await createEvent({
@@ -54,7 +58,7 @@ const onSubmit = handleSubmit(async (inputs) => {
       // convert local time to UTC in ISO-8601 format
       eventCategoryId: Number(inputs.eventCategoryId),
       eventStartTime: new Date(inputs.eventStartTime).toISOString(),
-    }, file.value ?? null);
+    }, file.value);
 
     if (createdEvent) {
       resetForm();
@@ -76,36 +80,12 @@ const onSubmit = handleSubmit(async (inputs) => {
     }
   }
 });
-
-const file = ref<File | null>(null);
-const fileError = ref<string | null>(null);
-
-const maxFileSize = 10 * 1024 * 1024;
-function handleFileChange(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const files = target.files;
-  if (files === null || files.length === 0) {
-    return;
-  }
-  if (files[0].size > maxFileSize) {
-    fileError.value = "File size is too large";
-    return;
-  }
-  file.value = files[0];
-  fileError.value = null;
-  console.log("Changed file", file.value);
-}
-
-function handleRemoveFile() {
-  file.value = null;
-  fileError.value = null;
-}
 </script>
  
 <template>
   <div class="mt-8 w-full">
     <form
-      class="m-auto flex max-w-sm flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
+      class="m-auto flex max-w-lg flex-col gap-4 rounded-xl border border-gray-100 bg-white py-10 px-8 shadow-xl shadow-black/5"
       @submit.prevent="onSubmit"
     >
       <div class="mb-4 flex flex-col text-center text-gray-700">
@@ -114,83 +94,46 @@ function handleRemoveFile() {
         </h1>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <!-- Name -->
+      <div class="flex flex-col gap-2">
         <div class="flex flex-col gap-1">
-          <label
-            for="bookingName"
-            class="required text-sm font-medium text-slate-500"
-          >Booking Name</label>
-          <Field
-            id="bookingName"
+          <InputField
+            label="Booking Name"
             name="bookingName"
-            class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+            :required="true"
             placeholder="What's your booking name?"
-          />
-          <ErrorMessage
-            name="bookingName"
-            class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
           />
         </div>
 
-        <!-- Email -->
         <div class="flex flex-col gap-1">
-          <label
-            for="bookingEmail"
-            class="text-sm font-medium text-slate-500"
-            :required="!isStudent"
-            :class="{
-              'required': !isStudent,
-            }"
-          >Booking Email</label>
-          <Field
-            id="bookingEmail"
+          <InputField
+            label="Booking Email"
             name="bookingEmail"
-            class="rounded-md border border-slate-500/10 bg-slate-500/5 p-2 px-3 text-slate-800 focus:border-transparent focus:outline-none focus:ring-1 focus:ring-sky-500"
+            :required="!isStudent"
             placeholder="What's your booking email?"
             :disabled="isStudent"
             :class="{
               'border-none bg-[#ffffff]': isStudent,
             }"
           />
-          <ErrorMessage
-            name="bookingEmail"
-            class="-mt-1 rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
-          />
         </div>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="eventStartTime"
-          class="required text-sm font-medium text-slate-500"
-        >Start Time</label>
-        <Field
-          id="eventStartTime"
+      <div class="flex gap-2">
+        <InputField
+          label="Start Time"
           name="eventStartTime"
           type="datetime-local"
           :min="minDateTimeLocal"
           :max="inputConstraits.MAX_DATETIME_LOCAL"
-          required
-          class="rounded bg-gray-100 p-2"
+          :required="true"
         />
-        <ErrorMessage
-          name="eventStartTime"
-          class="mx-1 rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        />
-      </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="eventCategoryId"
-          class="required text-sm font-medium text-slate-500"
-        >Category</label>
-        <Field
-          id="eventCategoryId"
+        <InputField
+          label="Category"
           name="eventCategoryId"
           as="select"
-          required
-          class="rounded bg-gray-100 p-2"
+          :required="true"
+          :use-field-slot="true"
         >
           <option
             disabled
@@ -208,91 +151,25 @@ function handleRemoveFile() {
               category.eventDuration
             }} min.)
           </option>
-        </Field>
-        <ErrorMessage
-          name="eventCategoryId"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        />
+        </InputField>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label
-          for="eventNotes"
-          class="text-sm font-medium text-slate-500"
-        >Notes <span
-          class="font-normal text-gray-400"
-        >(optional)</span></label>
-        <Field
-          id="eventNotes"
+        <InputField
+          label="Notes"
           name="eventNotes"
           as="textarea"
-          class="rounded bg-gray-100 p-2"
           placeholder="What's your event about?"
-        />
-        <ErrorMessage
-          name="eventNotes"
-          class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
         />
       </div>
 
       <div class="flex flex-col gap-2">
-        <label
-          for="file"
-          class="text-sm font-medium text-gray-700"
-        >
-          File <span class="font-normal text-gray-400">(optional)</span>
-        </label>
-
-        <input
-          id="file"
-          type="file"
-          class="hidden"
-          @change="handleFileChange"
-        >
-
-        <div class="flex rounded bg-gray-100 text-gray-700">
-          <div
-            v-if="file"
-            class="flex w-full items-center justify-between gap-2 p-2"
-          >
-            <label
-              for="file"
-              class="cursor-pointer text-sm font-medium"
-            >
-              {{ file.name }}
-            </label>
-            <button
-              v-if="file"
-              type="button"
-              class="text-red-500"
-              @click="handleRemoveFile"
-            >
-              <span class="material-symbols-outlined m-auto block">
-                delete
-              </span>
-            </button>
-          </div>
-
-          <label
-            v-else
-            for="file"
-            class="flex w-full cursor-pointer items-center justify-between gap-2 p-2 text-sm font-medium"
-          >Choose a file
-            <span class="material-symbols-outlined">
-              attach_file
-            </span>
-          </label>
-        </div>
-
-        <div
-          v-if="fileError"
-          class="mx-1 rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-        >
-          <span
-            v-for="error in fileError"
-            :key="error"
-          >{{ error }}</span>
-        </div>
+        <FileUploader
+          :file-name="file?.name"
+          :file-error="fileError"
+          @change="handleChangeFile"
+          @remove="handleRemoveFile"
+        />
 
         <button
           type="submit"
@@ -324,8 +201,5 @@ function handleRemoveFile() {
 </template>
  
 <style scoped>
-.required::after {
-  content: '*';
-  @apply text-red-500 pl-1
-}
+
 </style>
