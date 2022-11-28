@@ -20,7 +20,7 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  error: {
+  errorMessage: {
     type: String,
     default: null,
   },
@@ -64,7 +64,7 @@ export default defineComponent({
         <slot />
       </Field>
       <ErrorMessage
-        v-if="!error"
+        v-if="!errorMessage"
         :name="name"
         class="block rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
       />
@@ -72,7 +72,7 @@ export default defineComponent({
         v-else
         class="block rounded bg-red-500/5 p-1 pl-3 text-sm text-red-500"
       >
-        {{ error }}
+        {{ errorMessage }}
       </div>
     </div>
   </div>

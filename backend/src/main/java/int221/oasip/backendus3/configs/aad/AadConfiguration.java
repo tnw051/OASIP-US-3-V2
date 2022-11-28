@@ -5,7 +5,10 @@ import com.azure.spring.cloud.autoconfigure.aad.configuration.AadResourceServerC
 import com.azure.spring.cloud.autoconfigure.aad.implementation.jwt.AadJwtGrantedAuthoritiesConverter;
 import com.azure.spring.cloud.autoconfigure.aad.properties.AadAuthenticationProperties;
 import com.azure.spring.cloud.autoconfigure.aad.properties.AadResourceServerProperties;
+import com.querydsl.core.annotations.Config;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,49 +18,42 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-@Component
 @RequiredArgsConstructor
-public class MyAadResourceServerUtils implements ProviderRegistrar {
+@Configuration
+public class AadConfiguration implements ProviderRegistrar {
     private final AadResourceServerProperties resourceServerProperties;
     private final AadAuthenticationProperties authProperties;
     private final AadResourceServerConfiguration aadResourceServerConfiguration;
-    private AadTrustedIssuerRepository aadTrustedIssuerRepository;
-    private JwtDecoder jwtDecoder;
-    private JwtAuthenticationConverter converter;
 
-    public Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
-        if (converter == null) {
-            converter = new JwtAuthenticationConverter();
-            if (StringUtils.hasText(this.resourceServerProperties.getPrincipalClaimName())) {
-                converter.setPrincipalClaimName(this.resourceServerProperties.getPrincipalClaimName());
-            }
-
-            converter.setJwtGrantedAuthoritiesConverter(new AadJwtGrantedAuthoritiesConverter(this.resourceServerProperties.getClaimToAuthorityPrefixMap()));
+    @Bean("aadJwtAuthenticationConverter")
+    private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        if (StringUtils.hasText(this.resourceServerProperties.getPrincipalClaimName())) {
+            converter.setPrincipalClaimName(this.resourceServerProperties.getPrincipalClaimName());
         }
+
+        converter.setJwtGrantedAuthoritiesConverter(new AadJwtGrantedAuthoritiesConverter(this.resourceServerProperties.getClaimToAuthorityPrefixMap()));
         return converter;
     }
 
+    @Bean("aadJwtDecoder")
     private JwtDecoder jwtDecoder() {
-        if (jwtDecoder == null) {
-            jwtDecoder = aadResourceServerConfiguration.jwtDecoder(authProperties);
-        }
-        return jwtDecoder;
+        return aadResourceServerConfiguration.jwtDecoder(authProperties);
     }
 
+    @Bean
     private AadTrustedIssuerRepository aadTrustedIssuerRepository() {
-        if (aadTrustedIssuerRepository == null) {
-            aadTrustedIssuerRepository = new AadTrustedIssuerRepository(authProperties.getProfile().getTenantId());
-        }
-        return aadTrustedIssuerRepository;
+        return new AadTrustedIssuerRepository(authProperties.getProfile().getTenantId());
     }
 
-    public JwtAuthenticationProvider jwtAuthenticationProvider() {
+    @Bean("aadJwtAuthenticationProvider")
+    private JwtAuthenticationProvider jwtAuthenticationProvider() {
         JwtAuthenticationProvider authenticationProvider = new JwtAuthenticationProvider(jwtDecoder());
         authenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationConverter());
         return authenticationProvider;
     }
 
-    public void registerProvider(MyJwtIssuerAuthenticationManagerResolver authenticationManagerResolver) {
+    public void accept(MyJwtIssuerAuthenticationManagerResolver authenticationManagerResolver) {
         aadTrustedIssuerRepository().getTrustedIssuers().forEach(issuer -> authenticationManagerResolver.addManager(issuer, jwtAuthenticationProvider()));
     }
 

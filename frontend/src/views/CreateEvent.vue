@@ -1,32 +1,62 @@
 <script setup lang="ts">
+import { toFormValidator } from "@vee-validate/zod";
+import { computed } from "vue";
 import { AxiosError } from "axios";
+import { useForm } from "vee-validate";
 import { onBeforeMount, ref, watchEffect } from "vue";
+import { z } from "zod";
 import { useAuthStore } from "../auth/useAuthStore";
 import FileUploader from "../components/form/FileUploader.vue";
 import InputField from "../components/form/InputField.vue";
-import { useFile } from "../composables/useFile";
 import Modal from "../components/Modal.vue";
+import { useFile } from "../composables/useFile";
 import { CategoryResponse } from "../gen-types";
 import { createEvent, getCategories } from "../service/api";
 import { ErrorResponse } from "../types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
-import { useEventValidator } from "../utils/useEventValidatorNew";
+import { useOverlapValidator } from "../composables/useOverlapValidator";
 
 const { isAuthenticated, isStudent, user } = useAuthStore();
 
 const categories = ref<CategoryResponse[]>([]);
-const {
-  handleSubmit,
-  resetForm,
-  setFieldValue,
-  setErrors,
-  canSubmit,
-} = useEventValidator({
-  getDurationByCategoryId(categoryId) {
-    const category = categories.value.find((c) => c.id === categoryId);
-    return category ? category.eventDuration : null;
-  },
+const eventValidationSchema = toFormValidator(
+  z.object({
+    bookingName: z.string().min(1, "Name is required").max(100, "Name exceeds 100 characters"),
+    bookingEmail: z.string().email("Email is invalid").max(50, "Email exceeds 50 characters"),
+    eventNotes: z.string().max(500, "Notes exceed 500 characters").optional(),
+    eventStartTime: z.string().refine((value) => {
+      const date = new Date(value);
+      const now = new Date();
+      return date.getTime() > now.getTime();
+    }, "Start time must be in the future"),
+    eventCategoryId: z.number(),
+  }),
+);
+
+const { handleSubmit, setErrors, errors, resetForm, setFieldValue, values } = useForm({
+  validationSchema: eventValidationSchema,
 });
+
+const hasErrors = computed(() => {
+  return Object.keys(errors.value).length > 0;
+});
+
+const canSubmit = computed(() => {
+  return !hasErrors.value &&
+    values.bookingName !== undefined &&
+    values.bookingEmail !== undefined &&
+    values.eventStartTime !== undefined &&
+    values.eventCategoryId !== undefined;
+});
+
+const { isOverlapping, setEventCategory, setStartTime } = useOverlapValidator();
+
+function onCategoryChange(categoryId: number) {
+  const category = categories.value.find((c) => c.id === categoryId);
+  setEventCategory(categoryId, category?.eventDuration);
+  console.log(category, category?.eventDuration);
+  
+}
 
 watchEffect(() => {
   preFillInputs();
@@ -126,6 +156,8 @@ const onSubmit = handleSubmit(async (inputs) => {
           :min="minDateTimeLocal"
           :max="inputConstraits.MAX_DATETIME_LOCAL"
           :required="true"
+          :error-message="isOverlapping && 'The start time is overlapping with another event'"
+          @change="setStartTime($event.target.value)"
         />
 
         <InputField
@@ -134,6 +166,7 @@ const onSubmit = handleSubmit(async (inputs) => {
           as="select"
           :required="true"
           :use-field-slot="true"
+          @change="onCategoryChange(Number($event.target.value))"
         >
           <option
             disabled
