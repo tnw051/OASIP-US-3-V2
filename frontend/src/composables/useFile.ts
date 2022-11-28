@@ -5,6 +5,7 @@ export function useFile({
 } = {}) {
   const file = ref<File | null>(null);
   const fileError = ref<string | null>(null);
+  const isDirty = ref(false);
 
   function handleChangeFile(e: Event) {
     const target = e.target as HTMLInputElement;
@@ -18,6 +19,7 @@ export function useFile({
     }
     file.value = files[0];
     fileError.value = null;
+    isDirty.value = true;
   }
 
   watch(file, (newFile) => {
@@ -31,6 +33,7 @@ export function useFile({
   function handleRemoveFile() {
     file.value = null;
     fileError.value = null;
+    isDirty.value = true;
   }
 
   return {
@@ -38,5 +41,6 @@ export function useFile({
     fileError,
     handleChangeFile,
     handleRemoveFile,
+    isDirty,
   };
 }

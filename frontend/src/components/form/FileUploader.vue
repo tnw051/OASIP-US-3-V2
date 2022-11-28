@@ -33,22 +33,31 @@ const emit = defineEmits(["change", "remove"]);
       v-if="fileName"
       class="flex w-full items-center justify-between gap-2"
     >
-      <label
-        for="file"
-        class="cursor-pointer text-sm font-medium"
+      <div
+        class="text-sm font-medium"
       >
         {{ fileName }}
-      </label>
-      <button
-        v-if="fileName"
-        type="button"
-        class="text-red-500"
-        @click="$emit('remove')"
-      >
-        <span class="material-symbols-outlined m-auto block">
-          delete
-        </span>
-      </button>
+      </div>
+      <div class="flex gap-1">
+        <label
+          for="file"
+          class="block cursor-pointer rounded-md p-1 text-sm font-medium text-slate-400 hover:bg-blue-100 hover:text-blue-500"
+        >
+          <span class="material-symbols-outlined m-auto block">
+            edit
+          </span>
+        </label>
+        <button
+          type="button"
+          class="rounded-md p-1 text-sm font-medium text-slate-400 hover:bg-red-100 hover:text-red-500"
+          @click="$emit('remove')"
+        >
+          <span class="material-symbols-outlined m-auto block">
+            delete
+          </span>
+        </button>
+        <!-- edit -->
+      </div>
     </div>
 
     <label

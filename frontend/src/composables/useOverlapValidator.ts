@@ -15,6 +15,11 @@ export function useOverlapValidator(options?: Options) {
   const isOverlapping = ref<boolean>(false);
 
   const { currentTimeSlot } = options || {};
+  if (currentTimeSlot) {
+    eventCategoryIdRef.value = currentTimeSlot.eventCategoryId; 
+    startTimeRef.value = currentTimeSlot.eventStartTime;
+    durationRef.value = currentTimeSlot.eventDuration;
+  }
 
   const eventsInCategoryOnDate = ref<EventTimeSlotResponse[]>([]);
 
