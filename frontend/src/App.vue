@@ -19,7 +19,7 @@ async function handleLogout() {
 </script>
  
 <template>
-  <div class="flex h-screen flex-col bg-[#f7fafd]">
+  <div class="flex h-screen flex-col">
     <nav class="h-16 w-full shrink-0 grow-0 border-b bg-white px-8">
       <div class="mx-auto flex h-full items-center justify-between">
         <div class="flex items-center text-sm font-medium">
@@ -62,13 +62,6 @@ async function handleLogout() {
           >
             Create User
           </router-link>
-          <router-link
-            v-if="!authState.isAuthenticated"
-            :to="{ name: 'login' }"
-            class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-          >
-            Login
-          </router-link>
         </div>
         <div class="flex items-center text-sm text-gray-700">
           <div
@@ -95,6 +88,13 @@ async function handleLogout() {
           >
             Logout
           </button>
+          <router-link
+            v-else
+            :to="{ name: 'login' }"
+            class="no-active cursor-pointer rounded-md border bg-blue-500 p-2 px-3 font-medium text-white hover:bg-blue-600 hover:text-white"
+          >
+            Login
+          </router-link>
         </div>
       </div>
     </nav>
@@ -104,7 +104,7 @@ async function handleLogout() {
 </template>
 
 <style scoped>
-.router-link-active {
+.router-link-active:not(.no-active) {
   @apply text-sky-600 bg-sky-50;
   /* @apply border-blue-500 border-b-2 text-blue-500; */
 }
