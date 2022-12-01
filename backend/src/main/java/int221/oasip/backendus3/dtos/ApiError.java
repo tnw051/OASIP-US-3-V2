@@ -40,6 +40,8 @@ public class ApiError {
     private final HttpStatus httpStatus;
     private final int status;
     private final String error;
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private final String message;
 
     private Map<String, List<String>> errors;
@@ -52,8 +54,8 @@ public class ApiError {
         this.message = message;
     }
 
-    public ResponseEntity<ApiError> toResponseEntity() {
-        return new ResponseEntity<>(this, httpStatus);
+    public ApiError(HttpStatus httpStatus) {
+        this(httpStatus, null);
     }
 
     public static ApiError fromException(FieldNotValidException e) {
@@ -78,8 +80,9 @@ public class ApiError {
         return apiError;
     }
 
-    public static ApiError fromException(Exception e) {
-        return new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    @SuppressWarnings("unused")
+    public static ApiError fromException(Exception ignoredE) {
+        return new ApiError(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private static ApiError makeApiErrorForBadRequest(String validationErrorMessage) {
@@ -98,5 +101,9 @@ public class ApiError {
         Map<String, List<String>> errorMaps = new HashMap<>();
         errorMaps.put(exception.getField(), List.of(exception.getMessage()));
         return errorMaps;
+    }
+
+    public ResponseEntity<ApiError> toResponseEntity() {
+        return new ResponseEntity<>(this, httpStatus);
     }
 }
