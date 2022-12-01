@@ -1,6 +1,5 @@
 package int221.oasip.backendus3.controllers;
 
-import int221.oasip.backendus3.configs.AuthUtils;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
@@ -10,6 +9,8 @@ import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.services.EventService;
 import int221.oasip.backendus3.services.FileService;
+import int221.oasip.backendus3.services.auth.AuthStatus;
+import int221.oasip.backendus3.services.auth.AuthUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -38,7 +39,7 @@ import java.util.List;
 public class EventController {
     private EventService service;
     private FileService fileService;
-    private AuthUtils authUtils;
+    private AuthUtil authUtils;
 
     @GetMapping("")
     public List<EventResponse> getEvents(

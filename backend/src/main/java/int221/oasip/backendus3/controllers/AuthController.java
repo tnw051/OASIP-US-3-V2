@@ -1,6 +1,6 @@
 package int221.oasip.backendus3.controllers;
 
-import int221.oasip.backendus3.configs.MyUserDetails;
+import int221.oasip.backendus3.services.MyUserDetails;
 import int221.oasip.backendus3.dtos.LoginRequest;
 import int221.oasip.backendus3.dtos.LoginResponse;
 import int221.oasip.backendus3.dtos.MatchRequest;

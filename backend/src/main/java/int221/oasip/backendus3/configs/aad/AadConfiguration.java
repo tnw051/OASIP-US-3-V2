@@ -1,11 +1,12 @@
-package int221.oasip.backendus3.configs;
+package int221.oasip.backendus3.configs.aad;
 
 import com.azure.spring.cloud.autoconfigure.aad.AadTrustedIssuerRepository;
 import com.azure.spring.cloud.autoconfigure.aad.configuration.AadResourceServerConfiguration;
 import com.azure.spring.cloud.autoconfigure.aad.implementation.jwt.AadJwtGrantedAuthoritiesConverter;
 import com.azure.spring.cloud.autoconfigure.aad.properties.AadAuthenticationProperties;
 import com.azure.spring.cloud.autoconfigure.aad.properties.AadResourceServerProperties;
-import com.querydsl.core.annotations.Config;
+import int221.oasip.backendus3.configs.JwtAuthenticationProviderConfigurer;
+import int221.oasip.backendus3.configs.MyJwtIssuerAuthenticationManagerResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,17 +16,27 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor
 @Configuration
-public class AadConfiguration implements ProviderRegistrar {
+public class AadConfiguration implements JwtAuthenticationProviderConfigurer {
     private final AadResourceServerProperties resourceServerProperties;
     private final AadAuthenticationProperties authProperties;
     private final AadResourceServerConfiguration aadResourceServerConfiguration;
 
-    @Bean("aadJwtAuthenticationConverter")
+    @Override
+    public void configure(MyJwtIssuerAuthenticationManagerResolver authenticationManagerResolver) {
+        aadTrustedIssuerRepository().getTrustedIssuers()
+                .forEach(issuer -> authenticationManagerResolver.addManager(issuer, jwtAuthenticationProvider()));
+    }
+
+    private JwtAuthenticationProvider jwtAuthenticationProvider() {
+        JwtAuthenticationProvider authenticationProvider = new JwtAuthenticationProvider(jwtDecoder());
+        authenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationConverter());
+        return authenticationProvider;
+    }
+
     private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         if (StringUtils.hasText(this.resourceServerProperties.getPrincipalClaimName())) {
@@ -36,32 +47,12 @@ public class AadConfiguration implements ProviderRegistrar {
         return converter;
     }
 
-    @Bean("aadJwtDecoder")
     private JwtDecoder jwtDecoder() {
         return aadResourceServerConfiguration.jwtDecoder(authProperties);
     }
 
     @Bean
-    private AadTrustedIssuerRepository aadTrustedIssuerRepository() {
+    public AadTrustedIssuerRepository aadTrustedIssuerRepository() {
         return new AadTrustedIssuerRepository(authProperties.getProfile().getTenantId());
-    }
-
-    @Bean("aadJwtAuthenticationProvider")
-    private JwtAuthenticationProvider jwtAuthenticationProvider() {
-        JwtAuthenticationProvider authenticationProvider = new JwtAuthenticationProvider(jwtDecoder());
-        authenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationConverter());
-        return authenticationProvider;
-    }
-
-    public void accept(MyJwtIssuerAuthenticationManagerResolver authenticationManagerResolver) {
-        aadTrustedIssuerRepository().getTrustedIssuers().forEach(issuer -> authenticationManagerResolver.addManager(issuer, jwtAuthenticationProvider()));
-    }
-
-    public boolean isAadToken(Jwt jwt) {
-        return aadTrustedIssuerRepository().getTrustedIssuers().contains(jwt.getIssuer().toString());
-    }
-
-    public String getEmail(Jwt jwt) {
-        return jwt.getClaimAsString("preferred_username");
     }
 }

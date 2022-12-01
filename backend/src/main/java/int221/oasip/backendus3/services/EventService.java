@@ -1,7 +1,5 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.configs.AuthUtils;
-import int221.oasip.backendus3.controllers.AuthStatus;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
@@ -15,6 +13,8 @@ import int221.oasip.backendus3.exceptions.ForbiddenException;
 import int221.oasip.backendus3.repository.EventCategoryOwnerRepository;
 import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
+import int221.oasip.backendus3.services.auth.AuthStatus;
+import int221.oasip.backendus3.services.auth.AuthUtil;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,7 +45,7 @@ public class EventService {
     private final FileService fileService;
 
     private final MailService mailService;
-    private final AuthUtils authUtils;
+    private final AuthUtil authUtil;
     private final ForbiddenException COMMON_FORBIDDEN_EXCEPTION = new ForbiddenException("User with this email is not allowed to access this resource");
 
     public EventResponse getEvent(Integer id) {
@@ -59,7 +59,7 @@ public class EventService {
     }
 
     public EventResponse create(CreateEventMultipartRequest newEvent) throws MessagingException, IOException {
-        AuthStatus authStatus = authUtils.getAuthStatus();
+        AuthStatus authStatus = authUtil.getAuthStatus();
         Authentication authentication = authStatus.getAuthentication();
 
         if (!authStatus.isGuest && !authStatus.isAdmin && authentication != null && !authStatus.getEmail().equals(newEvent.getBookingEmail())) {
@@ -180,7 +180,7 @@ public class EventService {
 
         Instant startAt = options.getStartAt();
         Integer categoryId = options.getCategoryId();
-        AuthStatus authStatus = authUtils.getAuthStatus();
+        AuthStatus authStatus = authUtil.getAuthStatus();
 
         List<Integer> categoryIds = categoryId == null ? null : List.of(categoryId);
 

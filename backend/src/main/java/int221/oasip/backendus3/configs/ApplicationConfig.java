@@ -2,7 +2,6 @@ package int221.oasip.backendus3.configs;
 
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
