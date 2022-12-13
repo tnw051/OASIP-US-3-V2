@@ -52,11 +52,10 @@ public class EventController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be logged in to access this resource");
         }
 
-        EventService.GetEventsOptions options = EventService.GetEventsOptions.builder()
-                .categoryId(categoryId)
-                .startAt(startAt != null ? startAt.toInstant() : null)
-                .type(type)
-                .build();
+        EventService.GetEventsOptions options = new EventService.GetEventsOptions(
+                type,
+                startAt == null ? null : startAt.toInstant(),
+                categoryId == null ? null : List.of(categoryId));
 
         return service.getEventsNew(options);
     }
@@ -72,7 +71,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     public EventResponse getEventById(@PathVariable Integer id) {
-        return getEventIffAllowed(id);
+        return service.getEvent(id);
     }
 
     @PostMapping("")
@@ -94,7 +93,6 @@ public class EventController {
     @DeleteMapping("/{id}")
     @PreAuthorize("!hasRole('LECTURER')")
     public void delete(@PathVariable Integer id) {
-        getEventIffAllowed(id);
         service.delete(id);
     }
 
@@ -105,8 +103,6 @@ public class EventController {
             System.out.println("No fields to update");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
-
-        getEventIffAllowed(id);
 
         try {
             return service.update(id, editEvent);
@@ -144,20 +140,5 @@ public class EventController {
         } else {
             return bodyBuilder.body(file.getName());
         }
-    }
-
-    private EventResponse getEventIffAllowed(Integer id) {
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        AuthStatus authStatus = authUtils.getAuthStatus();
-        String email = authStatus.getEmail();
-        if (!authStatus.isAdmin && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
-
-        return event;
     }
 }

@@ -52,4 +52,9 @@ public class Event {
         this.eventNotes = eventNotes;
         this.eventDuration = eventCategory.getEventDuration();
     }
+
+    public void setEventCategory(EventCategory eventCategory) {
+        this.eventCategory = eventCategory;
+        this.eventDuration = eventCategory.getEventDuration();
+    }
 }
