@@ -40,4 +40,6 @@ public class User {
     @Generated(GenerationTime.ALWAYS)
     @Column(name = "updatedOn", nullable = false)
     private Instant updatedOn;
+
+
 }
