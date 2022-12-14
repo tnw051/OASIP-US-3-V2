@@ -1,29 +1,83 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from "vue";
+import BaseTable from "../components/BaseTable.vue";
 import EditUser from "../components/EditUser.vue";
 import Modal from "../components/Modal.vue";
-import Table from "../components/Table.vue";
-import { EditUserRequest, Role, UserResponse } from "../gen-types";
+import PageLayout from "../components/PageLayout.vue";
+import {
+  CategoryOwnerResponse,
+  CategoryResponse,
+  EditUserRequest,
+  Role,
+  UserResponse,
+} from "../gen-types";
+import {
+  deleteUser,
+  getCategories,
+  getRoles,
+  getUsers,
+  updateUser,
+} from "../service/api";
+import { getCategoryOwners } from "../service/api/category-owners";
 import { BaseSlotProps } from "../types";
-import { deleteUser, getRoles, getUsers, updateUser } from "../service/api";
 import { formatDateTime } from "../utils/index";
 import { useEditing } from "../utils/useEditing";
-import BaseTable from "../components/BaseTable.vue";
-import PageLayout from "../components/PageLayout.vue";
 
 const users = ref<UserResponse[]>([]);
 const roles = ref<Role[]>([]);
+const categoryOwners = ref<CategoryOwnerResponse[]>([]);
+const categories = ref<CategoryResponse[]>([]);
 const showDetails = ref(false);
 const isLoggedIn = ref(true);
 const { editingState, startEditing, stopEditing } = useEditing<UserResponse>();
 
+// email -> categories
+const ownershipMap = computed(() => {
+  if (!categoryOwners.value || !categories.value) {
+    return;
+  }
+  const map = new Map<string, CategoryResponse[]>();
+  const categoryIdToCategoryMap = new Map<number, CategoryResponse>();
+  categories.value.forEach((c) => {
+    categoryIdToCategoryMap.set(c.id, c);
+  });
+
+  categoryOwners.value.forEach((co) => {
+    const categories = map.get(co.ownerEmail) || [];
+    categories.push(categoryIdToCategoryMap.get(co.eventCategoryId));
+    map.set(co.ownerEmail, categories);
+  });
+
+  return map;
+});
+
+// categoryId -> owners
+const categoryOwnerMap = computed(() => {
+  if (!categoryOwners.value || !categories.value) {
+    return;
+  }
+  const map = new Map<number, CategoryOwnerResponse[]>();
+  categoryOwners.value.forEach((co) => {
+    const owners = map.get(co.eventCategoryId) || [];
+    owners.push(co);
+    map.set(co.eventCategoryId, owners);
+  });
+
+  return map;
+});
+
+// if the user is lecturer, check if there are any lecturers left to take over the categories (owners of each category must be > 0)
+// if there are none, throw an error
+
 onBeforeMount(async () => {
-  users.value = await getUsers({
+  users.value = (await getUsers({
     onUnauthorized: () => {
       isLoggedIn.value = false;
     },
-  }) || [];
-  roles.value = await getRoles() || [];
+  })) || [];
+  roles.value = (await getRoles()) || [];
+  categories.value = (await getCategories()) || [];
+  categoryOwners.value = (await getCategoryOwners()) || [];
 });
 
 const headers = computed(() => {
@@ -59,7 +113,24 @@ const headers = computed(() => {
 });
 
 async function confirmDeleteUser(user: UserResponse) {
-  if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
+  const hasOwnership = ownershipMap.value.has(user.email);
+  if (hasOwnership) {
+    // ensure that the user is not the only owner of any category
+    const ownCategories = ownershipMap.value.get(user.email);
+    const ownCategoriesWithOneOwner = ownCategories.filter((c) => {
+      const owners = categoryOwnerMap.value.get(c.id);
+      return owners.length === 1;
+    });
+
+    const denyMessage = `${user.name} is the owner of ${getCategoriesString(ownCategories)}. \n\nYou cannot delete this user account since ${user.name} is the only owner of ${getCategoriesString(ownCategoriesWithOneOwner)}. \n\nAnother owner must be added to the event category(s) before this lecturer can be deleted.`;
+    const confirmMessage = `${user.name} is the owner of ${getCategoriesString(ownCategories)}. Deletion of this user account will also remove this user from the event category(s). Do you still want to delete this account?`;
+    if (ownCategoriesWithOneOwner.length > 0) {
+      alert(denyMessage);
+      return;
+    } else if (!confirm(confirmMessage)) {
+      return;
+    }
+  } else if (!confirm(`Are you sure you want to delete ${user.name} (${user.email})?`)) {
     return;
   }
   const isSuccess = await deleteUser(user.id);
@@ -70,6 +141,19 @@ async function confirmDeleteUser(user: UserResponse) {
     alert("Failed to delete user");
   }
 }
+
+function getCategoriesString(categories: CategoryResponse[]) {
+  let categoriesString = "";
+  for (let i = 0; i < categories.length; i++) {
+    categoriesString += categories[i].eventCategoryName;
+    if (i !== categories.length - 1) {
+      categoriesString += ", ";
+    }
+  }
+
+  return categoriesString;
+}
+
 
 const isEditSuccessModalOpen = ref(false);
 const isEditErrorModalOpen = ref(false);
