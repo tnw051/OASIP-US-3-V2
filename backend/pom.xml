@@ -16,6 +16,7 @@
     <properties>
         <java.version>11</java.version>
         <typescript-generator.version>2.37.1128</typescript-generator.version>
+        <spring-cloud-azure.version>4.4.1</spring-cloud-azure.version>
     </properties>
     <dependencies>
         <dependency>
@@ -117,6 +118,17 @@
             <version>${querydsl.version}</version>
         </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.azure.spring</groupId>
+                <artifactId>spring-cloud-azure-dependencies</artifactId>
+                <version>${spring-cloud-azure.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
