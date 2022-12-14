@@ -1,12 +1,15 @@
 package int221.oasip.backendus3.services;
 
+import int221.oasip.backendus3.configs.AuthUtils;
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.entities.EventCategory;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.ValidationErrors;
+import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
@@ -21,6 +24,7 @@ import java.util.List;
 @AllArgsConstructor
 public class UserService {
     private UserRepository repository;
+    private EventCategoryRepository categoryRepository;
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
     private Argon2PasswordEncoder argon2PasswordEncoder;
@@ -64,11 +68,21 @@ public class UserService {
     }
 
     public void delete(Integer id) {
-        boolean userExists = repository.existsById(id);
-        if (!userExists) {
+        User user = repository.getById(id);
+        if (user == null) {
             throw new EntityNotFoundException("User not found");
         }
-        repository.deleteById(id);
+        // if the user is lecturer, check if there are any lecturers left to take over the categories (owners of each category must be > 0)
+        // if there are none, throw an error
+
+        if (user.getRole() == Role.LECTURER) {
+            List<EventCategory> categories = this.categoryRepository.findByOwners_OwnerEmail(user.getEmail());
+        }
+
+        if (user) {
+
+        }
+//        repository.deleteById(id);
     }
 
     public UserResponse update(Integer id, EditUserRequest request) {
