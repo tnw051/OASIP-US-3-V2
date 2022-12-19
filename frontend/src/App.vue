@@ -35,6 +35,7 @@ async function handleLogout() {
             Events
           </router-link>
           <router-link
+            v-if="!authState.isGuest"
             :to="{ name: 'categories' }"
             class="rounded-md px-4 py-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
           >

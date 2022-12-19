@@ -62,7 +62,7 @@ export function getDefaultAuthState(): AuthStateExtended {
     isAdmin: false,
     isLecturer: false,
     isStudent: false,
-    isGuest: false,
+    isGuest: true,
     user: null,
     status: "unauthenticated",
     isLoading: false,
