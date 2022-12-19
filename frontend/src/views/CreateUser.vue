@@ -65,7 +65,7 @@ const onSubmit = handleSubmit(async (user) => {
 </script>
  
 <template>
-  <div class="-mt-8 flex h-full">
+  <div class="flex h-full">
     <form
       class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-xl bg-white p-6 pb-8 shadow"
       @submit.prevent="onSubmit"
