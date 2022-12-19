@@ -33,7 +33,7 @@ public class File {
     private String type;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
     @JoinColumn(name = "eventId", nullable = false)
     private Event event;
 }
