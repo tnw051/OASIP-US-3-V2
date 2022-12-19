@@ -5,6 +5,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Entity
@@ -18,21 +20,18 @@ public class EventCategory {
     @Column(name = "eventCategoryId", nullable = false)
     private Integer id;
 
+    @Size(max = 100)
+    @NotNull
     @Column(name = "eventCategoryName", nullable = false, length = 100, unique = true)
     private String eventCategoryName;
 
+    @Size(max = 500)
     @Column(name = "eventCategoryDescription", length = 500)
     private String eventCategoryDescription;
 
+    @NotNull
     @Column(name = "eventDuration", nullable = false)
     private Integer eventDuration;
-
-    public EventCategory(String eventCategoryName, String eventCategoryDescription, Integer eventDuration) {
-        this.eventCategoryName = eventCategoryName;
-        this.eventCategoryDescription = eventCategoryDescription;
-        this.eventDuration = eventDuration;
-    }
-
     @OneToMany(mappedBy = "eventCategory", fetch = FetchType.LAZY)
     private List<EventCategoryOwner> owners;
 }
