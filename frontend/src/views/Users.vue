@@ -140,6 +140,8 @@ async function confirmDeleteUser(user: UserResponse) {
   } else {
     alert("Failed to delete user");
   }
+
+  categoryOwners.value = (await getCategoryOwners()) || [];
 }
 
 function getCategoriesString(categories: CategoryResponse[]) {
