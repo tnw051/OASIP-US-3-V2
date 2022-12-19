@@ -3,18 +3,19 @@ import { onBeforeMount, ref } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import BaseTable from "../components/BaseTable.vue";
+import CreateEventModal from "../components/CreateEventModal.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
 import PageLayout from "../components/PageLayout.vue";
 import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
 import {
-deleteEvent,
-getCategories,
-getEvents,
-getEventsByFilter,
-getLecturerCategories,
-updateEvent
+  deleteEvent,
+  getCategories,
+  getEvents,
+  getEventsByFilter,
+  getLecturerCategories,
+  updateEvent,
 } from "../service/api";
 import { BaseSlotProps } from "../types";
 import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
@@ -33,6 +34,10 @@ const isCancelSuccessModalOpen = ref(false);
 const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
 const selectedEvent = ref<EventResponse | null>(null);
+
+const isCreateEventModalOpen = ref(false);
+const isCreateSuccessModalOpen = ref(false);
+const isCreateErrorModalOpen = ref(false);
 
 const eventTypes = {
   DAY: "day" as const,
@@ -180,6 +185,17 @@ async function filterEvents() {
   setIsLoading(false);
 }
 
+function handleCreateEventSuccess(event: EventResponse) {
+  events.value.push(event);
+  isCreateEventModalOpen.value = false;
+  isCreateSuccessModalOpen.value = true;
+}
+
+function handleCreateEventError() {
+  isCreateEventModalOpen.value = false;
+  isCreateErrorModalOpen.value = true;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type SlotProps = BaseSlotProps<EventResponse>;
 </script>
@@ -247,6 +263,18 @@ type SlotProps = BaseSlotProps<EventResponse>;
             </div>
           </div>
         </div>
+
+        <button
+          v-if="!isLecturer"
+          type="submit"
+          class="mt-2 flex items-center gap-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="isCreateEventModalOpen = true"
+        >
+          <span class="material-symbols-outlined">
+            add
+          </span>
+          Create Event
+        </button>
       </div>
     </template>
 
@@ -392,6 +420,31 @@ type SlotProps = BaseSlotProps<EventResponse>;
     :is-open="isCancelConfirmModalOpen"
     @close="isCancelConfirmModalOpen = false"
     @confirm="confirmCancelEvent"
+  />
+
+  
+  <Modal
+    title="Success"
+    subtitle="Event created successfully"
+    :is-open="isCreateSuccessModalOpen"
+    @close="isCreateSuccessModalOpen = false"
+  />
+
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isCreateErrorModalOpen"
+    variant="error"
+    @close="isCreateErrorModalOpen = false"
+  />
+
+  <CreateEventModal
+    v-if="isCreateEventModalOpen"
+    :is-open="true"
+    @close="isCreateEventModalOpen = false"
+    @success="handleCreateEventSuccess"
+    @error="handleCreateEventError"
   />
 </template>
 

@@ -65,7 +65,7 @@ const emits = defineEmits(["close", "confirm"]);
   <Teleport to="body">
     <div
       v-if="props.isOpen"
-      class="absolute inset-0 z-50 flex bg-black/50 text-slate-700 shadow-2xl"
+      class="absolute top-0 left-0 z-50 flex h-screen w-screen bg-black/50 text-slate-700 shadow-2xl"
       @click="$emit('close')"
     >
       <div
