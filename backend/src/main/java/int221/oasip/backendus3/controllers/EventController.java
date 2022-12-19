@@ -8,28 +8,18 @@ import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.services.EventService;
-import int221.oasip.backendus3.services.FileService;
 import int221.oasip.backendus3.services.auth.AuthStatus;
 import int221.oasip.backendus3.services.auth.AuthUtil;
 import lombok.AllArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
 import javax.validation.Valid;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -38,7 +28,6 @@ import java.util.List;
 @AllArgsConstructor
 public class EventController {
     private EventService service;
-    private FileService fileService;
     private AuthUtil authUtils;
 
     @GetMapping("")
@@ -113,28 +102,5 @@ public class EventController {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update file");
         }
-    }
-
-    @GetMapping("/files/{bucketId}/{fileName}")
-    public ResponseEntity<?> getFile(
-            @PathVariable String bucketId,
-            @PathVariable String fileName
-    ) throws IOException {
-        File file = fileService.getFile(bucketId, fileName)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
-
-        Path path = Paths.get(file.getAbsolutePath());
-        Resource resource = new ByteArrayResource(Files.readAllBytes(path));
-        String contentType = Files.probeContentType(path);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + file.getName());
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .contentType(contentType == null
-                        ? MediaType.APPLICATION_OCTET_STREAM
-                        : MediaType.parseMediaType(contentType))
-                .body(resource);
     }
 }
