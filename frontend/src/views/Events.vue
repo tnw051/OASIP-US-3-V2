@@ -222,6 +222,11 @@ function handleCreateEventError() {
   isCreateErrorModalOpen.value = true;
 }
 
+const isFilterApplied = computed(() => {
+  const defaultFilter = createDefaultFilter();
+  return Object.keys(defaultFilter).some((key) => defaultFilter[key] !== filter.value[key]) || search.value !== "";
+});
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type SlotProps = BaseSlotProps<EventResponse>;
 </script>
@@ -229,7 +234,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
 <template>
   <PageLayout header="Events">
     <template #subheader>
-      <div class="mb-4 flex justify-between">
+      <div class="mb-4 flex items-end justify-between">
         <div class="mb-4 mt-2">
           {{ filteredEvents.length }} events shown
         </div>
@@ -266,7 +271,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
             </select>
           </div>
 
-          <div class="flex">
+          <div class="flex items-end">
             <div class="flex flex-col gap-1">
               <label class="text-xs text-slate-600">Type</label>
               <select
@@ -297,25 +302,24 @@ type SlotProps = BaseSlotProps<EventResponse>;
                 @change="filterEvents"
               >
             </div>
-            <div>
-              <button
-                type="reset"
-                class="mt-5 flex  items-center  rounded text-sm text-indigo-500 hover:text-indigo-600 disabled:cursor-not-allowed"
-                @click="resetFilter"
-              >
-                <span class="material-symbols-outlined">
-                  close
-                </span>
-                Reset Filter
-              </button>
-            </div>
+            <button
+              v-show="isFilterApplied"
+              type="reset"
+              class="mb-2 ml-1 flex items-center rounded text-sm text-indigo-500 hover:text-indigo-600"
+              @click="resetFilter"
+            >
+              <span class="material-symbols-outlined">
+                close
+              </span>
+              Reset Filter
+            </button>
           </div>
         </div>
 
         <button
           v-if="!isLecturer"
           type="submit"
-          class="mt-2 flex items-center gap-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          class="flex grow-0 items-center gap-1 rounded bg-blue-500 p-2 pr-3 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           @click="isCreateEventModalOpen = true"
         >
           <span class="material-symbols-outlined">
