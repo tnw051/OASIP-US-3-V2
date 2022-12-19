@@ -10,6 +10,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  info: {
+    type: String,
+    default: "Max file size: 10MB",
+  },
 });
 
 const emit = defineEmits(["change", "remove"]);
@@ -19,8 +23,13 @@ const emit = defineEmits(["change", "remove"]);
   <FieldLabel
     label="File"
     :required="false"
-    name="file"
   />
+  <div
+    v-if="info !== ''"
+    class="rounded-md text-sm text-blue-500"
+  >
+    {{ info }}
+  </div>
   <input
     id="file"
     type="file"
