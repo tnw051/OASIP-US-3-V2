@@ -3,10 +3,15 @@ package int221.oasip.backendus3.services;
 import int221.oasip.backendus3.dtos.CreateUserRequest;
 import int221.oasip.backendus3.dtos.EditUserRequest;
 import int221.oasip.backendus3.dtos.UserResponse;
+import int221.oasip.backendus3.entities.EventCategory;
+import int221.oasip.backendus3.entities.EventCategoryOwner;
 import int221.oasip.backendus3.entities.Role;
 import int221.oasip.backendus3.entities.User;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
+import int221.oasip.backendus3.exceptions.ForbiddenException;
 import int221.oasip.backendus3.exceptions.ValidationErrors;
+import int221.oasip.backendus3.repository.EventCategoryOwnerRepository;
+import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.UserRepository;
 import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.AllArgsConstructor;
@@ -16,11 +21,16 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @AllArgsConstructor
 public class UserService {
     private UserRepository repository;
+    private EventCategoryRepository categoryRepository;
+    private EventCategoryOwnerRepository categoryOwnerRepository;
     private ModelMapper modelMapper;
     private ModelMapperUtils modelMapperUtils;
     private Argon2PasswordEncoder argon2PasswordEncoder;
@@ -64,11 +74,45 @@ public class UserService {
     }
 
     public void delete(Integer id) {
-        boolean userExists = repository.existsById(id);
-        if (!userExists) {
-            throw new EntityNotFoundException("User not found");
+        User user = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // if the user is lecturer, check if there are any lecturers left to take over the categories (owners of each category must be > 0)
+        // if there are none, throw an error
+        if (user.getRole().equals(Role.LECTURER)) {
+            List<EventCategory> ownCategories = this.categoryRepository.findByOwners_OwnerEmail(user.getEmail());
+            List<EventCategory> ownCategoriesWithOneOwner = ownCategories.stream().filter(category -> category.getOwners().size() == 1).collect(Collectors.toList());
+            if (ownCategoriesWithOneOwner.size() > 0) {
+                String message = user.getName() + " is the owner of " +
+                        getCategoriesString(ownCategories) +
+                        ". You cannot delete this user account since " + user.getName() + " is the only owner of " +
+                        getCategoriesString(ownCategoriesWithOneOwner) +
+                        ". Another owner must be added to the event category(s) before this lecturer can be deleted.";
+
+                throw new ForbiddenException(message);
+            }
+
+            Stream<EventCategoryOwner> lecturerCategoryOwnerships = ownCategories.stream()
+                    .flatMap(category ->
+                            category.getOwners().stream().filter(owner -> owner.getOwnerEmail().equals(user.getEmail())));
+            lecturerCategoryOwnerships.forEach(owner -> this.categoryOwnerRepository.delete(owner));
         }
+
         repository.deleteById(id);
+    }
+
+    private StringBuilder getCategoriesString(List<EventCategory> categories) {
+        return getListString(categories, EventCategory::getEventCategoryName);
+    }
+
+    private <T, R> StringBuilder getListString(List<T> list, Function<T, R> mapper) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            sb.append(mapper.apply(list.get(i)));
+            if (i < list.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        return sb;
     }
 
     public UserResponse update(Integer id, EditUserRequest request) {

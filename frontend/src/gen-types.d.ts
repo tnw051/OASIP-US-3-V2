@@ -10,6 +10,12 @@ export interface ApiError {
     errors: { [index: string]: string[] };
 }
 
+export interface CategoryOwnerResponse {
+    id: number;
+    ownerEmail: string;
+    eventCategoryId: number;
+}
+
 export interface CategoryResponse {
     id: number;
     eventCategoryName: string;
