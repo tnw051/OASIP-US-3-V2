@@ -26,7 +26,7 @@ const validationSchema = toFormValidator(
   }),
 );
 
-const { handleSubmit, setErrors, errors } = useForm<{
+const { handleSubmit, setErrors, resetForm, values } = useForm<{
   name: string;
   email: string;
   password: string;
@@ -59,11 +59,13 @@ const onSubmit = handleSubmit(async (user) => {
       alert("Something went wrong");
     }
   }
+
+  resetForm();
 });
 </script>
  
 <template>
-  <div class="flex h-full bg-gray-100">
+  <div class="-mt-8 flex h-full">
     <form
       class="m-auto flex w-full max-w-sm flex-col gap-3 rounded-xl bg-white p-6 pb-8 shadow"
       @submit.prevent="onSubmit"
@@ -184,8 +186,8 @@ const onSubmit = handleSubmit(async (user) => {
 
         <button
           type="submit"
-          class="mt-4 rounded bg-sky-500 p-2 font-medium text-white hover:bg-sky-600 disabled:opacity-50"
-          :disabled="Object.keys(errors).length > 0"
+          class="mt-2 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="Object.keys(values).some((key) => values[key] === undefined)"
         >
           Create User
         </button>
