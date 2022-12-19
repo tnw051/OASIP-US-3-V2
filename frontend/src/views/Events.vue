@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import BaseTable from "../components/BaseTable.vue";
@@ -33,31 +33,26 @@ const isCancelSuccessModalOpen = ref(false);
 const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
 const selectedEvent = ref<EventResponse | null>(null);
-const search = ref('');
+const search = ref("");
 
-
-function searchFilter() {
-  if (search.value === '') {
-    return;
+const filteredEvents = computed(() => {
+  const keyword = search.value?.trim() || "";
+  if (keyword === "") {
+    return events.value;
   }
 
-  const filteredEvents = events.value.filter((event) => {
-    return event.eventNotes.toLowerCase().includes(search.value.toLowerCase());
+  return events.value.filter((event) => {
+    return event.eventNotes.toLowerCase().includes(keyword.toLowerCase()) ||
+      event.bookingName.toLowerCase().includes(keyword.toLowerCase()) ||
+      event.bookingEmail.toLowerCase().includes(keyword.toLowerCase());
   });
-
-  setEvents(filteredEvents);
- 
-}
+});
 
 function resetFilter() {
-  filter.value = {
-    categoryId: categoryTypes.ALL,
-    type: eventTypes.ALL,
-    date: '',
-  };
+  filter.value = createDefaultFilter();
+  filterEvents();
+  search.value = "";
 }
-
-
 
 const eventTypes = {
   DAY: "day" as const,
@@ -74,11 +69,15 @@ const filter = ref<{
   categoryId: number | null;
   type: "day" | "upcoming" | "past" | null;
   date: string;
-}>({
-  categoryId: categoryTypes.ALL,
-  type: eventTypes.ALL,
-  date: "",
-});
+}>(createDefaultFilter());
+
+function createDefaultFilter() {
+  return {
+    categoryId: categoryTypes.ALL,
+    type: eventTypes.ALL,
+    date: "",
+  };
+}
 
 // only call method if and only if auth is loaded
 onBeforeMount(async () => {
@@ -90,9 +89,9 @@ onBeforeMount(async () => {
     const events = await getEvents();
     setEvents(events);
     if (isLecturer.value) {
-      categories.value = await getLecturerCategories() || [];
+      categories.value = (await getLecturerCategories()) || [];
     } else {
-      categories.value = await getCategories() || [];
+      categories.value = (await getCategories()) || [];
     }
   }
 
@@ -214,16 +213,21 @@ type SlotProps = BaseSlotProps<EventResponse>;
     <template #subheader>
       <div class="mb-4 flex justify-between">
         <div class="mb-4 mt-2">
-          {{ events.length }} events shown
-        </div>
-        <div class="flex flex-col gap-1">
-        <div>
-          <input type="text" v-model="search" class="self-baseline rounded-sm border border-gray-500 bg-white p-1 text-sm shadow-md shadow-gray-500/5" placeholder="Search event"/>
-        </div>
+          {{ filteredEvents.length }} events shown
         </div>
 
         <!-- Filter -->
-        <div class="flex flex-wrap gap-6">
+        <div class="flex flex-wrap content-end gap-2">
+          <div class="grid">
+            <label class="text-xs text-slate-600">Search</label>
+            <input
+              v-model="search"
+              type="text"
+              class="self-baseline rounded-sm border border-gray-200 bg-white p-1 text-sm shadow-md shadow-gray-500/5"
+              placeholder="Search by keyword"
+            >
+          </div>
+        
           <div class="flex flex-col gap-1">
             <label class="text-xs text-slate-600">Category</label>
             <select
@@ -244,7 +248,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
             </select>
           </div>
 
-          <div class="flex gap-2">
+          <div class="flex">
             <div class="flex flex-col gap-1">
               <label class="text-xs text-slate-600">Type</label>
               <select
@@ -276,10 +280,16 @@ type SlotProps = BaseSlotProps<EventResponse>;
               >
             </div>
             <div>
-              <button type="reset" class="mt-5 rounded bg-red-500 py-1 px-3  text-white hover:bg-red-600 disabled:cursor-not-allowed" @click="resetFilter">
-                <Icon name="close" /> Reset
+              <button
+                type="reset"
+                class="mt-5 flex  items-center  rounded text-sm text-indigo-500 hover:text-indigo-600 disabled:cursor-not-allowed"
+                @click="resetFilter"
+              >
+                <span class="material-symbols-outlined">
+                  close
+                </span>
+                Reset Filter
               </button>
-  
             </div>
           </div>
         </div>
@@ -304,7 +314,7 @@ type SlotProps = BaseSlotProps<EventResponse>;
               key: 'eventCategory',
             },
           ]"
-          :items="events"
+          :items="filteredEvents"
           :enable-edit="!isLecturer"
           :enable-delete="!isLecturer"
           :selected-key="editingState.isEditing && editingState.item.id.toString()"
@@ -443,5 +453,4 @@ type SlotProps = BaseSlotProps<EventResponse>;
 .material-symbols-outlined {
   font-size: 1.2rem;
 }
-
 </style>
