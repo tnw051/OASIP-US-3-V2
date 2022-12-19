@@ -36,15 +36,21 @@ public class ResourceServerConfig extends WebSecurityConfigurerAdapter {
 
         http
                 .authorizeHttpRequests()
-                .antMatchers("/api/auth/private").authenticated()
+                .antMatchers("/api/auth/**").permitAll()
+                .antMatchers("/api/auth/match").hasAnyAuthority("ROLE_ADMIN", "APPROLE_Admin")
                 .antMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "APPROLE_Admin")
-                .antMatchers("/api/auth/match").hasRole("ADMIN")
-                .antMatchers(HttpMethod.POST, "/api/events").permitAll()
+
+                // @PreAuthorize is used on the controller to guard lecturer from create, update, delete events
+                .antMatchers(HttpMethod.POST, "/api/events/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/events/allocatedTimeSlots").permitAll()
-                .antMatchers("/api/events/test-lecturer").hasRole("LECTURER")
-                .antMatchers(HttpMethod.GET, "/api/events/files/**").permitAll()
                 .antMatchers("/api/events/**").authenticated()
-                .anyRequest().permitAll()
+
+                .antMatchers(HttpMethod.GET, "/api/categories/lecturer/**").hasAnyAuthority("ROLE_LECTURER", "APPROLE_Lecturer")
+                .antMatchers(HttpMethod.GET, "/api/categories").permitAll()
+
+                .antMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+
+                .anyRequest().authenticated()
                 .and()
                 .csrf().disable()
                 .oauth2ResourceServer()

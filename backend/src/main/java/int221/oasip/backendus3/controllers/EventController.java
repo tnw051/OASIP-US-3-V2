@@ -65,7 +65,7 @@ public class EventController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public EventResponse create(@Valid CreateEventMultipartRequest newEvent) {
         try {
             return service.create(newEvent);
@@ -80,13 +80,13 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null && editEvent.getFile() == null) {
             System.out.println("No fields to update");
