@@ -87,20 +87,23 @@ export function registerAuthStore(store: AuthStore) {
 
 async function preload() {
   const storeId = localStorage.getItem(authStoreIdKey);
-  if (storeId) {
-    const store = authStores.get(storeId);
-    if (store) {
-      logger.log(`preload: from ${store.id}`);
-      setStore(store);
-      await store.preload();
-      console.log("preload: done");
-    } else {
-      logger.error(`preload: ${storeId} not registered, aborting`);
+  try {
+    if (storeId) {
+      const store = authStores.get(storeId);
+      if (store) {
+        logger.log(`preload: from ${store.id}`);
+        setStore(store);
+        await store.preload();
+        console.log("preload: done");
+      } else {
+        logger.error(`preload: ${storeId} not registered, aborting`);
+      }
     }
+  } catch (e) {
+    logger.error("preload: error", e);
+  } finally {
+    isPreloadDone.value = true;
   }
-
-
-  isPreloadDone.value = true;
 }
 
 export function setStore(storeConfig: AuthStore) {

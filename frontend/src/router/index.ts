@@ -6,6 +6,7 @@ import Events from "../views/Events.vue";
 import Login from "../views/Login.vue";
 import NotFound from "../views/NotFound.vue";
 import Users from "../views/Users.vue";
+import { isAuthStoreReady } from "../auth/useAuthStore";
 
 const history = createWebHistory(import.meta.env.BASE_URL);
 
@@ -62,8 +63,11 @@ const router = createRouter({
 
 const { isAuthenticated, user, state } = useAuthStore();
 
-router.beforeEach((to, from) => {
+router.beforeEach(async (to, from) => {
   const { requiresAuth, checkAuth } = to.meta;
+
+  // wait for the auth store to be ready
+  await isAuthStoreReady();
 
   if (to.name === "login" && isAuthenticated.value) {
     return { name: "home" };
