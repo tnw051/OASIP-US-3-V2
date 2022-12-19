@@ -7,6 +7,8 @@ import org.hibernate.annotations.Formula;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "event")
@@ -38,11 +40,11 @@ public class Event {
     @Column(name = "eventNotes", length = 500)
     private String eventNotes;
 
-    @Column(name = "bucketUuid", length = 36)
-    private String bucketUuid;
-
     @Formula("TIMESTAMPADD(MINUTE, eventDuration, eventStartTime)")
     private Instant eventEndTime;
+
+    @OneToMany(mappedBy = "event", orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<File> files = new ArrayList<>();
 
     public Event(EventCategory eventCategory, String bookingName, String bookingEmail, Instant eventStartTime, String eventNotes) {
         this.eventCategory = eventCategory;

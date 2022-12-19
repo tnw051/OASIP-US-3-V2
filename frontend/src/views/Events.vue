@@ -9,12 +9,12 @@ import Modal from "../components/Modal.vue";
 import PageLayout from "../components/PageLayout.vue";
 import { CategoryResponse, EditEventRequest, EventResponse } from "../gen-types";
 import {
-  deleteEvent,
-  getCategories,
-  getEvents,
-  getEventsByFilter,
-  getLecturerCategories,
-  updateEvent,
+deleteEvent,
+getCategories,
+getEvents,
+getEventsByFilter,
+getLecturerCategories,
+updateEvent
 } from "../service/api";
 import { BaseSlotProps } from "../types";
 import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirections } from "../utils";
@@ -117,7 +117,7 @@ function closeEventDetails() {
   selectedEvent.value = null;
 }
 
-async function saveEvent(updates: EditEventRequest, file) {
+async function saveEvent(updates: EditEventRequest, file: File | undefined) {
   if (!editingState.isEditing) {
     return;
   }
@@ -138,7 +138,7 @@ async function saveEvent(updates: EditEventRequest, file) {
       const event = events.value.find((e) => e.id === selectedEventId);
       event.eventStartTime = updatedEvent.eventStartTime;
       event.eventNotes = updatedEvent.eventNotes;
-      event.bucketUuid = updatedEvent.bucketUuid;
+      event.files = updatedEvent.files;
       isEditSuccessModalOpen.value = true;
     } else {
       isEditErrorModalOpen.value = true;

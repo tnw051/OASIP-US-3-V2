@@ -115,13 +115,12 @@ public class EventController {
         }
     }
 
-    // with optional query parameter to only fetch the file name without the file content
-    @GetMapping("/files/{uuid}")
+    @GetMapping("/files/{bucketId}/{fileName}")
     public ResponseEntity<?> getFile(
-            @PathVariable String uuid,
-            @RequestParam(required = false) Boolean noContent
+            @PathVariable String bucketId,
+            @PathVariable String fileName
     ) throws IOException {
-        File file = fileService.getFileByBucketUuid(uuid)
+        File file = fileService.getFile(bucketId, fileName)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
 
         Path path = Paths.get(file.getAbsolutePath());
@@ -131,14 +130,11 @@ public class EventController {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + file.getName());
 
-        ResponseEntity.BodyBuilder bodyBuilder = ResponseEntity.ok()
+        return ResponseEntity.ok()
                 .headers(headers)
-                .contentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType));
-
-        if (noContent == null || !noContent) {
-            return bodyBuilder.body(resource);
-        } else {
-            return bodyBuilder.body(file.getName());
-        }
+                .contentType(contentType == null
+                        ? MediaType.APPLICATION_OCTET_STREAM
+                        : MediaType.parseMediaType(contentType))
+                .body(resource);
     }
 }

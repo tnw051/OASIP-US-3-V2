@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { toFormValidator } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
-import { computed, PropType, ref, watch } from "vue";
+import { computed, PropType } from "vue";
 import { z } from "zod";
 import { useFile } from "../composables/useFile";
 import { useOverlapValidator } from "../composables/useOverlapValidator";
 import { EditEventRequest, EventResponse } from "../gen-types";
-import { getFilenameByBucketUuid } from "../service/api";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
 import Badge from "./Badge.vue";
 import FileUploader from "./form/FileUploader.vue";
@@ -73,34 +72,6 @@ const { isOverlapping, setStartTime } = useOverlapValidator({
   },
 });
 
-async function getFilename() {
-  const bucketUuid = props.currentEvent.bucketUuid;
-  if (!bucketUuid) {
-    return;
-  }
-  const file = await getFilenameByBucketUuid(bucketUuid);
-  return file;
-}
-
-const filename = ref();
-const isLoading = ref(true);
-
-getFilename().then((res) => {
-  filename.value = res;
-  isLoading.value = false;
-});
-
-watch(
-  () => props.currentEvent.bucketUuid,
-  async (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-      isLoading.value = true;
-      filename.value = await getFilename();
-      isLoading.value = false;
-    }
-  },
-);
-
 const { file, fileError, handleChangeFile, handleRemoveFile, isDirty } = useFile();
 
 function handleSaveClick() {
@@ -124,7 +95,11 @@ const currentFilename = computed(() => {
     return file.value?.name;
   }
 
-  return filename.value;
+  if (props.currentEvent.files) {
+    return props.currentEvent.files[0].name;
+  }
+
+  return undefined;
 });
 </script>
  

@@ -1,11 +1,9 @@
 package int221.oasip.backendus3.services;
 
-import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
-import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
-import int221.oasip.backendus3.dtos.EventResponse;
-import int221.oasip.backendus3.dtos.EventTimeSlotResponse;
+import int221.oasip.backendus3.dtos.*;
 import int221.oasip.backendus3.entities.Event;
 import int221.oasip.backendus3.entities.EventCategory;
+import int221.oasip.backendus3.entities.File;
 import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.ForbiddenException;
@@ -14,12 +12,12 @@ import int221.oasip.backendus3.repository.EventCategoryRepository;
 import int221.oasip.backendus3.repository.EventRepository;
 import int221.oasip.backendus3.services.auth.AuthStatus;
 import int221.oasip.backendus3.services.auth.AuthUtil;
-import int221.oasip.backendus3.utils.ModelMapperUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Nullable;
 import javax.mail.MessagingException;
@@ -29,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 public class EventService {
     private final EventRepository repository;
     private final ModelMapper modelMapper;
-    private final ModelMapperUtils modelMapperUtils;
     private final EventCategoryRepository categoryRepository;
     private final EventCategoryOwnerRepository categoryOwnerRepository;
     private final FileService fileService;
@@ -46,7 +44,7 @@ public class EventService {
 
     public EventResponse getEvent(Integer id) {
         Event event = getEventIfAuthorized(id);
-        return modelMapper.map(event, EventResponse.class);
+        return mapEventToEventResponse(event);
     }
 
     public EventResponse create(CreateEventMultipartRequest newEvent) throws MessagingException, IOException {
@@ -70,14 +68,49 @@ public class EventService {
             throw new EventOverlapException();
         }
 
-        if (newEvent.getFile() != null && !newEvent.getFile().isEmpty()) {
-            String bucketUuid = fileService.uploadFile(newEvent.getFile());
-            event.setBucketUuid(bucketUuid);
-        }
-
+        setFileForEventIfExist(event, newEvent.getFile());
         mailService.sendmail(event);
 
-        return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
+        return mapEventToEventResponse(saveAndRefresh(event));
+    }
+
+    private Event saveAndRefresh(Event event) {
+        Event savedEvent = repository.saveAndFlush(event);
+        return repository.findById(savedEvent.getId()).orElseThrow();
+    }
+
+    private EventResponse mapEventToEventResponse(Event event) {
+        EventResponse eventResponse = modelMapper.map(event, EventResponse.class);
+        List<FileInfoResponse> files = event.getFiles().stream().map(file -> {
+            FileInfoResponse info = new FileInfoResponse();
+            info.setBucketId(file.getBucketId());
+            info.setName(file.getName());
+            info.setType(file.getType());
+            return info;
+        }).collect(Collectors.toList());
+
+        eventResponse.setFiles(files);
+
+        return eventResponse;
+    }
+
+    private List<EventResponse> mapEventsToEventResponses(List<Event> events) {
+        return events.stream().map(this::mapEventToEventResponse).collect(Collectors.toList());
+    }
+
+    private void setFileForEventIfExist(Event event, MultipartFile file) throws IOException {
+        if (file != null && !file.isEmpty()) {
+            String bucketId = UUID.randomUUID().toString();
+            fileService.uploadFile(bucketId, file);
+            File fileEntity = new File();
+            fileEntity.setBucketId(bucketId);
+            fileEntity.setName(file.getOriginalFilename());
+            fileEntity.setType(file.getContentType());
+            fileEntity.setEvent(event);
+            fileService.create(fileEntity);
+            event.getFiles().add(fileEntity);
+            System.out.println("Created file " + fileEntity.getId() + " bucketId " + fileEntity.getBucketId());
+        }
     }
 
     private List<Event> getOverlapEvents(Event event) {
@@ -98,7 +131,7 @@ public class EventService {
 
     public void delete(Integer id) {
         Event event = getEventIfAuthorized(id);
-        fileService.deleteFileByBucketUuid(event.getBucketUuid());
+        removeFileFromEvent(event);
         repository.deleteById(id);
     }
 
@@ -139,24 +172,33 @@ public class EventService {
             }
         }
 
-        String bucketUuid = event.getBucketUuid();
-        if (editEvent.getFile() != null) {
-            // remove the old file
-            if (editEvent.getFile().isEmpty()) {
-                fileService.deleteFileByBucketUuid(bucketUuid);
-                event.setBucketUuid(null);
-            } else {
-                // replace the old file with the new file
-                if (bucketUuid != null) {
-                    fileService.replaceFile(bucketUuid, editEvent.getFile());
-                } else {
-                    String newBucketUuid = fileService.uploadFile(editEvent.getFile());
-                    event.setBucketUuid(newBucketUuid);
-                }
+        updateFileForEvent(event, editEvent.getFile());
+
+        return mapEventToEventResponse(saveAndRefresh(event));
+    }
+
+    private void updateFileForEvent(Event event, MultipartFile newFile) throws IOException {
+        if (newFile != null) { // if there is a new file
+            removeFileFromEvent(event); // remove the old file regardless of whether the new file is empty or not
+
+            if (!newFile.isEmpty()) { // if the new file is not empty, then create a new file
+                setFileForEventIfExist(event, newFile);
             }
         }
 
-        return modelMapper.map(repository.saveAndFlush(event), EventResponse.class);
+    }
+
+    private void removeFileFromEvent(Event event) {
+        List<File> existingFiles = event.getFiles();
+        existingFiles.forEach(file -> {
+            try {
+                fileService.deleteFile(file.getBucketId(), file.getName());
+            } catch (Exception ignored) {
+            }
+            System.out.println("Deleted file " + file.getName() + " (" + file.getId() + ") from bucket " + file.getBucketId());
+        });
+
+        event.getFiles().clear();
     }
 
     public List<EventResponse> getEventsNew(GetEventsOptions options) {
@@ -188,19 +230,19 @@ public class EventService {
     public List<EventResponse> getEventsByDay(Instant startAt, Collection<Integer> categoryIds) {
         UserAwareFindEventsParameters parameters = new UserAwareFindEventsParameters(categoryIds);
         List<Event> events = repository.findByDateRangeOfOneDay(startAt, parameters.categoryIds, parameters.email);
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return mapEventsToEventResponses(events);
     }
 
     public List<EventResponse> getPastEvents(Instant startAt, Collection<Integer> categoryIds) {
         UserAwareFindEventsParameters parameters = new UserAwareFindEventsParameters(categoryIds);
         List<Event> events = repository.findPastEvents(startAt, parameters.categoryIds, parameters.email);
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return mapEventsToEventResponses(events);
     }
 
     public List<EventResponse> getUpcomingEvents(Instant startAt, Collection<Integer> categoryIds) {
         UserAwareFindEventsParameters parameters = new UserAwareFindEventsParameters(categoryIds);
         List<Event> events = repository.findUpcomingAndOngoingEvents(startAt, parameters.categoryIds, parameters.email);
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return mapEventsToEventResponses(events);
     }
 
     public List<EventResponse> getEventsByCategory(Collection<Integer> categoryIds) {
@@ -219,7 +261,7 @@ public class EventService {
             throw COMMON_FORBIDDEN_EXCEPTION;
         }
 
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return mapEventsToEventResponses(events);
     }
 
     public List<EventResponse> getAllEvents() {
@@ -238,7 +280,7 @@ public class EventService {
             throw COMMON_FORBIDDEN_EXCEPTION;
         }
 
-        return modelMapperUtils.mapList(events, EventResponse.class);
+        return mapEventsToEventResponses(events);
     }
 
     private Set<Integer> getFilteredCategoryIdsForLecturer(String email, @Nullable Collection<Integer> untrustedCategoryIds) {
