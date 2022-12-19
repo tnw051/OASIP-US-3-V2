@@ -34,7 +34,7 @@ const emit = defineEmits(["change", "remove"]);
       class="flex w-full items-center justify-between gap-2"
     >
       <div
-        class="text-sm font-medium"
+        class="truncate text-sm font-medium"
       >
         {{ fileName }}
       </div>
