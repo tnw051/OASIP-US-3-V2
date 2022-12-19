@@ -79,9 +79,8 @@ async function handleSubmit() {
   const user = {
     ...inputs.value,
   };
-
-  const { success, error } = await login(user);
-  if (success) {
+  
+  login(user, async () => {
     if (route.query.redirect) {
       console.log("[Login] redirecting to", route.query.redirect);
       await router.push(route.query.redirect);
@@ -89,11 +88,10 @@ async function handleSubmit() {
       console.log("[Login] redirecting to home");
       await router.push({ name: "home" });
     }
-  } else {
-    console.log("[Login] error", error);
+  }, () => {
+    console.log("[Login] error");
     inputs.value.password = ""; // clear password every time user submits
-    alert(error);
-  }
+  });
 }
 </script>
 
