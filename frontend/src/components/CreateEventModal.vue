@@ -54,7 +54,8 @@ const canSubmit = computed(() => {
     values.bookingName !== undefined &&
     values.bookingEmail !== undefined &&
     values.eventStartTime !== undefined &&
-    values.eventCategoryId !== undefined;
+    values.eventCategoryId !== undefined &&
+    !isOverlapping.value;
 });
 
 const { isOverlapping, setEventCategory, setStartTime } = useOverlapValidator();
