@@ -22,7 +22,7 @@ import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirect
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, isAuthLoading } = useAuthStore();
+const { isAuthenticated, isLecturer, isAuthLoading, isGuest } = useAuthStore();
 
 const events = ref<EventResponse[]>([]);
 const categories = ref<CategoryResponse[]>([]);
@@ -186,7 +186,9 @@ async function filterEvents() {
 }
 
 function handleCreateEventSuccess(event: EventResponse) {
-  events.value.push(event);
+  if (!isGuest.value) {
+    events.value.push(event);
+  }
   isCreateEventModalOpen.value = false;
   isCreateSuccessModalOpen.value = true;
 }
