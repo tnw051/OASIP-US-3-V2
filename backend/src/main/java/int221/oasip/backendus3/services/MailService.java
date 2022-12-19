@@ -17,6 +17,10 @@ import java.util.Properties;
 public class MailService {
     @Value("${mail.disable}")
     private boolean mailDisable;
+    @Value("${mail.username}")
+    private String mailUsername;
+    @Value("${mail.password}")
+    private String mailPassword;
 
     public void sendmail(Event event) throws MessagingException {
         if (mailDisable) {
@@ -30,7 +34,7 @@ public class MailService {
 
         Session session = Session.getInstance(props, new javax.mail.Authenticator() {
             protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("oasip.us3.noreply@gmail.com", "hyyvvoygfnytkmgt");
+                return new PasswordAuthentication(mailUsername, mailPassword);
             }
         });
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("E MMM dd, yyyy HH:mm").withZone(ZoneId.of("Asia/Bangkok"));
