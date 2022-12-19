@@ -33,6 +33,31 @@ const isCancelSuccessModalOpen = ref(false);
 const isCancelErrorModalOpen = ref(false);
 const isCancelConfirmModalOpen = ref(false);
 const selectedEvent = ref<EventResponse | null>(null);
+const search = ref('');
+
+
+function searchFilter() {
+  if (search.value === '') {
+    return;
+  }
+
+  const filteredEvents = events.value.filter((event) => {
+    return event.eventNotes.toLowerCase().includes(search.value.toLowerCase());
+  });
+
+  setEvents(filteredEvents);
+ 
+}
+
+function resetFilter() {
+  filter.value = {
+    categoryId: categoryTypes.ALL,
+    type: eventTypes.ALL,
+    date: '',
+  };
+}
+
+
 
 const eventTypes = {
   DAY: "day" as const,
@@ -191,6 +216,11 @@ type SlotProps = BaseSlotProps<EventResponse>;
         <div class="mb-4 mt-2">
           {{ events.length }} events shown
         </div>
+        <div class="flex flex-col gap-1">
+        <div>
+          <input type="text" v-model="search" class="self-baseline rounded-sm border border-gray-500 bg-white p-1 text-sm shadow-md shadow-gray-500/5" placeholder="Search event"/>
+        </div>
+        </div>
 
         <!-- Filter -->
         <div class="flex flex-wrap gap-6">
@@ -244,6 +274,12 @@ type SlotProps = BaseSlotProps<EventResponse>;
                 :max="inputConstraits.MAX_DATE"
                 @change="filterEvents"
               >
+            </div>
+            <div>
+              <button type="reset" class="mt-5 rounded bg-red-500 py-1 px-3  text-white hover:bg-red-600 disabled:cursor-not-allowed" @click="resetFilter">
+                <Icon name="close" /> Reset
+              </button>
+  
             </div>
           </div>
         </div>
@@ -407,4 +443,5 @@ type SlotProps = BaseSlotProps<EventResponse>;
 .material-symbols-outlined {
   font-size: 1.2rem;
 }
+
 </style>
