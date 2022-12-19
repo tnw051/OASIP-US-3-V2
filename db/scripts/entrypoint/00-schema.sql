@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS `oasip`.`event` (
   `eventDuration` INT NOT NULL,
   `eventNotes` VARCHAR(500) NULL,
   `eventCategoryId` INT NOT NULL,
-  `bucketUuid` VARCHAR(36) NULL,
   PRIMARY KEY (`eventId`),
   INDEX `fk_event_eventCategory_idx` (`eventCategoryId` ASC) VISIBLE,
   CONSTRAINT `fk_event_eventCategory`
@@ -79,6 +78,25 @@ CREATE TABLE IF NOT EXISTS `oasip`.`eventCategoryOwner` (
   CONSTRAINT `fk_user_has_eventCategory_eventCategory1`
     FOREIGN KEY (`eventCategoryId`)
     REFERENCES `oasip`.`eventCategory` (`eventCategoryId`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `oasip`.`file`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `oasip`.`file` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `bucketId` VARCHAR(36) NOT NULL,
+  `name` TEXT NOT NULL,
+  `type` VARCHAR(255) NOT NULL,
+  `eventId` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `fk_file_event1_idx` (`eventId` ASC) VISIBLE,
+  CONSTRAINT `fk_file_event1`
+    FOREIGN KEY (`eventId`)
+    REFERENCES `oasip`.`event` (`eventId`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;

@@ -1,49 +1,106 @@
 <script setup lang="ts">
+import { toFormValidator } from "@vee-validate/zod";
+import { useForm } from "vee-validate";
+import { computed, PropType } from "vue";
+import { z } from "zod";
+import { useFile } from "../composables/useFile";
+import { useOverlapValidator } from "../composables/useOverlapValidator";
 import { EditEventRequest, EventResponse } from "../gen-types";
 import { formatDateTimeLocal, inputConstraits } from "../utils";
-import { useEventValidator } from "../utils/useEventValidator";
-import { useFileInput } from "../utils/useFileInput";
 import Badge from "./Badge.vue";
+import FileUploader from "./form/FileUploader.vue";
+import InputField from "./form/InputField.vue";
 
-interface Props {
-  currentEvent: EventResponse;
-}
-
-const props = defineProps<Props>();
+const props = defineProps({
+  currentEvent: {
+    type: Object as PropType<EventResponse>,
+    required: true,
+  },
+});
 
 const emits = defineEmits([
   "save",
   "cancel",
 ]);
 
-const minDateTImeLocal = formatDateTimeLocal(new Date());
+const minDateTimeLocal = formatDateTimeLocal(new Date());
 
-const {
-  errors,
-  inputs,
-  canSubmit,
-} = useEventValidator({
-  currentEvent: props.currentEvent,
+const eventValidationSchema = toFormValidator(
+  z.object({
+    eventNotes: z.string().max(500, "Notes exceed 500 characters").optional().nullable(),
+    eventStartTime: z.string().refine((value) => {
+      const date = new Date(value);
+      const now = new Date();
+      return date.getTime() > now.getTime();
+    }, "Start time must be in the future"),
+  }),
+);
+
+const { values, errors } = useForm({
+  validationSchema: eventValidationSchema,
+  initialValues: {
+    eventNotes: props.currentEvent.eventNotes,
+    eventStartTime: props.currentEvent.eventStartTime ? formatDateTimeLocal(new Date(props.currentEvent.eventStartTime)) : undefined,
+  },
 });
+
+const hasErrors = computed(() => {
+  return Object.keys(errors.value).length > 0;
+});
+
+const hasChanges = computed(() => {
+  const currentEvent = props.currentEvent;
+  return values.eventNotes !== currentEvent.eventNotes ||
+    new Date(values.eventStartTime).getTime() !== new Date(currentEvent.eventStartTime).getTime() ||
+    isDirty.value;
+});
+
+const canSubmit = computed(() => {
+  return !hasErrors.value && hasChanges.value;
+});
+
+const startTime = new Date(props.currentEvent.eventStartTime);
+const endTime = new Date(props.currentEvent.eventStartTime);
+endTime.setMinutes(endTime.getMinutes() + props.currentEvent.eventDuration);
+
+const { isOverlapping, setStartTime } = useOverlapValidator({
+  currentTimeSlot: {
+    eventCategoryId: props.currentEvent.eventCategory.id,
+    eventDuration: props.currentEvent.eventDuration,
+    eventStartTime: startTime,
+    eventEndTime: endTime,
+  },
+});
+
+const { file, fileError, handleChangeFile, handleRemoveFile, isDirty } = useFile();
 
 function handleSaveClick() {
   const updates: EditEventRequest = {};
 
-  const newDate = new Date(inputs.eventStartTime);
-  if (newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
+  const newDate = new Date(values.eventStartTime);
+  if (!isNaN(newDate.getTime()) && newDate.getTime() !== new Date(props.currentEvent.eventStartTime).getTime()) {
     updates.eventStartTime = newDate.toISOString();
   }
 
-  const newNotes = inputs.eventNotes;
+  const newNotes = values.eventNotes;
   if (newNotes !== props.currentEvent.eventNotes) {
     updates.eventNotes = newNotes;
   }
 
-  assertNoPlaceholder();
-  emits("save", updates, file.value);
+  emits("save", updates, isDirty.value ? file.value : undefined);
 }
 
-const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, handleRemoveFile, assertNoPlaceholder, setPlaceholderWithName } = useFileInput();
+const currentFilename = computed(() => {
+  if (isDirty.value) {
+    return file.value?.name;
+  }
+
+  if (props.currentEvent.files) {
+    return props.currentEvent.files[0].name;
+  }
+
+  return undefined;
+});
 </script>
  
 <template>
@@ -71,93 +128,35 @@ const { file, fileError, fileInputRef, handleBlurFileInput, handleFileChange, ha
     </p>
 
     <div class="flex flex-col gap-2">
-      <label
-        for="startTime"
-        class="required text-sm font-medium text-gray-700"
-      >Start Time</label>
-      <input
-        id="startTime"
-        v-model="inputs.eventStartTime"
+      <InputField
+        label="Start Time"
+        name="eventStartTime"
         type="datetime-local"
-        :min="minDateTImeLocal"
+        :min="minDateTimeLocal"
         :max="inputConstraits.MAX_DATETIME_LOCAL"
-        required
-        class="rounded bg-gray-100 p-2"
-      >
-      <div
-        v-if="errors.eventStartTime"
-        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-      >
-        <span
-          v-for="error in errors.eventStartTime"
-          :key="error"
-        >{{ error }}</span>
-      </div>
+        :required="true"
+        :error-message="isOverlapping && 'The start time is overlapping with another event'"
+        @change="setStartTime($event.target.value)"
+      />
     </div>
 
     <div class="flex flex-col gap-2">
-      <label
-        for="notes"
-        class="text-sm font-medium text-gray-700"
-      >Notes <span
-        class="font-normal text-gray-400"
-      >(optional)</span></label>
-      <textarea
-        id="notes"
-        v-model="inputs.eventNotes"
-        class="rounded bg-gray-100 p-2"
+      <InputField
+        label="Notes"
+        name="eventNotes"
+        as="textarea"
         placeholder="What's your event about?"
       />
-      <div
-        v-if="errors.eventNotes"
-        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-      >
-        <span
-          v-for="error in errors.eventNotes"
-          :key="error"
-        >
-          {{ error }}
-        </span>
-      </div>
     </div>
 
     <!-- file -->
     <div class="flex flex-col gap-2">
-      <label
-        for="file"
-        class="text-sm font-medium text-gray-700"
-      >File <span
-        class="font-normal text-gray-400"
-      >(optional)</span></label>
-      <div class="flex items-center justify-between rounded bg-gray-100 p-2">
-        <input
-          id="file"
-          ref="fileInputRef"
-          type="file"
-          @change="handleFileChange"
-        >
-        <!-- remove file button -->
-        <button
-          v-if="file"
-          type="button"
-          class="text-red-500"
-          @click="handleRemoveFile"
-          @blur="handleBlurFileInput"
-        >
-          <span class="material-symbols-outlined m-auto block">
-            delete
-          </span>
-        </button>
-      </div>
-      <div
-        v-if="fileError"
-        class="mx-1 flex flex-col rounded-md bg-red-50 py-1 px-2 text-sm text-red-500"
-      >
-        <span
-          v-for="error in fileError"
-          :key="error"
-        >{{ error }}</span>
-      </div>
+      <FileUploader
+        :file-name="currentFilename"
+        :file-error="fileError"
+        @change="handleChangeFile"
+        @remove="handleRemoveFile"
+      />
     </div>
 
     <div class="flex gap-2">

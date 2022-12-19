@@ -1,6 +1,5 @@
 package int221.oasip.backendus3.controllers;
 
-import int221.oasip.backendus3.configs.AuthUtils;
 import int221.oasip.backendus3.dtos.CreateEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EditEventMultipartRequest;
 import int221.oasip.backendus3.dtos.EventResponse;
@@ -9,26 +8,18 @@ import int221.oasip.backendus3.exceptions.EntityNotFoundException;
 import int221.oasip.backendus3.exceptions.EventOverlapException;
 import int221.oasip.backendus3.exceptions.FieldNotValidException;
 import int221.oasip.backendus3.services.EventService;
-import int221.oasip.backendus3.services.FileService;
+import int221.oasip.backendus3.services.auth.AuthStatus;
+import int221.oasip.backendus3.services.auth.AuthUtil;
 import lombok.AllArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
 import javax.validation.Valid;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -37,8 +28,7 @@ import java.util.List;
 @AllArgsConstructor
 public class EventController {
     private EventService service;
-    private FileService fileService;
-    private AuthUtils authUtils;
+    private AuthUtil authUtils;
 
     @GetMapping("")
     public List<EventResponse> getEvents(
@@ -51,11 +41,10 @@ public class EventController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be logged in to access this resource");
         }
 
-        EventService.GetEventsOptions options = EventService.GetEventsOptions.builder()
-                .categoryId(categoryId)
-                .startAt(startAt != null ? startAt.toInstant() : null)
-                .type(type)
-                .build();
+        EventService.GetEventsOptions options = new EventService.GetEventsOptions(
+                type,
+                startAt == null ? null : startAt.toInstant(),
+                categoryId == null ? null : List.of(categoryId));
 
         return service.getEventsNew(options);
     }
@@ -71,12 +60,12 @@ public class EventController {
 
     @GetMapping("/{id}")
     public EventResponse getEventById(@PathVariable Integer id) {
-        return getEventIffAllowed(id);
+        return service.getEvent(id);
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public EventResponse create(@Valid CreateEventMultipartRequest newEvent) {
         try {
             return service.create(newEvent);
@@ -91,21 +80,18 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public void delete(@PathVariable Integer id) {
-        getEventIffAllowed(id);
         service.delete(id);
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("!hasRole('LECTURER')")
+    @PreAuthorize("!hasAnyAuthority('ROLE_LECTURER', 'APPROLE_Lecturer')")
     public EventResponse update(@PathVariable Integer id, @Valid EditEventMultipartRequest editEvent) {
         if (editEvent.getEventStartTime() == null && editEvent.getEventNotes() == null && editEvent.getFile() == null) {
             System.out.println("No fields to update");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one of eventStartTime, eventNotes, or file must be provided");
         }
-
-        getEventIffAllowed(id);
 
         try {
             return service.update(id, editEvent);
@@ -116,47 +102,5 @@ public class EventController {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update file");
         }
-    }
-
-    // with optional query parameter to only fetch the file name without the file content
-    @GetMapping("/files/{uuid}")
-    public ResponseEntity<?> getFile(
-            @PathVariable String uuid,
-            @RequestParam(required = false) Boolean noContent
-    ) throws IOException {
-        File file = fileService.getFileByBucketUuid(uuid)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
-
-        Path path = Paths.get(file.getAbsolutePath());
-        Resource resource = new ByteArrayResource(Files.readAllBytes(path));
-        String contentType = Files.probeContentType(path);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + file.getName());
-
-        ResponseEntity.BodyBuilder bodyBuilder = ResponseEntity.ok()
-                .headers(headers)
-                .contentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType));
-
-        if (noContent == null || !noContent) {
-            return bodyBuilder.body(resource);
-        } else {
-            return bodyBuilder.body(file.getName());
-        }
-    }
-
-    private EventResponse getEventIffAllowed(Integer id) {
-        EventResponse event = service.getEvent(id);
-        if (event == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event with id " + id + " not found");
-        }
-
-        AuthStatus authStatus = authUtils.getAuthStatus();
-        String email = authStatus.getEmail();
-        if (!authStatus.isAdmin && !event.getBookingEmail().equals(email)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to access this event");
-        }
-
-        return event;
     }
 }

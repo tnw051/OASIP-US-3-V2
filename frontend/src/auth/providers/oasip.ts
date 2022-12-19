@@ -83,7 +83,7 @@ async function _logout() {
 
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-function _login(user: LoginRequest, onSuccess?: () => void) {
+function _login(user: LoginRequest, onSuccess?: () => void, onError?: () => void) {
   try {
     login(user, {
       onSuccess: (response) => {
@@ -98,10 +98,12 @@ function _login(user: LoginRequest, onSuccess?: () => void) {
       onUnauthorized: (error) => {
         console.log(error);
         alert("Password is incorrect");
+        onError?.();
       },
       onNotFound: (error) => {
         console.log(error);
         alert("A user with the specified email DOES NOT exist");
+        onError?.();
       },
     });
   } catch (errorResponse) {

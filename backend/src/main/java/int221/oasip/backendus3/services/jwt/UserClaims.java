@@ -1,6 +1,6 @@
 package int221.oasip.backendus3.services.jwt;
 
-import int221.oasip.backendus3.configs.MyUserDetails;
+import int221.oasip.backendus3.services.MyUserDetails;
 import int221.oasip.backendus3.dtos.UserResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

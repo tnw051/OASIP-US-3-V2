@@ -44,9 +44,4 @@ public class GlobalControllerAdvice {
     public ResponseEntity<ApiError> handleValidationErrors(ValidationErrors exception) {
         return ApiError.fromException(exception).toResponseEntity();
     }
-
-    @ExceptionHandler({Exception.class})
-    public ResponseEntity<ApiError> handleException(Exception exception) {
-        return ApiError.fromException(exception).toResponseEntity();
-    }
 }

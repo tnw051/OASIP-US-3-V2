@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from "vue";
 import { useAuthStore } from "../auth/useAuthStore";
 import Badge from "../components/Badge.vue";
 import BaseTable from "../components/BaseTable.vue";
+import CreateEventModal from "../components/CreateEventModal.vue";
 import EditEvent from "../components/EditEvent.vue";
 import EventDetails from "../components/EventDetails.vue";
 import Modal from "../components/Modal.vue";
@@ -21,7 +22,7 @@ import { formatDateAndFromToTime, inputConstraits, sortByDateInPlace, sortDirect
 import { useEditing } from "../utils/useEditing";
 import { useIsLoading } from "../utils/useIsLoading";
 
-const { isAuthenticated, isLecturer, isAuthLoading } = useAuthStore();
+const { isAuthenticated, isLecturer, isAuthLoading, isGuest } = useAuthStore();
 
 const events = ref<EventResponse[]>([]);
 const categories = ref<CategoryResponse[]>([]);
@@ -53,6 +54,10 @@ function resetFilter() {
   filterEvents();
   search.value = "";
 }
+
+const isCreateEventModalOpen = ref(false);
+const isCreateSuccessModalOpen = ref(false);
+const isCreateErrorModalOpen = ref(false);
 
 const eventTypes = {
   DAY: "day" as const,
@@ -141,7 +146,7 @@ function closeEventDetails() {
   selectedEvent.value = null;
 }
 
-async function saveEvent(updates: EditEventRequest, file) {
+async function saveEvent(updates: EditEventRequest, file: File | undefined) {
   if (!editingState.isEditing) {
     return;
   }
@@ -162,7 +167,7 @@ async function saveEvent(updates: EditEventRequest, file) {
       const event = events.value.find((e) => e.id === selectedEventId);
       event.eventStartTime = updatedEvent.eventStartTime;
       event.eventNotes = updatedEvent.eventNotes;
-      event.bucketUuid = updatedEvent.bucketUuid;
+      event.files = updatedEvent.files;
       isEditSuccessModalOpen.value = true;
     } else {
       isEditErrorModalOpen.value = true;
@@ -202,6 +207,19 @@ async function filterEvents() {
   }
 
   setIsLoading(false);
+}
+
+function handleCreateEventSuccess(event: EventResponse) {
+  if (!isGuest.value) {
+    events.value.push(event);
+  }
+  isCreateEventModalOpen.value = false;
+  isCreateSuccessModalOpen.value = true;
+}
+
+function handleCreateEventError() {
+  isCreateEventModalOpen.value = false;
+  isCreateErrorModalOpen.value = true;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -293,6 +311,18 @@ type SlotProps = BaseSlotProps<EventResponse>;
             </div>
           </div>
         </div>
+
+        <button
+          v-if="!isLecturer"
+          type="submit"
+          class="mt-2 flex items-center gap-1 rounded bg-blue-500 py-2 px-4 font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="isCreateEventModalOpen = true"
+        >
+          <span class="material-symbols-outlined">
+            add
+          </span>
+          Create Event
+        </button>
       </div>
     </template>
 
@@ -438,6 +468,31 @@ type SlotProps = BaseSlotProps<EventResponse>;
     :is-open="isCancelConfirmModalOpen"
     @close="isCancelConfirmModalOpen = false"
     @confirm="confirmCancelEvent"
+  />
+
+  
+  <Modal
+    title="Success"
+    subtitle="Event created successfully"
+    :is-open="isCreateSuccessModalOpen"
+    @close="isCreateSuccessModalOpen = false"
+  />
+
+  <Modal
+    title="Error"
+    subtitle="Something went wrong"
+    button-text="Try Again"
+    :is-open="isCreateErrorModalOpen"
+    variant="error"
+    @close="isCreateErrorModalOpen = false"
+  />
+
+  <CreateEventModal
+    v-if="isCreateEventModalOpen"
+    :is-open="true"
+    @close="isCreateEventModalOpen = false"
+    @success="handleCreateEventSuccess"
+    @error="handleCreateEventError"
   />
 </template>
 

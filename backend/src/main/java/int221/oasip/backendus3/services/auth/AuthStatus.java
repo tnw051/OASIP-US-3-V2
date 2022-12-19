@@ -1,4 +1,4 @@
-package int221.oasip.backendus3.controllers;
+package int221.oasip.backendus3.services.auth;
 
 import lombok.Getter;
 import org.springframework.security.core.Authentication;

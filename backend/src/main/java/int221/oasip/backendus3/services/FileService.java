@@ -1,42 +1,25 @@
 package int221.oasip.backendus3.services;
 
+import int221.oasip.backendus3.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class FileService {
-
+    private final FileRepository fileRepository;
     @Value("${upload.path}")
-    private String uploadPath;
+    private String uploadPathProp;
 
-    public void replaceFile(String bucketUuid, MultipartFile newFile) throws IOException {
-        File uploadDir = new File(uploadPath, bucketUuid);
-        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
-        // remove all files in the directory
-        File[] files = uploadDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (!file.isDirectory()) {
-                    if (!file.delete()) {
-                        throw new IOException("Failed to delete file " + file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-
-        // upload new file to the same directory
-        String filename = getFileNameOrThrow(newFile);
-        File destination = new File(uploadDir, filename);
-        System.out.println("Replacing with " + destination.getAbsolutePath());
-        newFile.transferTo(new File(destination.getAbsolutePath()));
+    public FileService(FileRepository fileRepository) {
+        this.fileRepository = fileRepository;
     }
 
     private static String getFileNameOrThrow(MultipartFile newFile) throws IOException {
@@ -47,53 +30,40 @@ public class FileService {
         return filename;
     }
 
-    public String uploadFile(MultipartFile file) throws IOException {
-        // generate uuid as a directory name to store the file
-        String uuidNewDir = UUID.randomUUID().toString();
-        File uploadDir = new File(uploadPath, uuidNewDir);
-        Files.createDirectories(uploadDir.toPath().toAbsolutePath());
+    public void uploadFile(String bucketId, MultipartFile file) throws IOException {
+        Path uploadPath = Paths.get(uploadPathProp, bucketId).normalize();
+        Files.createDirectories(uploadPath);
 
         String filename = getFileNameOrThrow(file);
-        File destination = new File(uploadDir, filename);
-
-        // check that absolute path is the same as the canonical path to prevent path traversal
-//        if (!destination.getCanonicalPath().equals(destination.getAbsolutePath())) {
-//        }
-
-        System.out.println("Saving to " + destination.getAbsolutePath());
-        file.transferTo(new File(destination.getAbsolutePath()));
-
-        return uuidNewDir;
+        Path destinationPath = uploadPath.resolve(filename);
+        file.transferTo(destinationPath);
+        System.out.println("Saved to " + destinationPath.toAbsolutePath());
     }
 
-    public void deleteFileByBucketUuid(@Nullable String bucketUuid) {
-        if (bucketUuid == null) {
-            return;
+    public Optional<File> getFile(String bucketId, String filename) {
+        Path uploadPath = Paths.get(uploadPathProp, bucketId).normalize();
+        Path destinationPath = uploadPath.resolve(filename);
+        return Optional.of(destinationPath.toFile());
+    }
+
+    public void create(int221.oasip.backendus3.entities.File file) {
+        fileRepository.saveAndFlush(file);
+    }
+
+    public void deleteFile(String bucketId, String filename) {
+        Path uploadPath = Paths.get(uploadPathProp, bucketId).normalize();
+        Path destinationPath = uploadPath.resolve(filename);
+        File file = destinationPath.toFile();
+        if (!file.delete()) {
+            throw new RuntimeException("Failed to delete file " + file.getAbsolutePath());
         }
 
-        File uploadDir = new File(uploadPath, bucketUuid);
-        File[] files = uploadDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (!file.delete()) {
-                    throw new RuntimeException("Failed to delete file " + file.getAbsolutePath());
-                }
+        // if files in this bucket is empty, delete the bucket
+        File[] files = uploadPath.toFile().listFiles();
+        if (files == null || files.length == 0) {
+            if (!uploadPath.toFile().delete()) {
+                throw new RuntimeException("Failed to delete directory " + uploadPath.toFile().getAbsolutePath());
             }
         }
-        System.out.println("Deleting " + uploadDir.getAbsolutePath());
-        if (!uploadDir.delete()) {
-            throw new RuntimeException("Failed to delete directory " + uploadDir.getAbsolutePath());
-        }
-    }
-
-    public Optional<File> getFileByBucketUuid(String uuid) {
-        File uploadDir = new File(uploadPath, uuid);
-        // get the only file in the directory
-        File[] files = uploadDir.listFiles();
-        if (files == null || files.length == 0) {
-            return Optional.empty();
-        }
-
-        return Optional.of(files[0]);
     }
 }

@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-// Generated using typescript-generator version 2.37.1128 on 2022-12-14 13:14:32.
+// Generated using typescript-generator version 2.37.1128 on 2022-12-19 17:22:05.
 
 export interface ApiError {
     timestamp: string;
@@ -68,7 +68,7 @@ export interface EventResponse {
     eventStartTime: DateAsString;
     eventDuration: number;
     eventNotes: string;
-    bucketUuid: string;
+    files?: FileInfoResponse[];
 }
 
 export interface EventTimeSlotResponse {
@@ -76,6 +76,12 @@ export interface EventTimeSlotResponse {
     eventEndTime: DateAsString;
     eventDuration: number;
     eventCategoryId: number;
+}
+
+export interface FileInfoResponse {
+    name: string;
+    type: string;
+    bucketId: string;
 }
 
 export interface LoginRequest {

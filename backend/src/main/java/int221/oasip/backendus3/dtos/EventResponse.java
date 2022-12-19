@@ -1,9 +1,12 @@
 package int221.oasip.backendus3.dtos;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -15,5 +18,7 @@ public class EventResponse {
     private Instant eventStartTime;
     private Integer eventDuration;
     private String eventNotes;
-    private String bucketUuid;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @Nullable
+    private List<FileInfoResponse> files;
 }

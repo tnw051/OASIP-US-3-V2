@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { EventResponse } from "../gen-types";
+import { getDownloadUrl } from "../service/api";
 import { formatDateAndFromToTime } from "../utils";
 import Badge from "./Badge.vue";
-import { getFilenameByBucketUuid, getBucketURL } from "../service/api";
-import { onBeforeMount, ref, watch } from "vue";
 
 interface Props {
   currentEvent: EventResponse;
@@ -14,35 +13,6 @@ const props = defineProps<Props>();
 const emits = defineEmits([
   "close",
 ]);
-
-// fetch image using url from props.currentEvent.bucketUuid
-async function getFilename() {
-  const bucketUuid = props.currentEvent.bucketUuid;
-  if (!bucketUuid) {
-    return;
-  }
-  const file = await getFilenameByBucketUuid(bucketUuid);
-  return file;
-}
-
-const filename = ref();
-const isLoading = ref(true);
-
-getFilename().then((res) => {
-  filename.value = res;
-  isLoading.value = false;
-});
-
-watch(
-  () => props.currentEvent.bucketUuid,
-  async (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-      isLoading.value = true;
-      filename.value = await getFilename();
-      isLoading.value = false;
-    }
-  },
-);
 </script>
  
 <template>
@@ -93,25 +63,21 @@ watch(
       <p>{{ props.currentEvent.bucketUuid }}</p>
     </div> -->
 
-    <div v-if="props.currentEvent.bucketUuid">
+    <div
+      v-for="file in props.currentEvent.files"
+      :key="file.name"
+    >
       <p class="text-sm text-gray-500">
         Files
       </p>
       <a
-        v-if="!isLoading"
-        :href="getBucketURL(props.currentEvent.bucketUuid)"
+        :href="getDownloadUrl(file.bucketId, file.name)"
         target="_blank"
         rel="noopener noreferrer"
         class="text-blue-500 hover:underline"
       >
-        {{ filename }}
+        {{ file.name }}
       </a>
-      <p
-        v-else
-        class="text-gray-500"
-      >
-        Loading...
-      </p>
     </div>
   </div>
 </template>

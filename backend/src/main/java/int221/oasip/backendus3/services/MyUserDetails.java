@@ -1,4 +1,4 @@
-package int221.oasip.backendus3.configs;
+package int221.oasip.backendus3.services;
 
 import int221.oasip.backendus3.entities.User;
 import lombok.Getter;

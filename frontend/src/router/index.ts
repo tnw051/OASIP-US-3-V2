@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import { useAuthStore } from "../auth/useAuthStore";
 import CategoryEvent from "../views/CategoryEvent.vue";
-import CreateEvent from "../views/CreateEvent.vue";
 import CreateUser from "../views/CreateUser.vue";
 import Events from "../views/Events.vue";
 import Login from "../views/Login.vue";
@@ -16,16 +15,6 @@ const routes: RouteRecordRaw[] = [
     name: "home",
     component: Events,
     alias: ["/events", "/home"],
-  },
-  {
-    path: "/create-event",
-    name: "createEvent",
-    component: CreateEvent,
-    meta: {
-      checkAuth(auth) {
-        return !auth.isLecturer;
-      },
-    },
   },
   {
     path: "/categories",
