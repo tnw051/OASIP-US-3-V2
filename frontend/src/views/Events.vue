@@ -210,7 +210,7 @@ async function filterEvents() {
 }
 
 function handleCreateEventSuccess(event: EventResponse) {
-  if (!isGuest.value) {
+  if (!isGuest.value && isAuthenticated.value) {
     events.value.push(event);
   }
   isCreateEventModalOpen.value = false;
